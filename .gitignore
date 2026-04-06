@@ -1,0 +1,26 @@
+# Worktrees
+.worktrees/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Node.js
+node_modules/
+dist/
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test
+coverage/
+.vitest-cache/
+
+# Env
+.env
+.env.local
