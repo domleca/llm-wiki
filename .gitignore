@@ -8,6 +8,8 @@
 # Node.js
 node_modules/
 dist/
+main.js
+main.js.map
 *.log
 npm-debug.log*
 
