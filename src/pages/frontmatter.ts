@@ -12,7 +12,7 @@ export function entityFrontmatter(
     type: "entity",
     "entity-type": entity.type,
     name: entity.name,
-    aliases: entity.aliases,
+    aliases: [...entity.aliases],
     tags: ["llm-wiki/entity", `llm-wiki/entity/${entity.type}`],
     "source-count": entity.sources.length,
     "date-updated": today,
@@ -48,6 +48,17 @@ export function sourceFrontmatter(
   };
 }
 
+function yamlScalar(value: unknown): string {
+  if (typeof value === "string") {
+    // Quote if value contains YAML-unsafe characters
+    if (/[:{}\[\],#&*!|>'"%@`]/.test(value) || value.trim() !== value) {
+      return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+    }
+    return value;
+  }
+  return String(value);
+}
+
 /**
  * Serialize a frontmatter object to a YAML block (including --- delimiters).
  * Handles strings, numbers, booleans, and arrays of primitives.
@@ -61,13 +72,13 @@ export function serializeFrontmatter(fm: Record<string, unknown>): string {
       } else {
         lines.push(`${key}:`);
         for (const item of value) {
-          lines.push(`  - ${String(item)}`);
+          lines.push(`  - ${yamlScalar(item)}`);
         }
       }
     } else {
-      lines.push(`${key}: ${String(value)}`);
+      lines.push(`${key}: ${yamlScalar(value)}`);
     }
   }
   lines.push("---");
-  return lines.join("\n");
+  return lines.join("\n") + "\n";
 }

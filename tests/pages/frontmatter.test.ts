@@ -104,6 +104,21 @@ describe("conceptFrontmatter", () => {
     const fm = conceptFrontmatter(CONCEPT, TODAY);
     expect(fm["tags"]).toEqual(["llm-wiki/concept"]);
   });
+
+  it("sets aliases to empty list", () => {
+    const fm = conceptFrontmatter(CONCEPT, TODAY);
+    expect(fm["aliases"]).toEqual([]);
+  });
+
+  it("sets cssclasses to empty list", () => {
+    const fm = conceptFrontmatter(CONCEPT, TODAY);
+    expect(fm["cssclasses"]).toEqual([]);
+  });
+
+  it("sets date-updated to TODAY", () => {
+    const fm = conceptFrontmatter(CONCEPT, TODAY);
+    expect(fm["date-updated"]).toBe(TODAY);
+  });
 });
 
 describe("sourceFrontmatter", () => {
@@ -131,13 +146,23 @@ describe("sourceFrontmatter", () => {
     const fm = sourceFrontmatter(SOURCE);
     expect(fm["tags"]).toEqual(["llm-wiki/source"]);
   });
+
+  it("sets aliases to empty list", () => {
+    const fm = sourceFrontmatter(SOURCE);
+    expect(fm["aliases"]).toEqual([]);
+  });
+
+  it("sets cssclasses to empty list", () => {
+    const fm = sourceFrontmatter(SOURCE);
+    expect(fm["cssclasses"]).toEqual([]);
+  });
 });
 
 describe("serializeFrontmatter", () => {
   it("wraps output in --- delimiters", () => {
     const yaml = serializeFrontmatter({ type: "entity" });
     expect(yaml).toMatch(/^---\n/);
-    expect(yaml).toMatch(/\n---$/);
+    expect(yaml).toMatch(/\n---\n$/);
   });
 
   it("serializes string values", () => {
@@ -158,5 +183,16 @@ describe("serializeFrontmatter", () => {
   it("serializes integer values", () => {
     const yaml = serializeFrontmatter({ "source-count": 3 });
     expect(yaml).toContain("source-count: 3");
+  });
+
+  it("quotes string values containing colons", () => {
+    const yaml = serializeFrontmatter({ name: "React: A Deep Dive" });
+    expect(yaml).toContain('name: "React: A Deep Dive"');
+  });
+
+  it("defaults today to current ISO date when not provided", () => {
+    const fm = entityFrontmatter(ENTITY);
+    const expected = new Date().toISOString().slice(0, 10);
+    expect(fm["date-updated"]).toBe(expected);
   });
 });
