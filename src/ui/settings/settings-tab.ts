@@ -1,6 +1,7 @@
 import { App, PluginSettingTab } from "obsidian";
 import type LlmWikiPlugin from "../../plugin.js";
 import { renderIndexingSection } from "./indexing-section.js";
+import { buildQuerySection } from "./query-section.js";
 
 export class LlmWikiSettingsTab extends PluginSettingTab {
   private readonly plugin: LlmWikiPlugin;
@@ -23,6 +24,20 @@ export class LlmWikiSettingsTab extends PluginSettingTab {
       onIndexAll: () => this.plugin.runExtractAll(),
       onIndexCancel: () => this.plugin.cancelExtraction(),
       isRunning: () => this.plugin.isExtractionRunning(),
+    });
+
+    buildQuerySection({
+      container: containerEl,
+      settings: {
+        embeddingModel: this.plugin.settings.embeddingModel,
+        defaultQueryFolder: this.plugin.settings.defaultQueryFolder,
+        recentQuestionCount: this.plugin.settings.recentQuestionCount,
+        showSourceLinks: this.plugin.settings.showSourceLinks,
+      },
+      onChange: async (patch) => {
+        Object.assign(this.plugin.settings, patch);
+        await this.plugin.saveSettings();
+      },
     });
   }
 }

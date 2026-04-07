@@ -22,6 +22,10 @@ interface LlmWikiSettings {
   ollamaModel: string;
   extractionCharLimit: number;
   lastExtractionRunIso: string | null;
+  embeddingModel: string;
+  defaultQueryFolder: string;
+  recentQuestionCount: number;
+  showSourceLinks: boolean;
 }
 
 const DEFAULT_SETTINGS: LlmWikiSettings = {
@@ -30,6 +34,10 @@ const DEFAULT_SETTINGS: LlmWikiSettings = {
   ollamaModel: "qwen2.5:7b",
   extractionCharLimit: 12_000,
   lastExtractionRunIso: null,
+  embeddingModel: "nomic-embed-text",
+  defaultQueryFolder: "",
+  recentQuestionCount: 5,
+  showSourceLinks: true,
 };
 
 export default class LlmWikiPlugin extends Plugin {
