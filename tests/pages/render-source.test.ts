@@ -73,4 +73,9 @@ describe("renderSourcePage", () => {
     const afterFm = md.split("\n---\n")[1];
     expect(afterFm?.trimStart()).toMatch(/^# /);
   });
+
+  it("output ends with a newline", () => {
+    const md = renderSourcePage(SOURCE, [], []);
+    expect(md.endsWith("\n")).toBe(true);
+  });
 });

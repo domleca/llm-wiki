@@ -81,4 +81,15 @@ describe("renderEntityPage", () => {
     const md = renderEntityPage(e, [], TODAY);
     expect(md).not.toContain("## Facts");
   });
+
+  it("output ends with a newline", () => {
+    const md = renderEntityPage(ENTITY, [], TODAY);
+    expect(md.endsWith("\n")).toBe(true);
+  });
+
+  it("omits ## Sources section when entity has no sources", () => {
+    const e = { ...ENTITY, sources: [] };
+    const md = renderEntityPage(e, [], TODAY);
+    expect(md).not.toContain("## Sources");
+  });
 });

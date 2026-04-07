@@ -47,4 +47,26 @@ describe("renderConceptPage", () => {
     const md = renderConceptPage(c, TODAY);
     expect(md).not.toContain("## Related");
   });
+
+  it("output ends with a newline", () => {
+    const md = renderConceptPage(CONCEPT, TODAY);
+    expect(md.endsWith("\n")).toBe(true);
+  });
+
+  it("omits the definition paragraph when definition is empty", () => {
+    const c = { ...CONCEPT, definition: "" };
+    const md = renderConceptPage(c, TODAY);
+    // After the h1, the next non-blank content should be a section or end of file
+    const lines = md.split("\n");
+    const h1Index = lines.findIndex((l) => l.startsWith("# "));
+    const afterH1 = lines.slice(h1Index + 1).filter((l) => l.trim() !== "");
+    // Should start with ## or nothing, not a definition paragraph
+    expect(afterH1[0] ?? "").toMatch(/^(##|$)/);
+  });
+
+  it("omits ## Sources section when concept has no sources", () => {
+    const c = { ...CONCEPT, sources: [] };
+    const md = renderConceptPage(c, TODAY);
+    expect(md).not.toContain("## Sources");
+  });
 });
