@@ -3,6 +3,7 @@ import {
   LLMHttpError,
   LLMProtocolError,
   type CompletionOptions,
+  type EmbedOptions,
   type LLMProvider,
 } from "./provider.js";
 
@@ -27,6 +28,49 @@ export class OllamaProvider implements LLMProvider {
     this.url = opts.url ?? "http://localhost:11434";
     this.fetchImpl =
       opts.fetchImpl ?? ((...args) => globalThis.fetch(...args));
+  }
+
+  async embed(opts: EmbedOptions): Promise<number[]> {
+    if (opts.signal?.aborted) throw new LLMAbortError();
+
+    let response: Response;
+    try {
+      response = await this.fetchImpl(`${this.url}/api/embeddings`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ model: opts.model, prompt: opts.text }),
+        signal: opts.signal,
+      });
+    } catch (err) {
+      if (
+        opts.signal?.aborted ||
+        (err instanceof DOMException && err.name === "AbortError")
+      ) {
+        throw new LLMAbortError();
+      }
+      throw new LLMHttpError(
+        `Ollama embeddings fetch failed: ${(err as Error).message}`,
+        null,
+      );
+    }
+
+    if (!response.ok) {
+      throw new LLMHttpError(
+        `Ollama embeddings returned ${response.status}`,
+        response.status,
+      );
+    }
+
+    const json = (await response.json()) as { embedding?: unknown };
+    if (
+      !Array.isArray(json.embedding) ||
+      !json.embedding.every((n) => typeof n === "number")
+    ) {
+      throw new LLMProtocolError(
+        "Ollama embeddings response missing numeric embedding array",
+      );
+    }
+    return json.embedding as number[];
   }
 
   complete(opts: CompletionOptions): AsyncIterable<string> {

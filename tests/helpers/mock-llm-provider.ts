@@ -1,26 +1,58 @@
 import type {
   CompletionOptions,
+  EmbedOptions,
   LLMProvider,
 } from "../../src/llm/provider.js";
 import { LLMAbortError } from "../../src/llm/provider.js";
 
+export interface MockLLMProviderOptions {
+  responses?: string[];
+  embeddings?: number[][];
+  chunked?: boolean;
+  errors?: (Error | null)[];
+}
+
 /**
  * Test double for LLMProvider. Returns canned responses in FIFO order,
  * recording every call so tests can assert ordering, model, prompt, etc.
+ *
+ * Two constructor forms are supported for backward compatibility:
+ *   new MockLLMProvider(["resp1"], { chunked: true })   // legacy positional
+ *   new MockLLMProvider({ responses: ["resp1"], embeddings: [[1, 0]] })
  */
 export class MockLLMProvider implements LLMProvider {
   readonly calls: CompletionOptions[] = [];
+  readonly embedCalls: EmbedOptions[] = [];
   private queue: string[];
   private errorQueue: (Error | null)[];
   private chunked: boolean;
+  private embeddings: number[][];
+  private embedIdx = 0;
 
   constructor(
-    responses: string[] = [],
+    responsesOrOptions: string[] | MockLLMProviderOptions = [],
     options: { chunked?: boolean; errors?: (Error | null)[] } = {},
   ) {
-    this.queue = [...responses];
-    this.chunked = options.chunked ?? false;
-    this.errorQueue = options.errors ? [...options.errors] : [];
+    if (Array.isArray(responsesOrOptions)) {
+      this.queue = [...responsesOrOptions];
+      this.chunked = options.chunked ?? false;
+      this.errorQueue = options.errors ? [...options.errors] : [];
+      this.embeddings = [];
+    } else {
+      const opts = responsesOrOptions;
+      this.queue = opts.responses ? [...opts.responses] : [];
+      this.chunked = opts.chunked ?? false;
+      this.errorQueue = opts.errors ? [...opts.errors] : [];
+      this.embeddings = opts.embeddings ? opts.embeddings.map((v) => [...v]) : [];
+    }
+  }
+
+  async embed(opts: EmbedOptions): Promise<number[]> {
+    this.embedCalls.push(opts);
+    if (this.embedIdx >= this.embeddings.length) {
+      throw new Error("MockLLMProvider: no more embeddings in queue");
+    }
+    return this.embeddings[this.embedIdx++]!;
   }
 
   enqueue(response: string): void {
