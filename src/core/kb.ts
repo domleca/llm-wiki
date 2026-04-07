@@ -196,6 +196,23 @@ export class KnowledgeBase {
     return path in this.data.sources;
   }
 
+  getEntity(nameOrId: string): Entity | undefined {
+    const id = makeId(nameOrId);
+    if (this.data.entities[id]) return this.data.entities[id];
+    const lower = nameOrId.toLowerCase();
+    for (const e of Object.values(this.data.entities)) {
+      if (e.aliases.some((a) => a.toLowerCase() === lower)) {
+        return e;
+      }
+    }
+    return undefined;
+  }
+
+  getConcept(nameOrId: string): Concept | undefined {
+    const id = makeId(nameOrId);
+    return this.data.concepts[id];
+  }
+
   removeSource(path: string): void {
     delete this.data.sources[path];
     for (const entity of Object.values(this.data.entities)) {

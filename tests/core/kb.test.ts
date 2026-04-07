@@ -286,3 +286,38 @@ describe("KnowledgeBase.removeSource", () => {
     expect(() => kb.removeSource("nonexistent.md")).not.toThrow();
   });
 });
+
+describe("KnowledgeBase.getEntity and getConcept", () => {
+  it("getEntity finds by canonical ID", () => {
+    const kb = new KnowledgeBase();
+    kb.addEntity({ name: "Alan Watts", type: "person" });
+    expect(kb.getEntity("Alan Watts")?.id).toBe("alan-watts");
+    expect(kb.getEntity("alan-watts")?.id).toBe("alan-watts");
+  });
+
+  it("getEntity finds by alias (case-insensitive)", () => {
+    const kb = new KnowledgeBase();
+    kb.addEntity({
+      name: "Alan Watts",
+      type: "person",
+      aliases: ["A.W. Watts"],
+    });
+    expect(kb.getEntity("a.w. watts")?.id).toBe("alan-watts");
+  });
+
+  it("getEntity returns undefined for unknown name", () => {
+    const kb = new KnowledgeBase();
+    expect(kb.getEntity("nobody")).toBeUndefined();
+  });
+
+  it("getConcept finds by canonical ID", () => {
+    const kb = new KnowledgeBase();
+    kb.addConcept({ name: "Zen Buddhism", definition: "x" });
+    expect(kb.getConcept("Zen Buddhism")?.id).toBe("zen-buddhism");
+  });
+
+  it("getConcept returns undefined for unknown name", () => {
+    const kb = new KnowledgeBase();
+    expect(kb.getConcept("nothing")).toBeUndefined();
+  });
+});
