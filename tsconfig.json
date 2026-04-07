@@ -21,7 +21,7 @@
     "outDir": "./dist",
     "rootDir": "./",
     "baseUrl": ".",
-    "types": ["node", "vitest/globals"]
+    "types": ["node"]
   },
   "include": ["main.ts", "src/**/*", "tests/**/*", "*.config.ts", "*.config.mjs"],
   "exclude": ["node_modules", "dist", "main.js"]
