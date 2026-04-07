@@ -196,6 +196,14 @@ export class KnowledgeBase {
     return path in this.data.sources;
   }
 
+  allEntities(): Entity[] {
+    return Object.values(this.data.entities);
+  }
+
+  allConcepts(): Concept[] {
+    return Object.values(this.data.concepts);
+  }
+
   getEntity(nameOrId: string): Entity | undefined {
     const id = makeId(nameOrId);
     if (this.data.entities[id]) return this.data.entities[id];

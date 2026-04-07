@@ -322,6 +322,34 @@ describe("KnowledgeBase.getEntity and getConcept", () => {
   });
 });
 
+describe("KnowledgeBase.allEntities and allConcepts", () => {
+  it("allEntities returns every stored entity", () => {
+    const kb = new KnowledgeBase();
+    kb.addEntity({ name: "Alan Watts", type: "person" });
+    kb.addEntity({ name: "Andrej Karpathy", type: "person" });
+    const all = kb.allEntities();
+    expect(all).toHaveLength(2);
+    const names = all.map((e) => e.name).sort();
+    expect(names).toEqual(["Alan Watts", "Andrej Karpathy"]);
+  });
+
+  it("allConcepts returns every stored concept", () => {
+    const kb = new KnowledgeBase();
+    kb.addConcept({ name: "Zen", definition: "x" });
+    kb.addConcept({ name: "Flow", definition: "y" });
+    const all = kb.allConcepts();
+    expect(all).toHaveLength(2);
+    const names = all.map((c) => c.name).sort();
+    expect(names).toEqual(["Flow", "Zen"]);
+  });
+
+  it("returns empty arrays when KB is empty", () => {
+    const kb = new KnowledgeBase();
+    expect(kb.allEntities()).toEqual([]);
+    expect(kb.allConcepts()).toEqual([]);
+  });
+});
+
 describe("KnowledgeBase.connectionsFor and stats", () => {
   it("connectionsFor returns connections in either direction", () => {
     const kb = new KnowledgeBase();
