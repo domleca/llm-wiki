@@ -199,6 +199,48 @@
   text-underline-offset: 3px;
 }
 
+/* Ollama-disconnected hint Notice */
+.llm-wiki-ollama-hint-intro {
+  margin-bottom: 0.5em;
+}
+
+.llm-wiki-ollama-hint-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-top: 0.25em;
+}
+
+.llm-wiki-ollama-hint-code {
+  flex: 1;
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+  background: var(--background-secondary);
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.llm-wiki-ollama-hint-copy {
+  background: transparent;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 3px;
+  padding: 2px 6px;
+  cursor: pointer;
+  font-size: 0.9em;
+  line-height: 1;
+}
+
+.llm-wiki-ollama-hint-copy:hover:not(:disabled) {
+  background: var(--background-modifier-hover);
+}
+
+.llm-wiki-ollama-hint-copy:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
 .llm-wiki-query-modal[data-state="error"] .llm-wiki-query-terminal {
   border-left-color: var(--text-error);
   color: var(--text-error);

@@ -19,6 +19,7 @@ import type {
   EmbeddingIndexState,
 } from "../../query/embedding-index-controller.js";
 import { formatIndexingStatus } from "./indexing-status.js";
+import { buildOllamaHintFragment } from "./ollama-hint.js";
 
 const MAX_RECENTS_DISPLAYED = 5;
 
@@ -211,9 +212,14 @@ export class QueryModal extends Modal {
       this.terminalTextEl.setText(formatIndexingStatus(state));
       this.terminalTextEl.addClass("llm-wiki-query-terminal-clickable");
       this.terminalTextEl.onclick = (): void => {
-        new Notice(
-          "LLM Wiki: retrying — make sure Ollama is running (e.g. `ollama serve`).",
-        );
+        const fragment = buildOllamaHintFragment({
+          doc: document,
+          onCopy: (cmd) => {
+            void navigator.clipboard?.writeText(cmd);
+          },
+        });
+        // 15s — long enough to read both commands and click a copy button.
+        new Notice(fragment, 15_000);
         void this.args.indexController.retry();
       };
       this.inputEl.removeAttribute("disabled");
