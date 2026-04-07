@@ -14,6 +14,11 @@ import {
 } from "./query-controller.js";
 import { AnswerRenderer, type RenderTarget } from "./answer-renderer.js";
 import type { RetrievedBundle } from "../../query/types.js";
+import type {
+  EmbeddingIndexController,
+  EmbeddingIndexState,
+} from "../../query/embedding-index-controller.js";
+import { formatIndexingStatus } from "./indexing-status.js";
 
 const MAX_RECENTS_DISPLAYED = 5;
 
@@ -24,14 +29,14 @@ export interface QueryModalArgs {
   model: string;
   folder: string;
   recentQuestions: readonly string[];
+  indexController: EmbeddingIndexController;
+  queryEmbedding?: number[] | null;
   onAnswered: (entry: {
     question: string;
     answer: string;
     bundle: RetrievedBundle;
     elapsedMs: number;
   }) => void;
-  embeddingIndex?: ReadonlyMap<string, number[]>;
-  queryEmbedding?: number[] | null;
 }
 
 export class QueryModal extends Modal {
@@ -43,13 +48,14 @@ export class QueryModal extends Modal {
   private recentsEl!: HTMLDivElement;
   private recentItemEls: HTMLDivElement[] = [];
   private renderer!: AnswerRenderer;
-  private controller!: QueryController;
+  private controller: QueryController | null = null;
   private currentAnswer = "";
   private currentBundle: RetrievedBundle | null = null;
   private startMs = 0;
   private selectedRecentIdx = -1;
   private readonly recents: readonly string[];
   private readonly mdComponent = new Component();
+  private unsubscribeIndex: (() => void) | null = null;
 
   constructor(private readonly args: QueryModalArgs) {
     super(args.app);
@@ -149,13 +155,71 @@ export class QueryModal extends Modal {
     };
     this.renderer = new AnswerRenderer(renderTarget, { debounceMs: 50 });
 
-    // Query controller
-    this.controller = new QueryController({
+    // Input wiring
+    this.inputEl.addEventListener("input", () => {
+      this.updateClearVisibility();
+      this.clearRecentSelection();
+    });
+
+    this.inputEl.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") {
+        ev.preventDefault();
+        this.submit();
+      } else if (ev.key === "ArrowDown") {
+        ev.preventDefault();
+        this.moveRecentSelection(1);
+      } else if (ev.key === "ArrowUp") {
+        ev.preventDefault();
+        this.moveRecentSelection(-1);
+      } else if (ev.key === "Escape") {
+        ev.preventDefault();
+        this.close();
+      }
+    });
+
+    // Embedding index — subscribe first so the closed-modal guard works,
+    // then render the current state, then kick off the build.
+    this.unsubscribeIndex = this.args.indexController.subscribe((s) =>
+      this.applyIndexState(s),
+    );
+    this.applyIndexState(this.args.indexController.getState());
+    void this.args.indexController.ensureBuilt();
+  }
+
+  private applyIndexState(state: EmbeddingIndexState): void {
+    if (!this.unsubscribeIndex) return; // modal already closed
+    if (state.kind === "idle" || state.kind === "building") {
+      this.contentEl.setAttr("data-state", "indexing");
+      this.terminalTextEl.setText(formatIndexingStatus(state));
+      this.inputEl.setAttr("disabled", "true");
+      return;
+    }
+    // state.kind === "ready" | "error" — either way we hand the modal a usable
+    // (possibly empty) embedding index so keyword-only retrieval keeps working.
+    const index: ReadonlyMap<string, number[]> =
+      state.kind === "ready" ? state.index : new Map();
+    if (!this.controller) {
+      this.controller = this.buildQueryController(index);
+    }
+    if (state.kind === "error") {
+      new Notice(
+        `LLM Wiki: embedding index unavailable (${state.message}) — keyword-only retrieval`,
+      );
+    }
+    // Hand off the terminal line to the query-controller state machine.
+    this.applyState("idle");
+    this.inputEl.focus();
+  }
+
+  private buildQueryController(
+    embeddingIndex: ReadonlyMap<string, number[]>,
+  ): QueryController {
+    return new QueryController({
       kb: this.args.kb,
       provider: this.args.provider,
       model: this.args.model,
       folder: this.args.folder,
-      embeddingIndex: this.args.embeddingIndex,
+      embeddingIndex,
       queryEmbedding: this.args.queryEmbedding,
       onState: (s): void => {
         this.applyState(s);
@@ -193,33 +257,10 @@ export class QueryModal extends Modal {
         new Notice(`Query failed: ${msg}`);
       },
     });
-
-    // Input wiring
-    this.inputEl.addEventListener("input", () => {
-      this.updateClearVisibility();
-      this.clearRecentSelection();
-    });
-
-    this.inputEl.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter") {
-        ev.preventDefault();
-        this.submit();
-      } else if (ev.key === "ArrowDown") {
-        ev.preventDefault();
-        this.moveRecentSelection(1);
-      } else if (ev.key === "ArrowUp") {
-        ev.preventDefault();
-        this.moveRecentSelection(-1);
-      } else if (ev.key === "Escape") {
-        ev.preventDefault();
-        this.close();
-      }
-    });
-
-    this.inputEl.focus();
   }
 
   private submit(): void {
+    if (!this.controller) return;
     const q = this.inputEl.value.trim();
     if (!q) return;
     this.currentAnswer = "";
@@ -315,9 +356,11 @@ export class QueryModal extends Modal {
   }
 
   onClose(): void {
-    this.controller.cancel();
+    this.controller?.cancel();
     this.renderer.flush();
     this.mdComponent.unload();
+    this.unsubscribeIndex?.();
+    this.unsubscribeIndex = null;
     this.contentEl.empty();
   }
 }
