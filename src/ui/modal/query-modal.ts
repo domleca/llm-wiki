@@ -66,7 +66,7 @@ export class QueryModal extends Modal {
   private ollamaPingState: OllamaPingState = "unknown";
   private ollamaPingTimer: number | null = null;
   /** How often to re-check Ollama liveness while the modal is open. */
-  private static readonly OLLAMA_PING_INTERVAL_MS = 10_000;
+  private static readonly OLLAMA_PING_INTERVAL_MS = 2_000;
 
   constructor(private readonly args: QueryModalArgs) {
     super(args.app);
@@ -258,6 +258,14 @@ export class QueryModal extends Modal {
       this.controller = this.buildQueryController(index);
     }
     if (state.kind === "error" && state.reason === "connect") {
+      // Index build hit a connect error → flip the liveness pill immediately
+      // without waiting for the next ping tick.
+      this.ollamaPingState = ollamaPingStateFromBool(false);
+      if (this.ollamaPillEl) {
+        const r = renderOllamaPill(this.ollamaPingState);
+        this.ollamaPillEl.style.display = r.visible ? "" : "none";
+        if (r.visible) this.ollamaPillEl.setText(r.text);
+      }
       // Connect errors are recoverable: keep the status visible and clickable
       // so the user can start Ollama and click to retry. Input still becomes
       // enabled so keyword-only retrieval works in the meantime.
