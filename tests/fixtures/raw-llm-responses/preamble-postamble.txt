@@ -1,0 +1,10 @@
+Sure! Here is the extraction you asked for:
+
+{
+  "source_summary": "Preamble test.",
+  "entities": [{"name": "Bar", "type": "tool", "aliases": [], "facts": ["does things"]}],
+  "concepts": [],
+  "connections": []
+}
+
+Let me know if you need anything else!

@@ -1,0 +1,8 @@
+{
+  "source_summary": "Trailing comma example.",
+  "entities": [
+    {"name": "Foo", "type": "other", "aliases": [], "facts": ["a",]},
+  ],
+  "concepts": [],
+  "connections": [],
+}
