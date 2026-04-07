@@ -22,9 +22,9 @@ export function cosineSim(a: readonly number[], b: readonly number[]): number {
 
 export interface EmbeddingIndexProgress {
   /** 1-based count of items processed so far (cache hits included). */
-  current: number;
+  readonly current: number;
   /** Total number of items the build will visit. Stable for the whole call. */
-  total: number;
+  readonly total: number;
 }
 
 export interface BuildEmbeddingIndexArgs {
