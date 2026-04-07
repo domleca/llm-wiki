@@ -73,6 +73,8 @@ export interface SafeWriteApp {
       read(path: string): Promise<string>;
       write(path: string, content: string): Promise<void>;
       mkdir(path: string): Promise<void>;
+      list(path: string): Promise<{ files: string[]; folders: string[] }>;
+      remove(path: string): Promise<void>;
     };
   };
 }
@@ -140,4 +142,69 @@ async function ensureDir(app: SafeWriteApp, dir: string): Promise<void> {
 function dirname(path: string): string {
   const idx = path.lastIndexOf("/");
   return idx === -1 ? "" : path.slice(0, idx);
+}
+
+/**
+ * Write a generated wiki page. Path must be under wiki/entities/, wiki/concepts/,
+ * wiki/sources/, wiki/index.md, wiki/log.md, or wiki/memory.md.
+ */
+export async function safeWritePage(
+  app: SafeWriteApp,
+  relPath: string,
+  content: string,
+): Promise<void> {
+  assertAllowed(relPath);
+  await ensureDir(app, dirname(relPath));
+  await app.vault.adapter.write(relPath, content);
+}
+
+/**
+ * Delete a generated wiki page. No-op if the file does not exist.
+ */
+export async function safeDeletePage(
+  app: SafeWriteApp,
+  relPath: string,
+): Promise<void> {
+  assertAllowed(relPath);
+  if (await app.vault.adapter.exists(relPath)) {
+    await app.vault.adapter.remove(relPath);
+  }
+}
+
+/**
+ * Recursively list all .md file paths under the given allowed prefix.
+ * Returns vault-relative paths. Returns [] if the directory doesn't exist.
+ */
+export async function listPagePaths(
+  app: SafeWriteApp,
+  prefix: string,
+): Promise<string[]> {
+  const normalised = prefix.endsWith("/") ? prefix : prefix + "/";
+  // Validate the prefix is a known allowed directory prefix
+  const allowed = ALLOWED_PREFIXES.some(
+    (p) => p.endsWith("/") && normalised.startsWith(p),
+  );
+  if (!allowed) throw new PathNotAllowedError(prefix);
+  return collectMdFiles(app, normalised);
+}
+
+async function collectMdFiles(
+  app: SafeWriteApp,
+  dirPath: string,
+): Promise<string[]> {
+  const result: string[] = [];
+  try {
+    const { files, folders } = await app.vault.adapter.list(dirPath);
+    for (const f of files) {
+      if (f.endsWith(".md")) result.push(f);
+    }
+    for (const sub of folders) {
+      const subPath = sub.endsWith("/") ? sub : sub + "/";
+      const subFiles = await collectMdFiles(app, subPath);
+      result.push(...subFiles);
+    }
+  } catch {
+    // directory doesn't exist — return empty
+  }
+  return result;
 }
