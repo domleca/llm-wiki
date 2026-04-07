@@ -33,9 +33,9 @@ export class EmbeddingIndexController {
     return () => this.listeners.delete(cb);
   }
 
-  async ensureBuilt(): Promise<ReadonlyMap<string, number[]>> {
-    if (this.state.kind === "ready") return this.state.index;
-    if (this.state.kind === "error") return new Map();
+  ensureBuilt(): Promise<ReadonlyMap<string, number[]>> {
+    if (this.state.kind === "ready") return Promise.resolve(this.state.index);
+    if (this.state.kind === "error") return Promise.resolve(new Map());
     if (this.buildPromise) return this.buildPromise;
 
     this.transition({
