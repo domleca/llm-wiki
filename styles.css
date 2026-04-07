@@ -8,17 +8,21 @@
 
 .llm-wiki-query-modal.modal {
   width: min(720px, 92vw);
+  padding: 0 !important;
 }
 
-/* Hide the default Obsidian modal close button — Esc and click-outside already close */
-.llm-wiki-query-modal.modal > .modal-close-button {
-  display: none;
+/* Hide the default Obsidian modal close button + title — Esc and click-outside already close */
+.llm-wiki-query-modal.modal > .modal-close-button,
+.llm-wiki-query-modal.modal > .modal-title,
+.llm-wiki-query-modal.modal > .modal-header {
+  display: none !important;
 }
 
 /* Let children go edge-to-edge so the input and suggestion rows look like
  * the real command palette. */
 .llm-wiki-query-modal.modal-content {
-  padding: 0;
+  padding: 0 !important;
+  margin: 0 !important;
   display: flex;
   flex-direction: column;
 }
@@ -33,24 +37,27 @@
   box-sizing: border-box;
 }
 
-.llm-wiki-query-input {
+.llm-wiki-query-modal input.llm-wiki-query-input,
+.llm-wiki-query-modal input.llm-wiki-query-input:focus,
+.llm-wiki-query-modal input.llm-wiki-query-input:hover,
+.llm-wiki-query-modal input.llm-wiki-query-input:active {
   display: block;
   width: 100%;
   box-sizing: border-box;
-  border: none;
-  background: transparent;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
   color: var(--text-normal);
   font-size: var(--font-ui-large);
   font-family: inherit;
-  padding: 0 calc(1.6em + var(--size-4-2)) 0 0;
-  margin: 0;
-  outline: none;
-  box-shadow: none;
-}
-
-.llm-wiki-query-input:focus {
-  outline: none;
-  box-shadow: none;
+  padding: 0 calc(1.6em + var(--size-4-2)) 0 0 !important;
+  margin: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  height: auto !important;
+  min-height: 0 !important;
 }
 
 .llm-wiki-query-input::placeholder {
@@ -103,10 +110,25 @@
 .llm-wiki-query-recents {
   max-height: 240px;
   overflow-y: auto;
+  padding: var(--size-4-2) 0;
 }
 
 .llm-wiki-query-recents:empty {
   display: none;
+}
+
+.llm-wiki-query-recent-item {
+  padding: var(--size-4-2) var(--size-4-4);
+  cursor: pointer;
+  color: var(--text-normal);
+  font-size: var(--font-ui-medium);
+  line-height: 1.4;
+  border-radius: 0;
+}
+
+.llm-wiki-query-recent-item:hover,
+.llm-wiki-query-recent-item.is-selected {
+  background: var(--background-modifier-hover);
 }
 
 /* Hide recents while the LLM is working or an answer is on screen */
