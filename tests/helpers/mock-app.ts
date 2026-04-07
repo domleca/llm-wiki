@@ -25,6 +25,8 @@ export interface FakeApp {
       write(path: string, content: string): Promise<void>;
       mkdir(path: string): Promise<void>;
       stat(path: string): Promise<{ mtime: number; size: number } | null>;
+      list(path: string): Promise<{ files: string[]; folders: string[] }>;
+      remove(path: string): Promise<void>;
     };
   };
   fileManager: {
@@ -102,6 +104,26 @@ export function createMockApp(initial: FakeFile[] = []): {
           const f = files.get(path);
           if (!f) return null;
           return { mtime: f.mtime, size: f.content.length };
+        },
+        list: async (path: string) => {
+          const prefix = path.endsWith("/") ? path : path + "/";
+          const filesList: string[] = [];
+          const foldersSet = new Set<string>();
+          for (const key of files.keys()) {
+            if (key.startsWith(prefix)) {
+              const rel = key.slice(prefix.length);
+              const slashIdx = rel.indexOf("/");
+              if (slashIdx === -1) {
+                filesList.push(key);
+              } else {
+                foldersSet.add(prefix + rel.slice(0, slashIdx));
+              }
+            }
+          }
+          return { files: filesList, folders: Array.from(foldersSet) };
+        },
+        remove: async (path: string) => {
+          files.delete(path);
         },
       },
     },

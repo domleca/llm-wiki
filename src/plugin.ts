@@ -14,6 +14,10 @@ import {
 } from "./extract/defaults.js";
 import { ProgressEmitter } from "./runtime/progress.js";
 import { StatusBarWidget } from "./ui/status-bar.js";
+import {
+  defaultFilterSettings,
+  type FilterSettings,
+} from "./core/filters.js";
 import { LlmWikiSettingsTab } from "./ui/settings/settings-tab.js";
 import {
   loadEmbeddingsCache,
@@ -29,6 +33,8 @@ import {
 import { QueryModal } from "./ui/modal/query-modal.js";
 import { buildEmbeddingIndex } from "./query/embeddings.js";
 import { EmbeddingIndexController } from "./query/embedding-index-controller.js";
+import { generatePages, sourcePagePath } from "./pages/generator.js";
+import { safeDeletePage } from "./vault/safe-write.js";
 
 interface LlmWikiSettings {
   version: number;
@@ -41,6 +47,7 @@ interface LlmWikiSettings {
   recentQuestionCount: number;
   showSourceLinks: boolean;
   prebuildEmbeddingIndex: boolean;
+  filterSettings: FilterSettings;
 }
 
 const DEFAULT_SETTINGS: LlmWikiSettings = {
@@ -54,6 +61,7 @@ const DEFAULT_SETTINGS: LlmWikiSettings = {
   recentQuestionCount: 5,
   showSourceLinks: true,
   prebuildEmbeddingIndex: true,
+  filterSettings: defaultFilterSettings(),
 };
 
 /** Delay before kicking off the background pre-build, so plugin load stays snappy. */
@@ -147,6 +155,62 @@ export default class LlmWikiPlugin extends Plugin {
         return true;
       },
     });
+
+    this.addCommand({
+      id: "regenerate-pages",
+      name: "LLM Wiki: Regenerate pages from KB",
+      callback: () => {
+        void this.runRegeneratePages();
+      },
+    });
+
+    // Vault event: delete — remove source from KB and regenerate pages
+    this.registerEvent(
+      this.app.vault.on("delete", (abstractFile) => {
+        if (!(abstractFile instanceof TFile)) return;
+        if (abstractFile.extension !== "md") return;
+        this.kb.removeSource(abstractFile.path);
+        void (async () => {
+          try {
+            await saveKB(this.app as never, this.kb, this.kbMtime);
+            const r = await loadKB(this.app as never);
+            this.kbMtime = r.mtime;
+            await generatePages(
+              this.app as never,
+              this.kb,
+              this.settings.filterSettings,
+            );
+          } catch {
+            // best-effort
+          }
+        })();
+      }),
+    );
+
+    // Vault event: rename — update source path in KB and regenerate pages
+    this.registerEvent(
+      this.app.vault.on("rename", (abstractFile, oldPath) => {
+        if (!(abstractFile instanceof TFile)) return;
+        if (abstractFile.extension !== "md") return;
+        const oldSourcePage = sourcePagePath(oldPath);
+        this.kb.renameSource(oldPath, abstractFile.path);
+        void (async () => {
+          try {
+            await saveKB(this.app as never, this.kb, this.kbMtime);
+            const r = await loadKB(this.app as never);
+            this.kbMtime = r.mtime;
+            await safeDeletePage(this.app as never, oldSourcePage);
+            await generatePages(
+              this.app as never,
+              this.kb,
+              this.settings.filterSettings,
+            );
+          } catch {
+            // best-effort
+          }
+        })();
+      }),
+    );
 
     if (this.settings.prebuildEmbeddingIndex) {
       this.prebuildTimer = window.setTimeout(() => {
@@ -263,6 +327,11 @@ export default class LlmWikiPlugin extends Plugin {
       new Notice(
         `LLM Wiki: ${stats.succeeded} extracted, ${stats.failed} failed, ${stats.skipped} skipped (${Math.round(stats.elapsedMs / 1000)}s).`,
       );
+      await generatePages(
+        this.app as never,
+        this.kb,
+        this.settings.filterSettings,
+      );
     } catch (e) {
       this.progress.emit("batch-errored", {
         message: (e as Error).message ?? "Unknown error",
@@ -314,6 +383,21 @@ export default class LlmWikiPlugin extends Plugin {
     modal.open();
   }
 
+  async runRegeneratePages(): Promise<void> {
+    try {
+      const result = await generatePages(
+        this.app as never,
+        this.kb,
+        this.settings.filterSettings,
+      );
+      new Notice(
+        `LLM Wiki: ${result.written} pages written, ${result.deleted} deleted.`,
+      );
+    } catch (e) {
+      new Notice(`LLM Wiki: page generation failed — ${(e as Error).message}`);
+    }
+  }
+
   async runExtractCurrent(file: TFile): Promise<void> {
     if (this.running) {
       new Notice("LLM Wiki: wait for the current extraction to finish.");
@@ -341,6 +425,11 @@ export default class LlmWikiPlugin extends Plugin {
       const reloaded = await loadKB(this.app as never);
       this.kbMtime = reloaded.mtime;
       new Notice(`LLM Wiki: extracted ${file.path}.`);
+      await generatePages(
+        this.app as never,
+        this.kb,
+        this.settings.filterSettings,
+      );
     } catch (e) {
       new Notice(`LLM Wiki: extract failed — ${(e as Error).message}`);
     } finally {
