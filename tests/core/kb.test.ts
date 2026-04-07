@@ -34,3 +34,64 @@ describe("KnowledgeBase — construction", () => {
     expect(kb.data.entities["alan-watts"]?.name).toBe("Alan Watts");
   });
 });
+
+describe("KnowledgeBase.addEntity", () => {
+  it("creates a new entity when the ID is not present", () => {
+    const kb = new KnowledgeBase();
+    const e = kb.addEntity({
+      name: "Alan Watts",
+      type: "person",
+      facts: ["Author of Wisdom of Insecurity"],
+      source: "Books/Watts.md",
+    });
+    expect(e.id).toBe("alan-watts");
+    expect(e.name).toBe("Alan Watts");
+    expect(e.type).toBe("person");
+    expect(e.facts).toEqual(["Author of Wisdom of Insecurity"]);
+    expect(e.sources).toEqual(["Books/Watts.md"]);
+    expect(kb.data.entities["alan-watts"]).toBe(e);
+  });
+
+  it("merges new facts and sources into an existing entity", () => {
+    const kb = new KnowledgeBase();
+    kb.addEntity({
+      name: "Alan Watts",
+      type: "person",
+      facts: ["Author of Wisdom of Insecurity"],
+      source: "Books/Watts.md",
+    });
+    const merged = kb.addEntity({
+      name: "Alan Watts",
+      type: "person",
+      facts: ["Master of the law of reversed effort"],
+      aliases: ["A.W. Watts"],
+      source: "Learn/Buddhism.md",
+    });
+    expect(merged.facts).toHaveLength(2);
+    expect(merged.facts).toContain("Author of Wisdom of Insecurity");
+    expect(merged.facts).toContain("Master of the law of reversed effort");
+    expect(merged.aliases).toEqual(["A.W. Watts"]);
+    expect(merged.sources).toEqual(["Books/Watts.md", "Learn/Buddhism.md"]);
+  });
+
+  it("does not duplicate facts when adding the same fact twice", () => {
+    const kb = new KnowledgeBase();
+    kb.addEntity({
+      name: "Alan Watts",
+      type: "person",
+      facts: ["Author of Wisdom of Insecurity"],
+    });
+    kb.addEntity({
+      name: "Alan Watts",
+      type: "person",
+      facts: ["Author of Wisdom of Insecurity"],
+    });
+    expect(kb.data.entities["alan-watts"]?.facts).toHaveLength(1);
+  });
+
+  it("does not add an alias that equals the canonical name", () => {
+    const kb = new KnowledgeBase();
+    kb.addEntity({ name: "Alan Watts", type: "person", aliases: ["Alan Watts"] });
+    expect(kb.data.entities["alan-watts"]?.aliases).toEqual([]);
+  });
+});
