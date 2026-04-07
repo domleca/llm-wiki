@@ -3,7 +3,10 @@ import {
   isAllowedPath,
   PathNotAllowedError,
   ALLOWED_PREFIXES,
+  safeWritePluginData,
+  safeReadPluginData,
 } from "../../src/vault/safe-write.js";
+import { createMockApp } from "../helpers/mock-app.js";
 
 describe("isAllowedPath", () => {
   it("allows wiki/knowledge.json", () => {
@@ -75,5 +78,43 @@ describe("ALLOWED_PREFIXES is exported and frozen", () => {
     expect(ALLOWED_PREFIXES).toContain("wiki/log.md");
     expect(ALLOWED_PREFIXES).toContain("wiki/memory.md");
     expect(ALLOWED_PREFIXES).toContain(".obsidian/plugins/llm-wiki/");
+  });
+});
+
+describe("safeWritePluginData", () => {
+  it("writes a file under .obsidian/plugins/llm-wiki/", async () => {
+    const { app, files } = createMockApp();
+    await safeWritePluginData(app as never, "embeddings-cache.json", "{}");
+    const stored = files.get(".obsidian/plugins/llm-wiki/embeddings-cache.json");
+    expect(stored?.content).toBe("{}");
+  });
+
+  it("rejects an attempt to escape the plugin folder", async () => {
+    const { app } = createMockApp();
+    await expect(
+      safeWritePluginData(app as never, "../../../etc/passwd", "x"),
+    ).rejects.toThrow(PathNotAllowedError);
+  });
+
+  it("rejects an absolute filename", async () => {
+    const { app } = createMockApp();
+    await expect(
+      safeWritePluginData(app as never, "/tmp/x", "x"),
+    ).rejects.toThrow(PathNotAllowedError);
+  });
+});
+
+describe("safeReadPluginData", () => {
+  it("reads a file under .obsidian/plugins/llm-wiki/", async () => {
+    const { app } = createMockApp();
+    await safeWritePluginData(app as never, "test.json", '{"a":1}');
+    const result = await safeReadPluginData(app as never, "test.json");
+    expect(result).toBe('{"a":1}');
+  });
+
+  it("returns null when the file does not exist", async () => {
+    const { app } = createMockApp();
+    const result = await safeReadPluginData(app as never, "nope.json");
+    expect(result).toBeNull();
   });
 });

@@ -61,3 +61,54 @@ export function assertAllowed(path: string): void {
     throw new PathNotAllowedError(path);
   }
 }
+
+/**
+ * Minimal interface of the Obsidian App methods we need.
+ * Tests pass a mock; production passes the real App.
+ */
+export interface SafeWriteApp {
+  vault: {
+    adapter: {
+      exists(path: string): Promise<boolean>;
+      read(path: string): Promise<string>;
+      write(path: string, content: string): Promise<void>;
+      mkdir(path: string): Promise<void>;
+    };
+  };
+}
+
+const PLUGIN_DIR = ".obsidian/plugins/llm-wiki";
+
+export async function safeWritePluginData(
+  app: SafeWriteApp,
+  filename: string,
+  content: string,
+): Promise<void> {
+  if (filename.startsWith("/")) throw new PathNotAllowedError(filename);
+  const path = `${PLUGIN_DIR}/${filename}`;
+  assertAllowed(path);
+  await ensureDir(app, dirname(path));
+  await app.vault.adapter.write(path, content);
+}
+
+export async function safeReadPluginData(
+  app: SafeWriteApp,
+  filename: string,
+): Promise<string | null> {
+  if (filename.startsWith("/")) throw new PathNotAllowedError(filename);
+  const path = `${PLUGIN_DIR}/${filename}`;
+  assertAllowed(path);
+  if (!(await app.vault.adapter.exists(path))) return null;
+  return app.vault.adapter.read(path);
+}
+
+async function ensureDir(app: SafeWriteApp, dir: string): Promise<void> {
+  if (!(await app.vault.adapter.exists(dir))) {
+    await app.vault.adapter.mkdir(dir);
+  }
+}
+
+function dirname(path: string): string {
+  const idx = path.lastIndexOf("/");
+  return idx === -1 ? "" : path.slice(0, idx);
+}
