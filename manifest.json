@@ -1,0 +1,10 @@
+{
+  "id": "llm-wiki",
+  "name": "LLM Wiki",
+  "version": "0.1.0-phase1",
+  "minAppVersion": "1.5.0",
+  "description": "Local-first LLM-powered knowledge base for your Obsidian vault. Phase 1: foundation only — no extraction yet.",
+  "author": "Dominique Leca",
+  "authorUrl": "",
+  "isDesktopOnly": true
+}
