@@ -28,6 +28,7 @@ import {
 } from "./vault/recent-questions.js";
 import { QueryModal } from "./ui/modal/query-modal.js";
 import { buildEmbeddingIndex } from "./query/embeddings.js";
+import { EmbeddingIndexController } from "./query/embedding-index-controller.js";
 
 interface LlmWikiSettings {
   version: number;
@@ -39,6 +40,7 @@ interface LlmWikiSettings {
   defaultQueryFolder: string;
   recentQuestionCount: number;
   showSourceLinks: boolean;
+  prebuildEmbeddingIndex: boolean;
 }
 
 const DEFAULT_SETTINGS: LlmWikiSettings = {
@@ -51,7 +53,11 @@ const DEFAULT_SETTINGS: LlmWikiSettings = {
   defaultQueryFolder: "",
   recentQuestionCount: 5,
   showSourceLinks: true,
+  prebuildEmbeddingIndex: true,
 };
+
+/** Delay before kicking off the background pre-build, so plugin load stays snappy. */
+const PREBUILD_DELAY_MS = 2000;
 
 export default class LlmWikiPlugin extends Plugin {
   settings: LlmWikiSettings = DEFAULT_SETTINGS;
@@ -65,14 +71,16 @@ export default class LlmWikiPlugin extends Plugin {
   private abortController: AbortController | null = null;
   private running = false;
   private recentQuestions: string[] = [];
-  private embeddingIndex: Map<string, number[]> | null = null;
   private embeddingsCache: EmbeddingsCache | null = null;
+  private embeddingIndexController: EmbeddingIndexController | null = null;
+  private prebuildTimer: number | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
     this.rebuildProvider();
     await this.reloadKB();
     this.recentQuestions = await loadRecentQuestions(this.app);
+    this.embeddingIndexController = this.createIndexController();
 
     // Status bar
     const statusEl = this.addStatusBarItem();
@@ -83,7 +91,7 @@ export default class LlmWikiPlugin extends Plugin {
 
     // Ribbon icon — open the query modal
     this.addRibbonIcon("rainbow", "Ask knowledge base", () => {
-      void this.openQueryModal();
+      this.openQueryModal();
     });
 
     // Commands
@@ -92,7 +100,7 @@ export default class LlmWikiPlugin extends Plugin {
       name: "Ask knowledge base",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "k" }],
       callback: () => {
-        void this.openQueryModal();
+        this.openQueryModal();
       },
     });
 
@@ -139,10 +147,21 @@ export default class LlmWikiPlugin extends Plugin {
         return true;
       },
     });
+
+    if (this.settings.prebuildEmbeddingIndex) {
+      this.prebuildTimer = window.setTimeout(() => {
+        this.prebuildTimer = null;
+        void this.embeddingIndexController?.ensureBuilt();
+      }, PREBUILD_DELAY_MS);
+    }
   }
 
   onunload(): void {
     this.cancelExtraction();
+    if (this.prebuildTimer !== null) {
+      window.clearTimeout(this.prebuildTimer);
+      this.prebuildTimer = null;
+    }
   }
 
   async loadSettings(): Promise<void> {
@@ -171,6 +190,25 @@ export default class LlmWikiPlugin extends Plugin {
 
   cancelExtraction(): void {
     if (this.abortController) this.abortController.abort();
+  }
+
+  private createIndexController(): EmbeddingIndexController {
+    return new EmbeddingIndexController({
+      buildIndex: async (onProgress) => {
+        if (!this.embeddingsCache) {
+          this.embeddingsCache = await loadEmbeddingsCache(this.app);
+        }
+        const index = await buildEmbeddingIndex({
+          kb: this.kb,
+          provider: this.provider,
+          model: this.settings.embeddingModel,
+          cache: this.embeddingsCache,
+          onProgress,
+        });
+        await saveEmbeddingsCache(this.app, this.embeddingsCache);
+        return index;
+      },
+    });
   }
 
   async runExtractAll(): Promise<void> {
@@ -236,29 +274,13 @@ export default class LlmWikiPlugin extends Plugin {
     }
   }
 
-  private async openQueryModal(): Promise<void> {
+  private openQueryModal(): void {
     if (!this.kb) {
       new Notice("LLM Wiki: knowledge base not loaded yet");
       return;
     }
-    // Lazy-build the embedding index on first query
-    if (!this.embeddingIndex) {
-      try {
-        this.embeddingsCache =
-          this.embeddingsCache ?? (await loadEmbeddingsCache(this.app));
-        this.embeddingIndex = await buildEmbeddingIndex({
-          kb: this.kb,
-          provider: this.provider,
-          model: this.settings.embeddingModel,
-          cache: this.embeddingsCache,
-        });
-        await saveEmbeddingsCache(this.app, this.embeddingsCache);
-      } catch (err) {
-        new Notice(
-          `LLM Wiki: failed to build embedding index — ${err instanceof Error ? err.message : String(err)} (falling back to keyword-only retrieval)`,
-        );
-        this.embeddingIndex = new Map();
-      }
+    if (!this.embeddingIndexController) {
+      this.embeddingIndexController = this.createIndexController();
     }
 
     const modal = new QueryModal({
@@ -268,7 +290,7 @@ export default class LlmWikiPlugin extends Plugin {
       model: this.settings.ollamaModel,
       folder: this.settings.defaultQueryFolder,
       recentQuestions: this.recentQuestions,
-      embeddingIndex: this.embeddingIndex,
+      indexController: this.embeddingIndexController,
       onAnswered: ({ question, answer, bundle, elapsedMs }): void => {
         void (async (): Promise<void> => {
           this.recentQuestions = pushRecentQuestion(
