@@ -10,6 +10,7 @@ export interface MockLLMProviderOptions {
   embeddings?: number[][];
   chunked?: boolean;
   errors?: (Error | null)[];
+  chunkDelayMs?: number;
 }
 
 /**
@@ -26,6 +27,7 @@ export class MockLLMProvider implements LLMProvider {
   private queue: string[];
   private errorQueue: (Error | null)[];
   private chunked: boolean;
+  private chunkDelayMs: number;
   private embeddings: number[][];
   private embedIdx = 0;
 
@@ -38,12 +40,14 @@ export class MockLLMProvider implements LLMProvider {
       this.chunked = options.chunked ?? false;
       this.errorQueue = options.errors ? [...options.errors] : [];
       this.embeddings = [];
+      this.chunkDelayMs = 0;
     } else {
       const opts = responsesOrOptions;
       this.queue = opts.responses ? [...opts.responses] : [];
       this.chunked = opts.chunked ?? false;
       this.errorQueue = opts.errors ? [...opts.errors] : [];
       this.embeddings = opts.embeddings ? opts.embeddings.map((v) => [...v]) : [];
+      this.chunkDelayMs = opts.chunkDelayMs ?? 0;
     }
   }
 
@@ -68,6 +72,7 @@ export class MockLLMProvider implements LLMProvider {
     const response = this.queue.shift();
     const err = this.errorQueue.shift() ?? null;
     const chunked = this.chunked;
+    const chunkDelayMs = this.chunkDelayMs;
     const signal = opts.signal;
 
     return (async function* () {
@@ -79,6 +84,10 @@ export class MockLLMProvider implements LLMProvider {
       }
       if (chunked) {
         for (const ch of response) {
+          if (signal?.aborted) throw new LLMAbortError();
+          if (chunkDelayMs > 0) {
+            await new Promise((r) => setTimeout(r, chunkDelayMs));
+          }
           if (signal?.aborted) throw new LLMAbortError();
           yield ch;
         }
