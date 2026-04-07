@@ -31,6 +31,31 @@ export class OllamaProvider implements LLMProvider {
       opts.fetchImpl ?? ((...args) => globalThis.fetch(...args));
   }
 
+  /**
+   * Liveness probe. GETs `/api/tags` with a short internal timeout.
+   * Returns true on any 2xx response, false on any failure (network,
+   * non-2xx, abort). Never throws.
+   */
+  async ping(signal?: AbortSignal): Promise<boolean> {
+    if (signal?.aborted) return false;
+    const internalAbort = new AbortController();
+    const linkedAbort = (): void => internalAbort.abort();
+    if (signal) signal.addEventListener("abort", linkedAbort, { once: true });
+    const timer = setTimeout(() => internalAbort.abort(), 2000);
+    try {
+      const response = await this.fetchImpl(`${this.url}/api/tags`, {
+        method: "GET",
+        signal: internalAbort.signal,
+      });
+      return response.ok;
+    } catch {
+      return false;
+    } finally {
+      clearTimeout(timer);
+      if (signal) signal.removeEventListener("abort", linkedAbort);
+    }
+  }
+
   async embed(opts: EmbedOptions): Promise<number[]> {
     if (opts.signal?.aborted) throw new LLMAbortError();
 

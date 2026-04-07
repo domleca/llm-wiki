@@ -44,6 +44,12 @@ export interface EmbedOptions {
 export interface LLMProvider {
   complete(opts: CompletionOptions): AsyncIterable<string>;
   embed(opts: EmbedOptions): Promise<number[]>;
+  /**
+   * Cheap liveness probe — returns true if the backend is reachable, false
+   * otherwise. Should never throw. Used by the UI to surface a top-level
+   * "ollama: off" indicator that doesn't depend on the embedding-index path.
+   */
+  ping(signal?: AbortSignal): Promise<boolean>;
 }
 
 /**

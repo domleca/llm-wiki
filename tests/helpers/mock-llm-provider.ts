@@ -11,6 +11,8 @@ export interface MockLLMProviderOptions {
   chunked?: boolean;
   errors?: (Error | null)[];
   chunkDelayMs?: number;
+  /** What ping() should return. Defaults to true (reachable). */
+  pingResult?: boolean;
 }
 
 /**
@@ -30,6 +32,8 @@ export class MockLLMProvider implements LLMProvider {
   private chunkDelayMs: number;
   private embeddings: number[][];
   private embedIdx = 0;
+  pingResult = true;
+  pingCalls = 0;
 
   constructor(
     responsesOrOptions: string[] | MockLLMProviderOptions = [],
@@ -48,7 +52,13 @@ export class MockLLMProvider implements LLMProvider {
       this.errorQueue = opts.errors ? [...opts.errors] : [];
       this.embeddings = opts.embeddings ? opts.embeddings.map((v) => [...v]) : [];
       this.chunkDelayMs = opts.chunkDelayMs ?? 0;
+      if (opts.pingResult !== undefined) this.pingResult = opts.pingResult;
     }
+  }
+
+  async ping(): Promise<boolean> {
+    this.pingCalls += 1;
+    return this.pingResult;
   }
 
   async embed(opts: EmbedOptions): Promise<number[]> {

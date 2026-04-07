@@ -20,6 +20,11 @@ import type {
 } from "../../query/embedding-index-controller.js";
 import { formatIndexingStatus } from "./indexing-status.js";
 import { buildOllamaHintFragment } from "./ollama-hint.js";
+import {
+  ollamaPingStateFromBool,
+  renderOllamaPill,
+  type OllamaPingState,
+} from "./ollama-status-pill.js";
 
 const MAX_RECENTS_DISPLAYED = 5;
 
@@ -57,6 +62,11 @@ export class QueryModal extends Modal {
   private readonly recents: readonly string[];
   private readonly mdComponent = new Component();
   private unsubscribeIndex: (() => void) | null = null;
+  private ollamaPillEl: HTMLSpanElement | null = null;
+  private ollamaPingState: OllamaPingState = "unknown";
+  private ollamaPingTimer: number | null = null;
+  /** How often to re-check Ollama liveness while the modal is open. */
+  private static readonly OLLAMA_PING_INTERVAL_MS = 10_000;
 
   constructor(private readonly args: QueryModalArgs) {
     super(args.app);
@@ -99,6 +109,14 @@ export class QueryModal extends Modal {
       cls: "llm-wiki-query-pill",
       text: `model: ${this.args.model}`,
     });
+    // Ollama liveness pill — sits between model and folder so it doesn't
+    // shift the existing pills around when it appears. Hidden until the
+    // first ping reports `off`.
+    this.ollamaPillEl = pills.createSpan({
+      cls: "llm-wiki-query-pill llm-wiki-query-pill-ollama",
+    });
+    this.ollamaPillEl.style.display = "none";
+    this.ollamaPillEl.onclick = (): void => this.handleOllamaPillClick();
     pills.createSpan({
       cls: "llm-wiki-query-pill",
       text: `folder: ${this.args.folder || "(whole vault)"}`,
@@ -185,6 +203,41 @@ export class QueryModal extends Modal {
     );
     this.applyIndexState(this.args.indexController.getState());
     void this.args.indexController.ensureBuilt();
+
+    // Kick off Ollama liveness probe + periodic re-check.
+    void this.pingOllama();
+    this.ollamaPingTimer = window.setInterval(
+      () => void this.pingOllama(),
+      QueryModal.OLLAMA_PING_INTERVAL_MS,
+    );
+  }
+
+  private async pingOllama(): Promise<void> {
+    let reachable = false;
+    try {
+      reachable = await this.args.provider.ping();
+    } catch {
+      reachable = false;
+    }
+    // Modal might have closed mid-flight.
+    if (!this.ollamaPillEl) return;
+    this.ollamaPingState = ollamaPingStateFromBool(reachable);
+    const { visible, text } = renderOllamaPill(this.ollamaPingState);
+    this.ollamaPillEl.style.display = visible ? "" : "none";
+    if (visible) this.ollamaPillEl.setText(text);
+  }
+
+  private handleOllamaPillClick(): void {
+    const fragment = buildOllamaHintFragment({
+      doc: document,
+      onCopy: (cmd) => {
+        void navigator.clipboard?.writeText(cmd);
+      },
+    });
+    new Notice(fragment, 15_000);
+    // Re-ping shortly after — gives the user a moment to start Ollama and
+    // see the pill flip back to hidden without waiting for the next tick.
+    window.setTimeout(() => void this.pingOllama(), 1500);
   }
 
   private applyIndexState(state: EmbeddingIndexState): void {
@@ -388,6 +441,11 @@ export class QueryModal extends Modal {
     this.mdComponent.unload();
     this.unsubscribeIndex?.();
     this.unsubscribeIndex = null;
+    if (this.ollamaPingTimer !== null) {
+      window.clearInterval(this.ollamaPingTimer);
+      this.ollamaPingTimer = null;
+    }
+    this.ollamaPillEl = null;
     this.contentEl.empty();
   }
 }
