@@ -1,10 +1,6 @@
 import type { KnowledgeBase } from "../core/kb.js";
 import type { RankedItem } from "./types.js";
 
-function slug(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-}
-
 export function rankByPath(
   kb: KnowledgeBase,
   terms: readonly string[],
@@ -18,7 +14,7 @@ export function rankByPath(
       const lower = src.toLowerCase();
       for (const t of terms) if (lower.includes(t)) score += 1;
     }
-    if (score > 0) items.push({ id: slug(e.name), score });
+    if (score > 0) items.push({ id: e.id, score });
   }
 
   for (const c of kb.allConcepts()) {
@@ -27,7 +23,7 @@ export function rankByPath(
       const lower = src.toLowerCase();
       for (const t of terms) if (lower.includes(t)) score += 1;
     }
-    if (score > 0) items.push({ id: `concept:${slug(c.name)}`, score });
+    if (score > 0) items.push({ id: `concept:${c.id}`, score });
   }
 
   items.sort((a, b) => b.score - a.score);

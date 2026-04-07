@@ -5,10 +5,6 @@ const NAME_HIT = 3;
 const FACT_HIT = 1;
 const BIGRAM_BOOST = 6;
 
-function slug(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-}
-
 export function rankByKeyword(
   kb: KnowledgeBase,
   terms: readonly string[],
@@ -33,7 +29,7 @@ export function rankByKeyword(
     }
     if (score > 0) {
       items.push({
-        id: slug(e.name),
+        id: e.id,
         score,
         richness: e.facts.length + e.sources.length,
       });
@@ -50,7 +46,7 @@ export function rankByKeyword(
     }
     if (score > 0) {
       items.push({
-        id: `concept:${slug(c.name)}`,
+        id: `concept:${c.id}`,
         score,
         richness: (c.related?.length ?? 0) + c.sources.length,
       });

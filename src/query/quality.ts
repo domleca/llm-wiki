@@ -8,6 +8,7 @@ export const RETRIEVAL_ENTITY_BLACKLIST: ReadonlySet<string> = new Set([
 
 export const RETRIEVAL_CONCEPT_BLACKLIST: ReadonlySet<string> = new Set([
   "address book",
+  "address-book",
 ]);
 
 const TYPE_SYNONYMS: ReadonlyMap<string, EntityType> = new Map([
@@ -42,21 +43,17 @@ export function detectTypeHint(terms: readonly string[]): EntityType | null {
   return null;
 }
 
-function unslug(id: string): string {
-  return id.replace(/-/g, " ");
-}
-
 /**
  * Soft re-ranking multiplier applied AFTER RRF.
- * Walks the KB to look up the entity/concept by id (slug match).
+ * Looks up the entity/concept by canonical id (the slug stored on the
+ * record itself, not a re-derived form of the name). Both rankers and
+ * `retrieve()` emit ids in this canonical form.
  */
 export function qualityMultiplier(id: string, kb: KnowledgeBase): number {
   // Concept ids are prefixed
   if (id.startsWith("concept:")) {
-    const name = unslug(id.slice("concept:".length));
-    const concept = kb
-      .allConcepts()
-      .find((c) => c.name.toLowerCase() === name);
+    const conceptId = id.slice("concept:".length);
+    const concept = kb.allConcepts().find((c) => c.id === conceptId);
     if (!concept) return 1.0;
     let m = 1.0;
     const hasDef = (concept.definition ?? "").trim().length > 0;
@@ -66,10 +63,7 @@ export function qualityMultiplier(id: string, kb: KnowledgeBase): number {
     return m;
   }
 
-  const name = unslug(id);
-  const entity = kb
-    .allEntities()
-    .find((e) => e.name.toLowerCase() === name);
+  const entity = kb.allEntities().find((e) => e.id === id);
   if (!entity) return 1.0;
 
   let m = 1.0;

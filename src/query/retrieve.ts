@@ -1,4 +1,5 @@
 import type { KnowledgeBase } from "../core/kb.js";
+import type { Concept, Entity } from "../core/types.js";
 import { classifyQuery } from "./classify.js";
 import { rankByKeyword } from "./keyword-ranker.js";
 import { rankByPath } from "./path-ranker.js";
@@ -57,15 +58,18 @@ export function retrieve(args: RetrieveArgs): RetrievedBundle {
 
   const typeHint = detectTypeHint(terms);
 
+  // Build id-keyed lookup maps once so id resolution is O(1).
+  const entitiesById = new Map<string, Entity>();
+  for (const e of args.kb.allEntities()) entitiesById.set(e.id, e);
+  const conceptsById = new Map<string, Concept>();
+  for (const c of args.kb.allConcepts()) conceptsById.set(c.id, c);
+
   // Apply quality multipliers and type-hint boost
   const adjusted = fused
     .map((item) => {
       let score = item.score * qualityMultiplier(item.id, args.kb);
       if (typeHint && !item.id.startsWith("concept:")) {
-        const name = item.id.replace(/-/g, " ");
-        const ent = args.kb
-          .allEntities()
-          .find((e) => e.name.toLowerCase() === name);
+        const ent = entitiesById.get(item.id);
         if (ent && ent.type === typeHint) score *= TYPE_HINT_BOOST;
       }
       return { id: item.id, score };
@@ -78,28 +82,35 @@ export function retrieve(args: RetrieveArgs): RetrievedBundle {
   for (const item of adjusted) {
     if (item.id.startsWith("concept:")) {
       if (concepts.length >= MAX_CONCEPTS) continue;
-      const name = item.id.slice("concept:".length).replace(/-/g, " ");
-      if (RETRIEVAL_CONCEPT_BLACKLIST.has(name)) continue;
-      const c = args.kb
-        .allConcepts()
-        .find((cc) => cc.name.toLowerCase() === name);
-      if (c) concepts.push(c);
+      const conceptId = item.id.slice("concept:".length);
+      const c = conceptsById.get(conceptId);
+      if (!c) continue;
+      if (
+        RETRIEVAL_CONCEPT_BLACKLIST.has(conceptId) ||
+        RETRIEVAL_CONCEPT_BLACKLIST.has(c.name.toLowerCase())
+      ) {
+        continue;
+      }
+      concepts.push(c);
     } else {
       if (entities.length >= MAX_ENTITIES) continue;
-      const name = item.id.replace(/-/g, " ");
-      if (RETRIEVAL_ENTITY_BLACKLIST.has(name)) continue;
-      const e = args.kb
-        .allEntities()
-        .find((ee) => ee.name.toLowerCase() === name);
-      if (e) entities.push(e);
+      const e = entitiesById.get(item.id);
+      if (!e) continue;
+      if (
+        RETRIEVAL_ENTITY_BLACKLIST.has(item.id) ||
+        RETRIEVAL_ENTITY_BLACKLIST.has(e.name.toLowerCase())
+      ) {
+        continue;
+      }
+      entities.push(e);
     }
   }
 
-  // Gather connections that touch any of our entities
-  const entityNames = new Set(entities.map((e) => e.name));
+  // Gather connections that touch any of our entities (by id, not name).
+  const entityIds = new Set(entities.map((e) => e.id));
   const connections = args.kb
     .allConnections()
-    .filter((c) => entityNames.has(c.from) || entityNames.has(c.to));
+    .filter((c) => entityIds.has(c.from) || entityIds.has(c.to));
 
   // Gather source records referenced by surviving entities/concepts
   const sourcePaths = new Set<string>();

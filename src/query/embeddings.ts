@@ -20,10 +20,6 @@ export function cosineSim(a: readonly number[], b: readonly number[]): number {
   return dot / (Math.sqrt(na) * Math.sqrt(nb));
 }
 
-function slug(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-}
-
 export interface BuildEmbeddingIndexArgs {
   kb: KnowledgeBase;
   provider: LLMProvider;
@@ -38,7 +34,7 @@ export async function buildEmbeddingIndex(
   const index = new Map<string, number[]>();
 
   for (const e of args.kb.allEntities()) {
-    const id = slug(e.name);
+    const id = e.id;
     const text = contextualTextForEntity(e);
     const cached = args.cache.entries[id];
     if (cached && cached.sourceText === text) {
@@ -55,7 +51,7 @@ export async function buildEmbeddingIndex(
   }
 
   for (const c of args.kb.allConcepts()) {
-    const id = `concept:${slug(c.name)}`;
+    const id = `concept:${c.id}`;
     const text = contextualTextForConcept(c);
     const cached = args.cache.entries[id];
     if (cached && cached.sourceText === text) {
