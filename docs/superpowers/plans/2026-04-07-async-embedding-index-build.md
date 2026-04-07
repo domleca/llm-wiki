@@ -334,11 +334,7 @@ export type EmbeddingIndexState =
   | { kind: "idle" }
   | { kind: "building"; progress: EmbeddingIndexProgress }
   | { kind: "ready"; index: ReadonlyMap<string, number[]> }
-  | {
-      kind: "error";
-      message: string;
-      fallbackIndex: ReadonlyMap<string, number[]>;
-    };
+  | { kind: "error"; message: string };
 
 export interface EmbeddingIndexControllerOptions {
   buildIndex: (
@@ -357,6 +353,11 @@ export class EmbeddingIndexController {
     return this.state;
   }
 
+  /**
+   * Registers a listener for every future state transition. Does NOT fire
+   * immediately with the current state — callers should call getState()
+   * first if they need the initial value. Returns an unsubscribe function.
+   */
   subscribe(cb: (state: EmbeddingIndexState) => void): () => void {
     this.listeners.add(cb);
     return () => this.listeners.delete(cb);
@@ -364,7 +365,7 @@ export class EmbeddingIndexController {
 
   async ensureBuilt(): Promise<ReadonlyMap<string, number[]>> {
     if (this.state.kind === "ready") return this.state.index;
-    if (this.state.kind === "error") return this.state.fallbackIndex;
+    if (this.state.kind === "error") return new Map();
     if (this.buildPromise) return this.buildPromise;
 
     this.transition({
@@ -380,9 +381,8 @@ export class EmbeddingIndexController {
         return index;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        const fallbackIndex: ReadonlyMap<string, number[]> = new Map();
-        this.transition({ kind: "error", message, fallbackIndex });
-        return fallbackIndex;
+        this.transition({ kind: "error", message });
+        return new Map<string, number[]>();
       } finally {
         this.buildPromise = null;
       }
@@ -392,7 +392,9 @@ export class EmbeddingIndexController {
 
   private transition(state: EmbeddingIndexState): void {
     this.state = state;
-    for (const cb of this.listeners) cb(state);
+    // Snapshot listeners so a callback that unsubscribes itself (or a sibling)
+    // mid-fan-out doesn't skip later listeners.
+    for (const cb of [...this.listeners]) cb(state);
   }
 }
 ```
@@ -499,7 +501,7 @@ The build can fail (e.g. Ollama is down). The controller should land in `error` 
 Append inside `describe("EmbeddingIndexController", ...)`:
 
 ```ts
-  it("transitions to error with a fallback empty index when buildIndex throws", async () => {
+  it("transitions to error with an empty fallback when buildIndex throws", async () => {
     const { controller, states } = recordingController({
       buildError: new Error("ollama down"),
     });
@@ -508,7 +510,6 @@ Append inside `describe("EmbeddingIndexController", ...)`:
     const last = states[states.length - 1]!;
     if (last.kind !== "error") throw new Error("expected error state");
     expect(last.message).toBe("ollama down");
-    expect(last.fallbackIndex.size).toBe(0);
   });
 
   it("does not retry after landing in error", async () => {
@@ -594,7 +595,6 @@ describe("formatIndexingStatus", () => {
       formatIndexingStatus({
         kind: "error",
         message: "ollama down",
-        fallbackIndex: new Map(),
       }),
     ).toBe("Embedding index unavailable (ollama down) — keyword-only fallback");
   });
@@ -652,7 +652,7 @@ Update the already-polished modal (clear button, recents, terminal status line, 
 1. Replace the static `embeddingIndex` arg with an `indexController`. Keep `queryEmbedding` for Phase 5 forward-compat.
 2. Start with `this.controller: QueryController | null = null` — no longer eagerly constructed in `onOpen`.
 3. On open, subscribe to `indexController`, render the current state into the existing `terminalTextEl`, kick off `ensureBuilt()`. While the build is in progress, `contentEl[data-state]` is `"indexing"` and the input is `disabled`.
-4. When the controller reaches `ready` or `error`, lazily construct the inner `QueryController` with `state.index` (or `state.fallbackIndex`), show a `Notice` on error, then hand off to the existing `applyState("idle")` which focuses the input and clears the terminal line.
+4. When the controller reaches `ready` or `error`, lazily construct the inner `QueryController` with `state.index` (or an empty `Map` on error), show a `Notice` on error, then hand off to the existing `applyState("idle")` which focuses the input and clears the terminal line.
 5. Guard `submit()` against a null controller. Unsubscribe in `onClose()`.
 
 **Files:**
@@ -859,9 +859,10 @@ export class QueryModal extends Modal {
       this.inputEl.setAttr("disabled", "true");
       return;
     }
-    // state.kind === "ready" | "error" — either way we have a usable index.
-    const index =
-      state.kind === "ready" ? state.index : state.fallbackIndex;
+    // state.kind === "ready" | "error" — either way we hand the modal a usable
+    // (possibly empty) embedding index so keyword-only retrieval keeps working.
+    const index: ReadonlyMap<string, number[]> =
+      state.kind === "ready" ? state.index : new Map();
     if (!this.controller) {
       this.controller = this.buildQueryController(index);
     }
