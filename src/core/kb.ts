@@ -195,4 +195,17 @@ export class KnowledgeBase {
   isProcessed(path: string): boolean {
     return path in this.data.sources;
   }
+
+  removeSource(path: string): void {
+    delete this.data.sources[path];
+    for (const entity of Object.values(this.data.entities)) {
+      entity.sources = entity.sources.filter((s) => s !== path);
+    }
+    for (const concept of Object.values(this.data.concepts)) {
+      concept.sources = concept.sources.filter((s) => s !== path);
+    }
+    for (const conn of this.data.connections) {
+      conn.sources = conn.sources.filter((s) => s !== path);
+    }
+  }
 }

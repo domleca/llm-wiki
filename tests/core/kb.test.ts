@@ -232,3 +232,57 @@ describe("KnowledgeBase.markSource and needsExtraction", () => {
     expect(kb.needsExtraction("Books/Watts.md", 1700000001)).toBe(true);
   });
 });
+
+describe("KnowledgeBase.removeSource", () => {
+  it("removes the source record from sources", () => {
+    const kb = new KnowledgeBase();
+    kb.markSource({ path: "Books/Watts.md", mtime: 1700000000, origin: "user-note" });
+    kb.removeSource("Books/Watts.md");
+    expect(kb.data.sources["Books/Watts.md"]).toBeUndefined();
+  });
+
+  it("decrements source-count on entities by removing the source from their list", () => {
+    const kb = new KnowledgeBase();
+    kb.addEntity({
+      name: "Alan Watts",
+      type: "person",
+      facts: ["fact"],
+      source: "Books/Watts.md",
+    });
+    kb.addEntity({
+      name: "Alan Watts",
+      type: "person",
+      facts: ["fact"],
+      source: "Learn/Zen.md",
+    });
+    kb.markSource({ path: "Books/Watts.md", mtime: 1, origin: "user-note" });
+    kb.removeSource("Books/Watts.md");
+    expect(kb.data.entities["alan-watts"]?.sources).toEqual(["Learn/Zen.md"]);
+  });
+
+  it("removes the source from concept source lists", () => {
+    const kb = new KnowledgeBase();
+    kb.addConcept({ name: "Zen", definition: "x", source: "Books/Watts.md" });
+    kb.markSource({ path: "Books/Watts.md", mtime: 1, origin: "user-note" });
+    kb.removeSource("Books/Watts.md");
+    expect(kb.data.concepts["zen"]?.sources).toEqual([]);
+  });
+
+  it("removes the source from connection source lists", () => {
+    const kb = new KnowledgeBase();
+    kb.addConnection({
+      from: "Alan Watts",
+      to: "Zen",
+      type: "influences",
+      source: "Books/Watts.md",
+    });
+    kb.markSource({ path: "Books/Watts.md", mtime: 1, origin: "user-note" });
+    kb.removeSource("Books/Watts.md");
+    expect(kb.data.connections[0]?.sources).toEqual([]);
+  });
+
+  it("does not throw if the source does not exist", () => {
+    const kb = new KnowledgeBase();
+    expect(() => kb.removeSource("nonexistent.md")).not.toThrow();
+  });
+});
