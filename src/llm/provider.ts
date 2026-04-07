@@ -68,6 +68,19 @@ export class LLMHttpError extends LLMError {
   }
 }
 
+/**
+ * Thrown when fetch itself fails before any HTTP response — i.e. the server
+ * is not reachable (connection refused, DNS failure, network down). Distinct
+ * from LLMHttpError so callers can show "Ollama disconnected" UX vs a generic
+ * server error.
+ */
+export class LLMConnectError extends LLMHttpError {
+  constructor(message: string) {
+    super(message, null);
+    this.name = "LLMConnectError";
+  }
+}
+
 /** Thrown when the caller aborts via AbortSignal. */
 export class LLMAbortError extends LLMError {
   constructor() {

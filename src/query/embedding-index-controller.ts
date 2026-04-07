@@ -1,10 +1,18 @@
+import { LLMConnectError } from "../llm/provider.js";
 import type { EmbeddingIndexProgress } from "./embeddings.js";
+
+/**
+ * Reason classifies error states so the UI can show appropriate copy.
+ * `connect` = the LLM server is unreachable (typically Ollama not running);
+ * `other`   = any other failure (HTTP 5xx, malformed response, etc.).
+ */
+export type EmbeddingIndexErrorReason = "connect" | "other";
 
 export type EmbeddingIndexState =
   | { kind: "idle" }
   | { kind: "building"; progress: EmbeddingIndexProgress }
   | { kind: "ready"; index: ReadonlyMap<string, number[]> }
-  | { kind: "error"; message: string };
+  | { kind: "error"; message: string; reason: EmbeddingIndexErrorReason };
 
 export interface EmbeddingIndexControllerOptions {
   buildIndex: (
@@ -51,13 +59,27 @@ export class EmbeddingIndexController {
         return index;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        this.transition({ kind: "error", message });
+        const reason: EmbeddingIndexErrorReason =
+          err instanceof LLMConnectError ? "connect" : "other";
+        this.transition({ kind: "error", message, reason });
         return new Map<string, number[]>();
       } finally {
         this.buildPromise = null;
       }
     })();
     return this.buildPromise;
+  }
+
+  /**
+   * Resets an error state back to idle and re-runs the build. No-op if the
+   * controller is not in error. Returns the new build promise (or the
+   * existing index if already ready).
+   */
+  retry(): Promise<ReadonlyMap<string, number[]>> {
+    if (this.state.kind === "error") {
+      this.transition({ kind: "idle" });
+    }
+    return this.ensureBuilt();
   }
 
   private transition(state: EmbeddingIndexState): void {

@@ -12,6 +12,9 @@ export function formatIndexingStatus(state: EmbeddingIndexState): string {
     case "ready":
       return "Ready";
     case "error":
+      if (state.reason === "connect") {
+        return "Ollama disconnected — click to retry";
+      }
       return `Embedding index unavailable (${state.message}) — keyword-only fallback`;
   }
 }

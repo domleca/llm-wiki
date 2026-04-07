@@ -192,6 +192,13 @@
   white-space: pre;
 }
 
+.llm-wiki-query-terminal-text.llm-wiki-query-terminal-clickable {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}
+
 .llm-wiki-query-modal[data-state="error"] .llm-wiki-query-terminal {
   border-left-color: var(--text-error);
   color: var(--text-error);

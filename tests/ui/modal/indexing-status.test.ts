@@ -33,12 +33,23 @@ describe("formatIndexingStatus", () => {
     ).toBe("Ready");
   });
 
-  it("returns a fallback warning when in error", () => {
+  it("returns a fallback warning when in a non-connect error", () => {
     expect(
       formatIndexingStatus({
         kind: "error",
         message: "ollama down",
+        reason: "other",
       }),
     ).toBe("Embedding index unavailable (ollama down) — keyword-only fallback");
+  });
+
+  it("shows the disconnected hint when the error reason is connect", () => {
+    expect(
+      formatIndexingStatus({
+        kind: "error",
+        message: "fetch failed",
+        reason: "connect",
+      }),
+    ).toBe("Ollama disconnected — click to retry");
   });
 });

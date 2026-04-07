@@ -191,6 +191,8 @@ export class QueryModal extends Modal {
     if (state.kind === "idle" || state.kind === "building") {
       this.contentEl.setAttr("data-state", "indexing");
       this.terminalTextEl.setText(formatIndexingStatus(state));
+      this.terminalTextEl.removeClass("llm-wiki-query-terminal-clickable");
+      this.terminalTextEl.onclick = null;
       this.inputEl.setAttr("disabled", "true");
       return;
     }
@@ -201,11 +203,30 @@ export class QueryModal extends Modal {
     if (!this.controller) {
       this.controller = this.buildQueryController(index);
     }
+    if (state.kind === "error" && state.reason === "connect") {
+      // Connect errors are recoverable: keep the status visible and clickable
+      // so the user can start Ollama and click to retry. Input still becomes
+      // enabled so keyword-only retrieval works in the meantime.
+      this.contentEl.setAttr("data-state", "indexing");
+      this.terminalTextEl.setText(formatIndexingStatus(state));
+      this.terminalTextEl.addClass("llm-wiki-query-terminal-clickable");
+      this.terminalTextEl.onclick = (): void => {
+        new Notice(
+          "LLM Wiki: retrying — make sure Ollama is running (e.g. `ollama serve`).",
+        );
+        void this.args.indexController.retry();
+      };
+      this.inputEl.removeAttribute("disabled");
+      this.inputEl.focus();
+      return;
+    }
     if (state.kind === "error") {
       new Notice(
         `LLM Wiki: embedding index unavailable (${state.message}) — keyword-only retrieval`,
       );
     }
+    this.terminalTextEl.removeClass("llm-wiki-query-terminal-clickable");
+    this.terminalTextEl.onclick = null;
     // Hand off the terminal line to the query-controller state machine.
     this.applyState("idle");
     this.inputEl.focus();

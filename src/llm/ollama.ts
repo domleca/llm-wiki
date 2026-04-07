@@ -1,5 +1,6 @@
 import {
   LLMAbortError,
+  LLMConnectError,
   LLMHttpError,
   LLMProtocolError,
   type CompletionOptions,
@@ -48,9 +49,8 @@ export class OllamaProvider implements LLMProvider {
       ) {
         throw new LLMAbortError();
       }
-      throw new LLMHttpError(
+      throw new LLMConnectError(
         `Ollama embeddings fetch failed: ${(err as Error).message}`,
-        null,
       );
     }
 
@@ -100,9 +100,8 @@ export class OllamaProvider implements LLMProvider {
         });
       } catch (e) {
         if (signal?.aborted) throw new LLMAbortError();
-        throw new LLMHttpError(
+        throw new LLMConnectError(
           `Ollama fetch failed: ${(e as Error).message}`,
-          null,
         );
       }
 
