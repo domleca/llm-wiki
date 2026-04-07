@@ -99,4 +99,79 @@ describe("buildEmbeddingIndex", () => {
     });
     expect(index.get("alan-watts")).toEqual([1, 1, 1]);
   });
+
+  it("calls onProgress for every entity and concept with a stable total", async () => {
+    const kb = new KnowledgeBase();
+    kb.addEntity({
+      name: "Alan Watts",
+      type: "person",
+      aliases: [],
+      facts: ["philosopher"],
+      source: "x.md",
+    });
+    kb.addEntity({
+      name: "Richard Feynman",
+      type: "person",
+      aliases: [],
+      facts: ["physicist"],
+      source: "x.md",
+    });
+    kb.addConcept({
+      name: "Flow",
+      definition: "absorbed attention",
+      source: "x.md",
+    });
+    const provider = new MockLLMProvider({
+      responses: [],
+      embeddings: [
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+      ],
+    });
+    const cache: EmbeddingsCache = { vaultId: "v1", entries: {} };
+    const events: Array<{ current: number; total: number }> = [];
+    await buildEmbeddingIndex({
+      kb,
+      provider,
+      model: "nomic-embed-text",
+      cache,
+      onProgress: (p) => events.push({ ...p }),
+    });
+    expect(events.length).toBe(3);
+    expect(events[0]).toEqual({ current: 1, total: 3 });
+    expect(events[1]).toEqual({ current: 2, total: 3 });
+    expect(events[2]).toEqual({ current: 3, total: 3 });
+  });
+
+  it("calls onProgress even for cache hits", async () => {
+    const kb = new KnowledgeBase();
+    kb.addEntity({
+      name: "Alan Watts",
+      type: "person",
+      aliases: [],
+      facts: ["philosopher"],
+      source: "x.md",
+    });
+    const { contextualTextForEntity } = await import(
+      "../../src/query/embedding-text.js"
+    );
+    const text = contextualTextForEntity(kb.allEntities()[0]!);
+    const cache: EmbeddingsCache = {
+      vaultId: "v1",
+      entries: {
+        "alan-watts": { sourceText: text, vector: [9, 9, 9] },
+      },
+    };
+    const provider = new MockLLMProvider({ responses: [], embeddings: [] });
+    const events: Array<{ current: number; total: number }> = [];
+    await buildEmbeddingIndex({
+      kb,
+      provider,
+      model: "nomic-embed-text",
+      cache,
+      onProgress: (p) => events.push({ ...p }),
+    });
+    expect(events).toEqual([{ current: 1, total: 1 }]);
+  });
 });

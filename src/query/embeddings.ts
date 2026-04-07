@@ -20,25 +20,43 @@ export function cosineSim(a: readonly number[], b: readonly number[]): number {
   return dot / (Math.sqrt(na) * Math.sqrt(nb));
 }
 
+export interface EmbeddingIndexProgress {
+  /** 1-based count of items processed so far (cache hits included). */
+  current: number;
+  /** Total number of items the build will visit. Stable for the whole call. */
+  total: number;
+}
+
 export interface BuildEmbeddingIndexArgs {
   kb: KnowledgeBase;
   provider: LLMProvider;
   model: string;
   cache: EmbeddingsCache;
   signal?: AbortSignal;
+  onProgress?: (progress: EmbeddingIndexProgress) => void;
 }
 
 export async function buildEmbeddingIndex(
   args: BuildEmbeddingIndexArgs,
 ): Promise<Map<string, number[]>> {
   const index = new Map<string, number[]>();
+  const entities = args.kb.allEntities();
+  const concepts = args.kb.allConcepts();
+  const total = entities.length + concepts.length;
+  let current = 0;
 
-  for (const e of args.kb.allEntities()) {
+  const tick = (): void => {
+    current += 1;
+    args.onProgress?.({ current, total });
+  };
+
+  for (const e of entities) {
     const id = e.id;
     const text = contextualTextForEntity(e);
     const cached = args.cache.entries[id];
     if (cached && cached.sourceText === text) {
       index.set(id, cached.vector);
+      tick();
       continue;
     }
     const vec = await args.provider.embed({
@@ -48,14 +66,16 @@ export async function buildEmbeddingIndex(
     });
     args.cache.entries[id] = { sourceText: text, vector: vec };
     index.set(id, vec);
+    tick();
   }
 
-  for (const c of args.kb.allConcepts()) {
+  for (const c of concepts) {
     const id = `concept:${c.id}`;
     const text = contextualTextForConcept(c);
     const cached = args.cache.entries[id];
     if (cached && cached.sourceText === text) {
       index.set(id, cached.vector);
+      tick();
       continue;
     }
     const vec = await args.provider.embed({
@@ -65,6 +85,7 @@ export async function buildEmbeddingIndex(
     });
     args.cache.entries[id] = { sourceText: text, vector: vec };
     index.set(id, vec);
+    tick();
   }
 
   return index;
