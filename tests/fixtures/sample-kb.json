@@ -1,0 +1,117 @@
+{
+  "meta": {
+    "version": 1,
+    "created": "2026-01-01",
+    "updated": "2026-04-01"
+  },
+  "entities": {
+    "alan-watts": {
+      "id": "alan-watts",
+      "name": "Alan Watts",
+      "type": "person",
+      "aliases": ["A.W. Watts"],
+      "facts": [
+        "Author of The Wisdom of Insecurity",
+        "Popularized Zen Buddhism in the West",
+        "Coined the phrase 'the law of reversed effort'"
+      ],
+      "sources": ["Books/Watts.md", "Learn/Zen.md", "Dailies/12 March 2026.md"]
+    },
+    "andrej-karpathy": {
+      "id": "andrej-karpathy",
+      "name": "Andrej Karpathy",
+      "type": "person",
+      "aliases": [],
+      "facts": [
+        "Former director of AI at Tesla",
+        "Wrote the LLM Wiki gist that inspired this tool"
+      ],
+      "sources": ["Learn/Karpathy-LLM-Wiki.md", "Learn/Neural-Nets.md"]
+    },
+    "exact-name": {
+      "id": "exact-name",
+      "name": "Exact Name",
+      "type": "other",
+      "aliases": [],
+      "facts": [],
+      "sources": ["Twitter/some-bookmark.md"]
+    },
+    "lonely-entity": {
+      "id": "lonely-entity",
+      "name": "Lonely Entity",
+      "type": "person",
+      "aliases": [],
+      "facts": ["Only one fact"],
+      "sources": ["one.md"]
+    }
+  },
+  "concepts": {
+    "zen-buddhism": {
+      "id": "zen-buddhism",
+      "name": "Zen Buddhism",
+      "definition": "The practice of direct experience over scriptural study, emphasizing meditation and non-attachment to thought",
+      "related": ["Alan Watts", "D.T. Suzuki"],
+      "sources": ["Books/Watts.md", "Learn/Zen.md"]
+    },
+    "law-of-reversed-effort": {
+      "id": "law-of-reversed-effort",
+      "name": "Law of Reversed Effort",
+      "definition": "The principle that grasping for something pushes it away — the harder you try to be secure, the more insecure you feel",
+      "related": ["Alan Watts", "Zen Buddhism"],
+      "sources": ["Books/Watts.md"]
+    },
+    "address-book": {
+      "id": "address-book",
+      "name": "Address Book",
+      "definition": "",
+      "related": [],
+      "sources": []
+    }
+  },
+  "connections": [
+    {
+      "from": "alan-watts",
+      "to": "zen-buddhism",
+      "type": "influences",
+      "description": "Watts popularized Zen in the West",
+      "sources": ["Books/Watts.md"]
+    },
+    {
+      "from": "alan-watts",
+      "to": "law-of-reversed-effort",
+      "type": "created-by",
+      "description": "",
+      "sources": ["Books/Watts.md"]
+    }
+  ],
+  "sources": {
+    "Books/Watts.md": {
+      "id": "Books/Watts.md",
+      "summary": "Notes on Watts' The Wisdom of Insecurity",
+      "date": "2026-03-01",
+      "mtime": 1709251200,
+      "origin": "user-note"
+    },
+    "Learn/Zen.md": {
+      "id": "Learn/Zen.md",
+      "summary": "An overview of Zen Buddhism's history and key teachers",
+      "date": "2026-03-15",
+      "mtime": 1710547200,
+      "origin": "user-note"
+    },
+    "Learn/Karpathy-LLM-Wiki.md": {
+      "id": "Learn/Karpathy-LLM-Wiki.md",
+      "summary": "Karpathy's gist on building an LLM-powered wiki from your notes",
+      "date": "2026-04-01",
+      "mtime": 1711929600,
+      "origin": "clipping"
+    },
+    "Twitter/some-bookmark.md": {
+      "id": "Twitter/some-bookmark.md",
+      "summary": "",
+      "date": "2026-03-20",
+      "mtime": 1710979200,
+      "origin": "clipping"
+    }
+  }
+}
