@@ -57,4 +57,36 @@ describe("EmbeddingIndexController", () => {
     if (ready.kind !== "ready") throw new Error("expected ready");
     expect(ready.index).toBe(result);
   });
+
+  it("returns the same promise when ensureBuilt is called concurrently", async () => {
+    let resolveBuild: (idx: ReadonlyMap<string, number[]>) => void = () => {};
+    let buildCalls = 0;
+    const controller = new EmbeddingIndexController({
+      buildIndex: () => {
+        buildCalls += 1;
+        return new Promise((res) => {
+          resolveBuild = res;
+        });
+      },
+    });
+    const a = controller.ensureBuilt();
+    const b = controller.ensureBuilt();
+    expect(a).toBe(b);
+    expect(buildCalls).toBe(1);
+    resolveBuild(new Map([["x", [1]]]));
+    await a;
+  });
+
+  it("does not rebuild after reaching ready", async () => {
+    let buildCalls = 0;
+    const controller = new EmbeddingIndexController({
+      buildIndex: () => {
+        buildCalls += 1;
+        return Promise.resolve(new Map([["x", [1]]]));
+      },
+    });
+    await controller.ensureBuilt();
+    await controller.ensureBuilt();
+    expect(buildCalls).toBe(1);
+  });
 });
