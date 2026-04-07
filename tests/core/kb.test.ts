@@ -95,3 +95,50 @@ describe("KnowledgeBase.addEntity", () => {
     expect(kb.data.entities["alan-watts"]?.aliases).toEqual([]);
   });
 });
+
+describe("KnowledgeBase.addConcept", () => {
+  it("creates a new concept when the ID is not present", () => {
+    const kb = new KnowledgeBase();
+    const c = kb.addConcept({
+      name: "Zen Buddhism",
+      definition: "The practice of direct experience",
+      related: ["Alan Watts"],
+      source: "Books/Watts.md",
+    });
+    expect(c.id).toBe("zen-buddhism");
+    expect(c.definition).toBe("The practice of direct experience");
+    expect(c.related).toEqual(["Alan Watts"]);
+    expect(c.sources).toEqual(["Books/Watts.md"]);
+  });
+
+  it("keeps the longer definition when merging", () => {
+    const kb = new KnowledgeBase();
+    kb.addConcept({ name: "Zen", definition: "Short def" });
+    kb.addConcept({
+      name: "Zen",
+      definition: "A much longer and more thorough definition of Zen",
+    });
+    expect(kb.data.concepts["zen"]?.definition).toBe(
+      "A much longer and more thorough definition of Zen",
+    );
+  });
+
+  it("does not shrink an existing definition", () => {
+    const kb = new KnowledgeBase();
+    kb.addConcept({ name: "Zen", definition: "A long thorough definition" });
+    kb.addConcept({ name: "Zen", definition: "Short" });
+    expect(kb.data.concepts["zen"]?.definition).toBe(
+      "A long thorough definition",
+    );
+  });
+
+  it("merges related items without duplication", () => {
+    const kb = new KnowledgeBase();
+    kb.addConcept({ name: "Zen", related: ["Alan Watts"] });
+    kb.addConcept({ name: "Zen", related: ["Alan Watts", "D.T. Suzuki"] });
+    expect(kb.data.concepts["zen"]?.related).toEqual([
+      "Alan Watts",
+      "D.T. Suzuki",
+    ]);
+  });
+});

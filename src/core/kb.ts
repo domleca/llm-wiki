@@ -1,4 +1,4 @@
-import type { Entity, EntityType, KBData } from "./types.js";
+import type { Concept, Entity, EntityType, KBData } from "./types.js";
 import { makeId } from "./ids.js";
 
 function todayIso(): string {
@@ -21,6 +21,13 @@ export interface AddEntityArgs {
   type: EntityType;
   aliases?: string[];
   facts?: string[];
+  source?: string;
+}
+
+export interface AddConceptArgs {
+  name: string;
+  definition?: string;
+  related?: string[];
   source?: string;
 }
 
@@ -77,5 +84,48 @@ export class KnowledgeBase {
       entity.sources.push(patch.source);
     }
     return entity;
+  }
+
+  addConcept(args: AddConceptArgs): Concept {
+    const id = makeId(args.name);
+    const existing = this.data.concepts[id];
+    if (existing) {
+      return this.mergeConcept(existing, {
+        definition: args.definition,
+        related: args.related,
+        source: args.source,
+      });
+    }
+    const concept: Concept = {
+      id,
+      name: args.name,
+      definition: args.definition ?? "",
+      related: args.related ?? [],
+      sources: args.source ? [args.source] : [],
+    };
+    this.data.concepts[id] = concept;
+    return concept;
+  }
+
+  private mergeConcept(
+    concept: Concept,
+    patch: { definition?: string; related?: string[]; source?: string },
+  ): Concept {
+    if (patch.definition && patch.definition.length > concept.definition.length) {
+      concept.definition = patch.definition;
+    }
+    if (patch.related) {
+      const existing = new Set(concept.related);
+      for (const r of patch.related) {
+        if (!existing.has(r)) {
+          concept.related.push(r);
+          existing.add(r);
+        }
+      }
+    }
+    if (patch.source && !concept.sources.includes(patch.source)) {
+      concept.sources.push(patch.source);
+    }
+    return concept;
   }
 }
