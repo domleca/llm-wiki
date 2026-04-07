@@ -92,4 +92,11 @@ describe("listPagePaths", () => {
     const paths = await listPagePaths(app as never, "wiki/entities/");
     expect(paths).toEqual([]);
   });
+
+  it("throws PathNotAllowedError for disallowed prefix", async () => {
+    const { app } = createMockApp();
+    await expect(
+      listPagePaths(app as never, "notes/"),
+    ).rejects.toBeInstanceOf(PathNotAllowedError);
+  });
 });
