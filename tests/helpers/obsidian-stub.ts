@@ -61,6 +61,8 @@ class MarkdownRenderer {
   ): Promise<void> {}
 }
 
+function setIcon(_el: unknown, _name: string): void {}
+
 export {
   Setting,
   Component,
@@ -70,4 +72,5 @@ export {
   Notice,
   TFile,
   MarkdownRenderer,
+  setIcon,
 };

@@ -82,7 +82,7 @@ export default class LlmWikiPlugin extends Plugin {
     this.addSettingTab(new LlmWikiSettingsTab(this.app, this));
 
     // Ribbon icon — open the query modal
-    this.addRibbonIcon("search", "Ask knowledge base", () => {
+    this.addRibbonIcon("rainbow", "Ask knowledge base", () => {
       void this.openQueryModal();
     });
 

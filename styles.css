@@ -1,0 +1,286 @@
+/*
+ * LLM Wiki — Query modal styles
+ *
+ * Leans on Obsidian's native command-palette classes for the input, recent
+ * list, and footer. Only custom sections (pills, terminal, answer, sources)
+ * have bespoke rules.
+ */
+
+.llm-wiki-query-modal.modal {
+  width: min(720px, 92vw);
+}
+
+/* Hide the default Obsidian modal close button — Esc and click-outside already close */
+.llm-wiki-query-modal.modal > .modal-close-button {
+  display: none;
+}
+
+/* Let children go edge-to-edge so the input and suggestion rows look like
+ * the real command palette. */
+.llm-wiki-query-modal.modal-content {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Input ---------- */
+
+.llm-wiki-query-input-container {
+  position: relative;
+  width: 100%;
+  padding: var(--size-4-3) var(--size-4-4);
+  border-bottom: 1px solid var(--background-modifier-border);
+  box-sizing: border-box;
+}
+
+.llm-wiki-query-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  background: transparent;
+  color: var(--text-normal);
+  font-size: var(--font-ui-large);
+  font-family: inherit;
+  padding: 0 calc(1.6em + var(--size-4-2)) 0 0;
+  margin: 0;
+  outline: none;
+  box-shadow: none;
+}
+
+.llm-wiki-query-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.llm-wiki-query-input::placeholder {
+  color: var(--text-faint);
+}
+
+.llm-wiki-query-modal[data-state="loading"] .llm-wiki-query-input,
+.llm-wiki-query-modal[data-state="streaming"] .llm-wiki-query-input {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+/* Clear button — only visible once the user has typed something */
+
+.llm-wiki-query-clear {
+  display: none;
+  position: absolute;
+  right: var(--size-4-4);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.5em;
+  height: 1.5em;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--background-modifier-hover);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  box-shadow: none;
+}
+
+.llm-wiki-query-clear:hover {
+  background: var(--background-modifier-active-hover);
+  color: var(--text-normal);
+}
+
+.llm-wiki-query-clear[data-visible="true"] {
+  display: inline-flex;
+}
+
+.llm-wiki-query-clear .svg-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* ---------- Recents list ---------- */
+
+.llm-wiki-query-recents {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.llm-wiki-query-recents:empty {
+  display: none;
+}
+
+/* Hide recents while the LLM is working or an answer is on screen */
+.llm-wiki-query-modal[data-state="loading"] .llm-wiki-query-recents,
+.llm-wiki-query-modal[data-state="streaming"] .llm-wiki-query-recents {
+  display: none;
+}
+
+/* ---------- Pills row ---------- */
+
+.llm-wiki-query-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+  padding: var(--size-4-3) var(--size-4-3) 0;
+}
+
+.llm-wiki-query-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--size-2-1) var(--size-4-2);
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-smaller);
+  font-family: var(--font-monospace);
+  line-height: 1.4;
+}
+
+/* ---------- Terminal-style status line ---------- */
+
+.llm-wiki-query-terminal {
+  display: none;
+  align-items: center;
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-small);
+  line-height: 1.4;
+  padding: var(--size-4-2) var(--size-4-3);
+  margin: var(--size-4-2) var(--size-4-3) 0;
+  background: var(--background-primary-alt);
+  color: var(--text-normal);
+  border-radius: var(--radius-s);
+  border-left: 2px solid var(--interactive-accent);
+}
+
+.llm-wiki-query-modal[data-state="loading"] .llm-wiki-query-terminal,
+.llm-wiki-query-modal[data-state="streaming"] .llm-wiki-query-terminal,
+.llm-wiki-query-modal[data-state="done"] .llm-wiki-query-terminal,
+.llm-wiki-query-modal[data-state="error"] .llm-wiki-query-terminal,
+.llm-wiki-query-modal[data-state="cancelled"] .llm-wiki-query-terminal {
+  display: flex;
+}
+
+.llm-wiki-query-terminal::before {
+  content: "$ ";
+  color: var(--interactive-accent);
+  margin-right: 0.25em;
+}
+
+.llm-wiki-query-terminal-text {
+  white-space: pre;
+}
+
+.llm-wiki-query-modal[data-state="error"] .llm-wiki-query-terminal {
+  border-left-color: var(--text-error);
+  color: var(--text-error);
+}
+
+.llm-wiki-query-modal[data-state="error"] .llm-wiki-query-terminal::before {
+  color: var(--text-error);
+}
+
+/* Blinking block cursor — only while thinking or streaming */
+.llm-wiki-query-cursor {
+  display: none;
+  width: 0.55em;
+  height: 1em;
+  background: currentColor;
+  margin-left: 0.15em;
+  vertical-align: text-bottom;
+  animation: llm-wiki-blink 1s steps(1, end) infinite;
+}
+
+.llm-wiki-query-modal[data-state="loading"] .llm-wiki-query-cursor,
+.llm-wiki-query-modal[data-state="streaming"] .llm-wiki-query-cursor {
+  display: inline-block;
+}
+
+@keyframes llm-wiki-blink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+
+/* ---------- Answer area ---------- */
+
+.llm-wiki-query-answer {
+  min-height: 0;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: var(--size-4-3);
+  margin: var(--size-4-2) var(--size-4-3) 0;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-primary);
+}
+
+.llm-wiki-query-answer:empty {
+  display: none;
+}
+
+.llm-wiki-query-answer > :first-child {
+  margin-top: 0;
+}
+
+.llm-wiki-query-answer > :last-child {
+  margin-bottom: 0;
+}
+
+/* ---------- Sources ---------- */
+
+.llm-wiki-query-sources {
+  margin: var(--size-4-2) var(--size-4-3) var(--size-4-3);
+  padding: var(--size-4-2) var(--size-4-3);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+}
+
+.llm-wiki-query-sources[data-empty="true"] {
+  display: none;
+}
+
+.llm-wiki-query-sources summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  user-select: none;
+  list-style: none;
+}
+
+.llm-wiki-query-sources summary::-webkit-details-marker {
+  display: none;
+}
+
+.llm-wiki-query-sources summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 1em;
+  color: var(--text-faint);
+  transition: transform 0.1s ease;
+}
+
+.llm-wiki-query-sources[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.llm-wiki-query-sources summary:hover {
+  color: var(--text-normal);
+}
+
+.llm-wiki-query-sources ul {
+  margin: var(--size-4-2) 0 0 0;
+  padding-left: var(--size-4-5);
+  list-style: none;
+}
+
+.llm-wiki-query-sources li {
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  padding: var(--size-2-1) 0;
+}
+
+.llm-wiki-query-sources li::before {
+  content: "• ";
+  color: var(--text-faint);
+}
