@@ -197,3 +197,38 @@ describe("KnowledgeBase.addConnection", () => {
     expect(kb.data.connections).toHaveLength(2);
   });
 });
+
+describe("KnowledgeBase.markSource and needsExtraction", () => {
+  it("records a source with origin and mtime", () => {
+    const kb = new KnowledgeBase();
+    kb.markSource({
+      path: "Books/Watts.md",
+      mtime: 1700000000,
+      origin: "user-note",
+      summary: "A book about insecurity",
+    });
+    const src = kb.data.sources["Books/Watts.md"];
+    expect(src?.id).toBe("Books/Watts.md");
+    expect(src?.mtime).toBe(1700000000);
+    expect(src?.origin).toBe("user-note");
+    expect(src?.summary).toBe("A book about insecurity");
+    expect(src?.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it("needsExtraction is true for an unknown path", () => {
+    const kb = new KnowledgeBase();
+    expect(kb.needsExtraction("Books/Watts.md", 1700000000)).toBe(true);
+  });
+
+  it("needsExtraction is false when mtime is unchanged", () => {
+    const kb = new KnowledgeBase();
+    kb.markSource({ path: "Books/Watts.md", mtime: 1700000000, origin: "user-note" });
+    expect(kb.needsExtraction("Books/Watts.md", 1700000000)).toBe(false);
+  });
+
+  it("needsExtraction is true when current mtime is newer than stored", () => {
+    const kb = new KnowledgeBase();
+    kb.markSource({ path: "Books/Watts.md", mtime: 1700000000, origin: "user-note" });
+    expect(kb.needsExtraction("Books/Watts.md", 1700000001)).toBe(true);
+  });
+});

@@ -1,4 +1,12 @@
-import type { Concept, Connection, ConnectionType, Entity, EntityType, KBData } from "./types.js";
+import type {
+  Concept,
+  Connection,
+  ConnectionType,
+  Entity,
+  EntityType,
+  KBData,
+  SourceOrigin,
+} from "./types.js";
 import { makeId } from "./ids.js";
 
 function todayIso(): string {
@@ -37,6 +45,14 @@ export interface AddConnectionArgs {
   type: ConnectionType;
   description?: string;
   source?: string;
+}
+
+export interface MarkSourceArgs {
+  path: string;
+  mtime: number;
+  origin: SourceOrigin;
+  summary?: string;
+  date?: string;
 }
 
 export class KnowledgeBase {
@@ -158,5 +174,25 @@ export class KnowledgeBase {
     };
     this.data.connections.push(connection);
     return connection;
+  }
+
+  markSource(args: MarkSourceArgs): void {
+    this.data.sources[args.path] = {
+      id: args.path,
+      summary: args.summary ?? "",
+      date: args.date ?? todayIso(),
+      mtime: args.mtime,
+      origin: args.origin,
+    };
+  }
+
+  needsExtraction(path: string, currentMtime: number): boolean {
+    const stored = this.data.sources[path];
+    if (!stored) return true;
+    return currentMtime > stored.mtime;
+  }
+
+  isProcessed(path: string): boolean {
+    return path in this.data.sources;
   }
 }
