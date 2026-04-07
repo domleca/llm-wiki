@@ -8,6 +8,8 @@
  * directly — vitest is `node` env so DocumentFragment isn't available).
  */
 
+import { setIcon } from "obsidian";
+
 /** The commands to suggest, in display order. */
 export const OLLAMA_HINT_COMMANDS: readonly string[] = [
   "brew services start ollama",
@@ -15,7 +17,7 @@ export const OLLAMA_HINT_COMMANDS: readonly string[] = [
 ];
 
 export const OLLAMA_HINT_INTRO =
-  "Ollama not reachable. Start it with one of these, then click retry:";
+  "Ollama is not reachable. Relaunch with one of the commands below:";
 
 export interface OllamaHintFragmentOptions {
   /** Document used to create elements. Pass `document` in production. */
@@ -51,18 +53,17 @@ export function buildOllamaHintFragment(
 
     const btn = doc.createElement("button");
     btn.type = "button";
-    btn.className = "llm-wiki-ollama-hint-copy";
+    btn.className = "llm-wiki-ollama-hint-copy clickable-icon";
     btn.setAttribute("aria-label", `Copy "${cmd}"`);
     btn.title = "Copy";
-    btn.textContent = "📋";
+    setIcon(btn, "copy");
     btn.addEventListener("click", (ev) => {
       ev.stopPropagation();
       onCopy(cmd);
-      const original = btn.textContent;
-      btn.textContent = "✓";
+      setIcon(btn, "check");
       btn.disabled = true;
       window.setTimeout(() => {
-        btn.textContent = original;
+        setIcon(btn, "copy");
         btn.disabled = false;
       }, 1200);
     });

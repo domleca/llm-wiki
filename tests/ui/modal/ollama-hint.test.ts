@@ -10,8 +10,9 @@ describe("ollama-hint", () => {
     expect(OLLAMA_HINT_COMMANDS).toContain("ollama serve");
   });
 
-  it("intro mentions clicking retry", () => {
-    expect(OLLAMA_HINT_INTRO.toLowerCase()).toContain("retry");
+  it("intro mentions Ollama and how to relaunch it", () => {
+    expect(OLLAMA_HINT_INTRO).toContain("Ollama");
+    expect(OLLAMA_HINT_INTRO.toLowerCase()).toContain("relaunch");
   });
 
   it("commands are in stable display order (brew first, fallback second)", () => {
