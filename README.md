@@ -84,6 +84,7 @@ Press **Cmd+Shift+K** (or click the search icon in the ribbon) to open the query
 - Default folder scope
 - How many recent questions to remember
 - Whether to show source links in answers
+- Whether to pre-build the embedding index on startup (default on) — builds the index ~2s after Obsidian launches so the first query modal opens instantly instead of blocking on a cold build
 
 All interactions are logged to `.obsidian/plugins/llm-wiki/interactions/<date>.jsonl` for later review.
 
