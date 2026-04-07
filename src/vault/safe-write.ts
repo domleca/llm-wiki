@@ -77,7 +77,7 @@ export interface SafeWriteApp {
   };
 }
 
-const PLUGIN_DIR = ".obsidian/plugins/llm-wiki";
+export const PLUGIN_DIR = ".obsidian/plugins/llm-wiki";
 
 export async function safeWritePluginData(
   app: SafeWriteApp,
@@ -89,6 +89,35 @@ export async function safeWritePluginData(
   assertAllowed(path);
   await ensureDir(app, dirname(path));
   await app.vault.adapter.write(path, content);
+}
+
+/**
+ * Appends a line to a file under `.obsidian/plugins/llm-wiki/`, creating the
+ * file (and parent directory) if needed. Unlike `safeWritePluginData`, this
+ * preserves existing content — used for JSONL logs such as the interaction log.
+ *
+ * The line is normalised so the file always ends in exactly one trailing
+ * newline: if `line` already ends with `\n` we keep it, otherwise we append
+ * one.
+ */
+export async function safeAppendPluginData(
+  app: SafeWriteApp,
+  relPath: string,
+  line: string,
+): Promise<void> {
+  if (relPath.startsWith("/") || relPath.split("/").includes("..")) {
+    throw new PathNotAllowedError(relPath);
+  }
+  const fullPath = `${PLUGIN_DIR}/${relPath}`;
+  assertAllowed(fullPath);
+  const text = line.endsWith("\n") ? line : line + "\n";
+  if (await app.vault.adapter.exists(fullPath)) {
+    const prior = await app.vault.adapter.read(fullPath);
+    await app.vault.adapter.write(fullPath, prior + text);
+    return;
+  }
+  await ensureDir(app, dirname(fullPath));
+  await app.vault.adapter.write(fullPath, text);
 }
 
 export async function safeReadPluginData(
