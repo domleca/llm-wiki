@@ -6,6 +6,7 @@ import type {
   EntityType,
   KBData,
   SourceOrigin,
+  SourceRecord,
 } from "./types.js";
 import { makeId } from "./ids.js";
 
@@ -202,6 +203,14 @@ export class KnowledgeBase {
 
   allConcepts(): Concept[] {
     return Object.values(this.data.concepts);
+  }
+
+  allConnections(): Connection[] {
+    return this.data.connections;
+  }
+
+  allSources(): SourceRecord[] {
+    return Object.values(this.data.sources);
   }
 
   getEntity(nameOrId: string): Entity | undefined {

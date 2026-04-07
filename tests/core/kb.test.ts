@@ -350,6 +350,32 @@ describe("KnowledgeBase.allEntities and allConcepts", () => {
   });
 });
 
+describe("KnowledgeBase.allConnections and allSources", () => {
+  it("allConnections returns every stored connection", () => {
+    const kb = new KnowledgeBase();
+    kb.addConnection({ from: "Alan Watts", to: "Zen", type: "influences" });
+    kb.addConnection({ from: "Zen", to: "Meditation", type: "related-to" });
+    const conns = kb.allConnections();
+    expect(conns).toHaveLength(2);
+  });
+
+  it("allSources returns every stored source record", () => {
+    const kb = new KnowledgeBase();
+    kb.markSource({ path: "Books/Watts.md", mtime: 1, origin: "user-note" });
+    kb.markSource({ path: "Learn/Zen.md", mtime: 2, origin: "user-note" });
+    const sources = kb.allSources();
+    expect(sources).toHaveLength(2);
+    const ids = sources.map((s) => s.id).sort();
+    expect(ids).toEqual(["Books/Watts.md", "Learn/Zen.md"]);
+  });
+
+  it("returns empty arrays when KB is empty", () => {
+    const kb = new KnowledgeBase();
+    expect(kb.allConnections()).toEqual([]);
+    expect(kb.allSources()).toEqual([]);
+  });
+});
+
 describe("KnowledgeBase.connectionsFor and stats", () => {
   it("connectionsFor returns connections in either direction", () => {
     const kb = new KnowledgeBase();
