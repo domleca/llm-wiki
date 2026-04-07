@@ -14,6 +14,10 @@ import {
 } from "./extract/defaults.js";
 import { ProgressEmitter } from "./runtime/progress.js";
 import { StatusBarWidget } from "./ui/status-bar.js";
+import {
+  defaultFilterSettings,
+  type FilterSettings,
+} from "./core/filters.js";
 import { LlmWikiSettingsTab } from "./ui/settings/settings-tab.js";
 import {
   loadEmbeddingsCache,
@@ -41,6 +45,7 @@ interface LlmWikiSettings {
   recentQuestionCount: number;
   showSourceLinks: boolean;
   prebuildEmbeddingIndex: boolean;
+  filterSettings: FilterSettings;
 }
 
 const DEFAULT_SETTINGS: LlmWikiSettings = {
@@ -54,6 +59,7 @@ const DEFAULT_SETTINGS: LlmWikiSettings = {
   recentQuestionCount: 5,
   showSourceLinks: true,
   prebuildEmbeddingIndex: true,
+  filterSettings: defaultFilterSettings(),
 };
 
 /** Delay before kicking off the background pre-build, so plugin load stays snappy. */
