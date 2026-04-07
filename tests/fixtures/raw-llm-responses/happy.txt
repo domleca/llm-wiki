@@ -1,0 +1,12 @@
+{
+  "source_summary": "Short note about Alan Watts and zen.",
+  "entities": [
+    {"name": "Alan Watts", "type": "person", "aliases": ["A.W."], "facts": ["wrote The Wisdom of Insecurity"]}
+  ],
+  "concepts": [
+    {"name": "Zen", "definition": "A school of Mahayana Buddhism.", "related": ["Alan Watts"]}
+  ],
+  "connections": [
+    {"from": "Alan Watts", "to": "Zen", "type": "influences", "description": "Popularized zen in the West"}
+  ]
+}

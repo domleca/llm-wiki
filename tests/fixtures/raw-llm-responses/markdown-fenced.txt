@@ -1,0 +1,8 @@
+```json
+{
+  "source_summary": "Fenced.",
+  "entities": [{"name": "X", "type": "other", "aliases": [], "facts": ["f"]}],
+  "concepts": [],
+  "connections": []
+}
+```
