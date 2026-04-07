@@ -1,4 +1,4 @@
-import type { Concept, Entity, EntityType, KBData } from "./types.js";
+import type { Concept, Connection, ConnectionType, Entity, EntityType, KBData } from "./types.js";
 import { makeId } from "./ids.js";
 
 function todayIso(): string {
@@ -28,6 +28,14 @@ export interface AddConceptArgs {
   name: string;
   definition?: string;
   related?: string[];
+  source?: string;
+}
+
+export interface AddConnectionArgs {
+  from: string;
+  to: string;
+  type: ConnectionType;
+  description?: string;
   source?: string;
 }
 
@@ -127,5 +135,28 @@ export class KnowledgeBase {
       concept.sources.push(patch.source);
     }
     return concept;
+  }
+
+  addConnection(args: AddConnectionArgs): Connection {
+    const fromId = makeId(args.from);
+    const toId = makeId(args.to);
+    const existing = this.data.connections.find(
+      (c) => c.from === fromId && c.to === toId && c.type === args.type,
+    );
+    if (existing) {
+      if (args.source && !existing.sources.includes(args.source)) {
+        existing.sources.push(args.source);
+      }
+      return existing;
+    }
+    const connection: Connection = {
+      from: fromId,
+      to: toId,
+      type: args.type,
+      description: args.description ?? "",
+      sources: args.source ? [args.source] : [],
+    };
+    this.data.connections.push(connection);
+    return connection;
   }
 }

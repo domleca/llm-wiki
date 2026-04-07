@@ -142,3 +142,58 @@ describe("KnowledgeBase.addConcept", () => {
     ]);
   });
 });
+
+describe("KnowledgeBase.addConnection", () => {
+  it("creates a new connection between two normalized IDs", () => {
+    const kb = new KnowledgeBase();
+    const c = kb.addConnection({
+      from: "Alan Watts",
+      to: "Zen Buddhism",
+      type: "influences",
+      description: "Watts popularized Zen in the West",
+      source: "Books/Watts.md",
+    });
+    expect(c.from).toBe("alan-watts");
+    expect(c.to).toBe("zen-buddhism");
+    expect(c.type).toBe("influences");
+    expect(c.description).toBe("Watts popularized Zen in the West");
+    expect(c.sources).toEqual(["Books/Watts.md"]);
+    expect(kb.data.connections).toHaveLength(1);
+  });
+
+  it("dedupes by (from, to, type) — adds source to existing connection instead", () => {
+    const kb = new KnowledgeBase();
+    kb.addConnection({
+      from: "Alan Watts",
+      to: "Zen Buddhism",
+      type: "influences",
+      source: "Books/Watts.md",
+    });
+    kb.addConnection({
+      from: "Alan Watts",
+      to: "Zen Buddhism",
+      type: "influences",
+      source: "Learn/Buddhism.md",
+    });
+    expect(kb.data.connections).toHaveLength(1);
+    expect(kb.data.connections[0]?.sources).toEqual([
+      "Books/Watts.md",
+      "Learn/Buddhism.md",
+    ]);
+  });
+
+  it("creates separate connections when type differs", () => {
+    const kb = new KnowledgeBase();
+    kb.addConnection({
+      from: "Alan Watts",
+      to: "Zen Buddhism",
+      type: "influences",
+    });
+    kb.addConnection({
+      from: "Alan Watts",
+      to: "Zen Buddhism",
+      type: "uses",
+    });
+    expect(kb.data.connections).toHaveLength(2);
+  });
+});
