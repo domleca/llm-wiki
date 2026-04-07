@@ -15,6 +15,19 @@ import {
 import { ProgressEmitter } from "./runtime/progress.js";
 import { StatusBarWidget } from "./ui/status-bar.js";
 import { LlmWikiSettingsTab } from "./ui/settings/settings-tab.js";
+import {
+  loadEmbeddingsCache,
+  saveEmbeddingsCache,
+  type EmbeddingsCache,
+} from "./vault/plugin-data.js";
+import { appendInteractionLog } from "./vault/interaction-log.js";
+import {
+  loadRecentQuestions,
+  saveRecentQuestions,
+  pushRecentQuestion,
+} from "./vault/recent-questions.js";
+import { QueryModal } from "./ui/modal/query-modal.js";
+import { buildEmbeddingIndex } from "./query/embeddings.js";
 
 interface LlmWikiSettings {
   version: number;
@@ -51,11 +64,15 @@ export default class LlmWikiPlugin extends Plugin {
   });
   private abortController: AbortController | null = null;
   private running = false;
+  private recentQuestions: string[] = [];
+  private embeddingIndex: Map<string, number[]> | null = null;
+  private embeddingsCache: EmbeddingsCache | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
     this.rebuildProvider();
     await this.reloadKB();
+    this.recentQuestions = await loadRecentQuestions(this.app);
 
     // Status bar
     const statusEl = this.addStatusBarItem();
@@ -64,7 +81,21 @@ export default class LlmWikiPlugin extends Plugin {
     // Settings tab
     this.addSettingTab(new LlmWikiSettingsTab(this.app, this));
 
+    // Ribbon icon — open the query modal
+    this.addRibbonIcon("search", "Ask knowledge base", () => {
+      void this.openQueryModal();
+    });
+
     // Commands
+    this.addCommand({
+      id: "run-query",
+      name: "Ask knowledge base",
+      hotkeys: [{ modifiers: ["Mod", "Shift"], key: "k" }],
+      callback: () => {
+        void this.openQueryModal();
+      },
+    });
+
     this.addCommand({
       id: "show-vocabulary",
       name: "LLM Wiki: Show vocabulary",
@@ -203,6 +234,62 @@ export default class LlmWikiPlugin extends Plugin {
       this.running = false;
       this.abortController = null;
     }
+  }
+
+  private async openQueryModal(): Promise<void> {
+    if (!this.kb) {
+      new Notice("LLM Wiki: knowledge base not loaded yet");
+      return;
+    }
+    // Lazy-build the embedding index on first query
+    if (!this.embeddingIndex) {
+      try {
+        this.embeddingsCache =
+          this.embeddingsCache ?? (await loadEmbeddingsCache(this.app));
+        this.embeddingIndex = await buildEmbeddingIndex({
+          kb: this.kb,
+          provider: this.provider,
+          model: this.settings.embeddingModel,
+          cache: this.embeddingsCache,
+        });
+        await saveEmbeddingsCache(this.app, this.embeddingsCache);
+      } catch (err) {
+        new Notice(
+          `LLM Wiki: failed to build embedding index — ${err instanceof Error ? err.message : String(err)} (falling back to keyword-only retrieval)`,
+        );
+        this.embeddingIndex = new Map();
+      }
+    }
+
+    const modal = new QueryModal({
+      app: this.app,
+      kb: this.kb,
+      provider: this.provider,
+      model: this.settings.ollamaModel,
+      folder: this.settings.defaultQueryFolder,
+      recentQuestions: this.recentQuestions,
+      embeddingIndex: this.embeddingIndex,
+      onAnswered: ({ question, answer, bundle, elapsedMs }): void => {
+        void (async (): Promise<void> => {
+          this.recentQuestions = pushRecentQuestion(
+            this.recentQuestions,
+            question,
+            this.settings.recentQuestionCount,
+          );
+          await saveRecentQuestions(this.app, this.recentQuestions);
+          await appendInteractionLog(this.app, {
+            question,
+            answer,
+            model: this.settings.ollamaModel,
+            queryType: bundle.queryType,
+            entityCount: bundle.entities.length,
+            conceptCount: bundle.concepts.length,
+            elapsedMs,
+          });
+        })();
+      },
+    });
+    modal.open();
   }
 
   async runExtractCurrent(file: TFile): Promise<void> {
