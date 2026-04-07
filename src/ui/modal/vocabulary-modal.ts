@@ -34,6 +34,9 @@ class VocabularyModal extends Modal {
     const pre = contentEl.createEl("pre");
     pre.style.maxHeight = "60vh";
     pre.style.overflow = "auto";
+    pre.style.whiteSpace = "pre-wrap";
+    pre.style.wordBreak = "break-word";
+    pre.style.userSelect = "text";
     pre.style.fontSize = "0.85em";
     pre.style.fontFamily = "var(--font-monospace)";
     pre.setText(exportVocabulary(this.kb));
