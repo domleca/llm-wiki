@@ -15,7 +15,7 @@ querying, and cloud providers are still ahead.
 |---|---|---|
 | 1 — Foundation | core/ + vault/ + safety + smoke test | **Shipped** |
 | 2 — Extraction | Ollama-backed knowledge extraction from vault files | **Shipped (beta)** |
-| 3 — Query | Cmd+K modal with streamed answers | Not started |
+| 3 — Query | Cmd+Shift+K modal with streamed answers | **Shipped** |
 | 4 — Page generation | Bases-compatible entity/concept/source markdown pages | Not started |
 | 5 — Cloud + dream + scheduling | OpenAI/Anthropic/Google + nightly pass + ranker boost | Not started |
 | 6 — Onboarding + store submission | First-run flow + community store | Not started |
@@ -74,6 +74,18 @@ the first three files complete.
 4. Watch the status bar for progress; when it returns to `🧠 LLM Wiki`, the
    batch is done. Open `wiki/knowledge.json` to inspect the extracted KB, or
    run **LLM Wiki: Show vocabulary** for a quick summary.
+
+## Phase 3 — Ask your knowledge base
+
+Press **Cmd+Shift+K** (or click the search icon in the ribbon) to open the query modal. Ask a question in natural language; the plugin retrieves matching entities, concepts, and connections from your KB and streams an LLM answer grounded in your notes.
+
+**Settings → Query** lets you configure:
+- Embedding model (default `nomic-embed-text`)
+- Default folder scope
+- How many recent questions to remember
+- Whether to show source links in answers
+
+All interactions are logged to `.obsidian/plugins/llm-wiki/interactions/<date>.jsonl` for later review.
 
 ## Development
 

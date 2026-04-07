@@ -1,0 +1,82 @@
+import type { KnowledgeBase } from "../../core/kb.js";
+import { ask } from "../../query/ask.js";
+import type { LLMProvider } from "../../llm/provider.js";
+import type { RetrievedBundle } from "../../query/types.js";
+
+export type QueryControllerState =
+  | "idle"
+  | "loading"
+  | "streaming"
+  | "done"
+  | "error"
+  | "cancelled";
+
+export interface QueryControllerOptions {
+  kb: KnowledgeBase;
+  provider: LLMProvider;
+  model: string;
+  folder?: string;
+  embeddingIndex?: ReadonlyMap<string, number[]>;
+  queryEmbedding?: number[] | null;
+  onState: (s: QueryControllerState) => void;
+  onContext: (bundle: RetrievedBundle) => void;
+  onChunk: (text: string) => void;
+  onError?: (msg: string) => void;
+}
+
+export class QueryController {
+  private state: QueryControllerState = "idle";
+  private abortCtrl: AbortController | null = null;
+
+  constructor(private readonly opts: QueryControllerOptions) {}
+
+  getState(): QueryControllerState {
+    return this.state;
+  }
+
+  async run(question: string): Promise<void> {
+    this.abortCtrl = new AbortController();
+    this.transition("loading");
+
+    try {
+      for await (const ev of ask({
+        question,
+        kb: this.opts.kb,
+        provider: this.opts.provider,
+        model: this.opts.model,
+        folder: this.opts.folder,
+        embeddingIndex: this.opts.embeddingIndex,
+        queryEmbedding: this.opts.queryEmbedding,
+        signal: this.abortCtrl.signal,
+      })) {
+        if (this.state === "cancelled") return;
+        if (ev.kind === "context" && ev.bundle) {
+          this.opts.onContext(ev.bundle);
+          this.transition("streaming");
+        } else if (ev.kind === "chunk" && ev.text) {
+          this.opts.onChunk(ev.text);
+        } else if (ev.kind === "done") {
+          this.transition("done");
+        } else if (ev.kind === "error") {
+          this.opts.onError?.(ev.error ?? "unknown error");
+          this.transition("error");
+        }
+      }
+    } catch (err) {
+      if (this.state !== "cancelled") {
+        this.opts.onError?.(err instanceof Error ? err.message : String(err));
+        this.transition("error");
+      }
+    }
+  }
+
+  cancel(): void {
+    if (this.abortCtrl) this.abortCtrl.abort();
+    this.transition("cancelled");
+  }
+
+  private transition(next: QueryControllerState): void {
+    this.state = next;
+    this.opts.onState(next);
+  }
+}
