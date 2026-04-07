@@ -89,4 +89,29 @@ describe("EmbeddingIndexController", () => {
     await controller.ensureBuilt();
     expect(buildCalls).toBe(1);
   });
+
+  it("transitions to error with an empty fallback when buildIndex throws", async () => {
+    const { controller, states } = recordingController({
+      buildError: new Error("ollama down"),
+    });
+    const index = await controller.ensureBuilt();
+    expect(index.size).toBe(0);
+    const last = states[states.length - 1]!;
+    if (last.kind !== "error") throw new Error("expected error state");
+    expect(last.message).toBe("ollama down");
+  });
+
+  it("does not retry after landing in error", async () => {
+    let calls = 0;
+    const controller = new EmbeddingIndexController({
+      buildIndex: async () => {
+        calls += 1;
+        throw new Error("nope");
+      },
+    });
+    await controller.ensureBuilt();
+    await controller.ensureBuilt();
+    expect(calls).toBe(1);
+    expect(controller.getState().kind).toBe("error");
+  });
 });
