@@ -30,6 +30,7 @@ const context = await esbuild.context({
     "@lezer/lr",
     ...builtins,
   ],
+  platform: "node",
   format: "cjs",
   target: "es2022",
   logLevel: "info",
@@ -41,6 +42,7 @@ const context = await esbuild.context({
 
 if (prod) {
   await context.rebuild();
+  await context.dispose();
   process.exit(0);
 } else {
   await context.watch();
