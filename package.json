@@ -12,7 +12,12 @@
     "lint": "eslint . --ext .ts,.cjs",
     "typecheck": "tsc --noEmit"
   },
-  "keywords": ["obsidian", "obsidian-plugin", "llm", "knowledge-base"],
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "llm",
+    "knowledge-base"
+  ],
   "author": "Dominique Leca",
   "license": "MIT",
   "devDependencies": {
@@ -23,6 +28,7 @@
     "builtin-modules": "^4.0.0",
     "esbuild": "^0.20.2",
     "eslint": "^8.57.0",
+    "eslint-plugin-local-rules": "^3.0.2",
     "fast-check": "^3.17.0",
     "obsidian": "^1.5.7",
     "tslib": "^2.6.2",
