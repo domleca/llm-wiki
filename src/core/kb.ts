@@ -243,6 +243,25 @@ export class KnowledgeBase {
     }
   }
 
+  renameSource(oldPath: string, newPath: string): void {
+    const source = this.data.sources[oldPath];
+    if (!source) return;
+    delete this.data.sources[oldPath];
+    source.id = newPath;
+    this.data.sources[newPath] = source;
+    for (const entity of Object.values(this.data.entities)) {
+      entity.sources = entity.sources.map((s) => (s === oldPath ? newPath : s));
+    }
+    for (const concept of Object.values(this.data.concepts)) {
+      concept.sources = concept.sources.map((s) =>
+        s === oldPath ? newPath : s,
+      );
+    }
+    for (const conn of this.data.connections) {
+      conn.sources = conn.sources.map((s) => (s === oldPath ? newPath : s));
+    }
+  }
+
   connectionsFor(nameOrId: string): Connection[] {
     const id = makeId(nameOrId);
     return this.data.connections.filter(
