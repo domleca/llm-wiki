@@ -13,6 +13,7 @@ import {
   defaultDailiesFromIso,
 } from "./extract/defaults.js";
 import { ProgressEmitter } from "./runtime/progress.js";
+import { Scheduler } from "./runtime/scheduler.js";
 import { StatusBarWidget } from "./ui/status-bar.js";
 import {
   defaultFilterSettings,
@@ -48,6 +49,8 @@ interface LlmWikiSettings {
   showSourceLinks: boolean;
   prebuildEmbeddingIndex: boolean;
   filterSettings: FilterSettings;
+  nightlyExtractionEnabled: boolean;
+  nightlyExtractionHour: number;
 }
 
 const DEFAULT_SETTINGS: LlmWikiSettings = {
@@ -62,6 +65,8 @@ const DEFAULT_SETTINGS: LlmWikiSettings = {
   showSourceLinks: true,
   prebuildEmbeddingIndex: true,
   filterSettings: defaultFilterSettings(),
+  nightlyExtractionEnabled: false,
+  nightlyExtractionHour: 2,
 };
 
 /** Delay before kicking off the background pre-build, so plugin load stays snappy. */
@@ -82,6 +87,7 @@ export default class LlmWikiPlugin extends Plugin {
   private embeddingsCache: EmbeddingsCache | null = null;
   private embeddingIndexController: EmbeddingIndexController | null = null;
   private prebuildTimer: number | null = null;
+  private scheduler: Scheduler | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -212,6 +218,12 @@ export default class LlmWikiPlugin extends Plugin {
       }),
     );
 
+    // Nightly extraction scheduler. Wait for the workspace to be ready so the
+    // missed-run catch-up doesn't race the rest of plugin startup.
+    this.app.workspace.onLayoutReady(() => {
+      this.startScheduler();
+    });
+
     if (this.settings.prebuildEmbeddingIndex) {
       this.prebuildTimer = window.setTimeout(() => {
         this.prebuildTimer = null;
@@ -222,9 +234,31 @@ export default class LlmWikiPlugin extends Plugin {
 
   onunload(): void {
     this.cancelExtraction();
+    this.stopScheduler();
     if (this.prebuildTimer !== null) {
       window.clearTimeout(this.prebuildTimer);
       this.prebuildTimer = null;
+    }
+  }
+
+  startScheduler(): void {
+    this.stopScheduler();
+    if (!this.settings.nightlyExtractionEnabled) return;
+    this.scheduler = new Scheduler({
+      hour: this.settings.nightlyExtractionHour,
+      getLastRunIso: () => this.settings.lastExtractionRunIso,
+      isExtractionRunning: () => this.running,
+      trigger: () => {
+        void this.runExtractAll();
+      },
+    });
+    this.scheduler.start();
+  }
+
+  stopScheduler(): void {
+    if (this.scheduler) {
+      this.scheduler.stop();
+      this.scheduler = null;
     }
   }
 

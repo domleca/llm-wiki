@@ -65,6 +65,37 @@ export function renderIndexingSection(
     );
 
   new Setting(containerEl)
+    .setName("Nightly extraction")
+    .setDesc(
+      "Automatically run extraction once per day. Missed runs (machine asleep at the scheduled hour) catch up at next launch.",
+    )
+    .addToggle((toggle) =>
+      toggle
+        .setValue(plugin.settings.nightlyExtractionEnabled)
+        .onChange(async (value) => {
+          plugin.settings.nightlyExtractionEnabled = value;
+          await plugin.saveSettings();
+          plugin.startScheduler();
+        }),
+    );
+
+  new Setting(containerEl)
+    .setName("Nightly extraction hour")
+    .setDesc("Hour of day (0–23, local time) at which the nightly run fires.")
+    .addText((text) =>
+      text
+        .setPlaceholder("2")
+        .setValue(String(plugin.settings.nightlyExtractionHour))
+        .onChange(async (value) => {
+          const parsed = Number.parseInt(value, 10);
+          if (!Number.isFinite(parsed) || parsed < 0 || parsed > 23) return;
+          plugin.settings.nightlyExtractionHour = parsed;
+          await plugin.saveSettings();
+          plugin.startScheduler();
+        }),
+    );
+
+  new Setting(containerEl)
     .setName("Cancel running extraction")
     .setDesc("Stops the extraction at the next file boundary.")
     .addButton((btn) =>
