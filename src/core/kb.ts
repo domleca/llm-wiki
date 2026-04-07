@@ -225,4 +225,25 @@ export class KnowledgeBase {
       conn.sources = conn.sources.filter((s) => s !== path);
     }
   }
+
+  connectionsFor(nameOrId: string): Connection[] {
+    const id = makeId(nameOrId);
+    return this.data.connections.filter(
+      (c) => c.from === id || c.to === id,
+    );
+  }
+
+  stats(): {
+    entities: number;
+    concepts: number;
+    connections: number;
+    sources: number;
+  } {
+    return {
+      entities: Object.keys(this.data.entities).length,
+      concepts: Object.keys(this.data.concepts).length,
+      connections: this.data.connections.length,
+      sources: Object.keys(this.data.sources).length,
+    };
+  }
 }

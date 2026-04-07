@@ -321,3 +321,28 @@ describe("KnowledgeBase.getEntity and getConcept", () => {
     expect(kb.getConcept("nothing")).toBeUndefined();
   });
 });
+
+describe("KnowledgeBase.connectionsFor and stats", () => {
+  it("connectionsFor returns connections in either direction", () => {
+    const kb = new KnowledgeBase();
+    kb.addConnection({ from: "Alan Watts", to: "Zen", type: "influences" });
+    kb.addConnection({ from: "Zen", to: "Alan Watts", type: "related-to" });
+    kb.addConnection({ from: "Other", to: "Thing", type: "influences" });
+    const conns = kb.connectionsFor("Alan Watts");
+    expect(conns).toHaveLength(2);
+  });
+
+  it("stats reports counts", () => {
+    const kb = new KnowledgeBase();
+    kb.addEntity({ name: "Alan Watts", type: "person" });
+    kb.addConcept({ name: "Zen", definition: "x" });
+    kb.addConnection({ from: "Alan Watts", to: "Zen", type: "influences" });
+    kb.markSource({ path: "Books/Watts.md", mtime: 1, origin: "user-note" });
+    expect(kb.stats()).toEqual({
+      entities: 1,
+      concepts: 1,
+      connections: 1,
+      sources: 1,
+    });
+  });
+});
