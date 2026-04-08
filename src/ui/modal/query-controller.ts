@@ -2,6 +2,12 @@ import type { KnowledgeBase } from "../../core/kb.js";
 import { ask } from "../../query/ask.js";
 import type { LLMProvider } from "../../llm/provider.js";
 import type { RetrievedBundle } from "../../query/types.js";
+import type { Chat } from "../../chat/types.js";
+import { rewriteFollowUp } from "../../chat/rewrite.js";
+import { getModelContextWindow } from "../../chat/model-context.js";
+import { budgetHistory } from "../../chat/history-budget.js";
+
+const RESERVE_TOKENS = 2048;
 
 export type QueryControllerState =
   | "idle"
@@ -22,6 +28,7 @@ export interface QueryControllerOptions {
   onContext: (bundle: RetrievedBundle) => void;
   onChunk: (text: string) => void;
   onError?: (msg: string) => void;
+  onRetrievalQuery?: (q: string) => void;
 }
 
 export class QueryController {
@@ -34,13 +41,33 @@ export class QueryController {
     return this.state;
   }
 
-  async run(question: string): Promise<void> {
+  async runChatTurn(args: { chat: Chat; question: string }): Promise<void> {
     this.abortCtrl = new AbortController();
     this.transition("loading");
 
     try {
+      const isFollowUp = args.chat.turns.length > 0;
+      const retrievalQuery = isFollowUp
+        ? await rewriteFollowUp({
+            provider: this.opts.provider,
+            model: this.opts.model,
+            history: args.chat.turns,
+            question: args.question,
+            signal: this.abortCtrl.signal,
+          })
+        : args.question;
+
+      this.opts.onRetrievalQuery?.(retrievalQuery);
+
+      const ctx = await getModelContextWindow(this.opts.provider, this.opts.model);
+      const history = budgetHistory(args.chat.turns, {
+        availableTokens: Math.max(0, ctx - RESERVE_TOKENS),
+      });
+
       for await (const ev of ask({
-        question,
+        question: args.question,
+        retrievalQuery,
+        history,
         kb: this.opts.kb,
         provider: this.opts.provider,
         model: this.opts.model,
@@ -68,6 +95,19 @@ export class QueryController {
         this.transition("error");
       }
     }
+  }
+
+  async run(question: string): Promise<void> {
+    const emptyChat: Chat = {
+      id: "transient",
+      title: "",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      folder: this.opts.folder ?? "",
+      model: this.opts.model,
+      turns: [],
+    };
+    await this.runChatTurn({ chat: emptyChat, question });
   }
 
   cancel(): void {
