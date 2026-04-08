@@ -51,7 +51,7 @@ export function sourceFrontmatter(
 function yamlScalar(value: unknown): string {
   if (typeof value === "string") {
     // Quote if value contains YAML-unsafe characters
-    if (/[:{}\[\],#&*!|>'"%@`]/.test(value) || value.trim() !== value) {
+    if (/[:{}[\],#&*!|>'"%@`]/.test(value) || value.trim() !== value) {
       return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
     }
     return value;
