@@ -390,7 +390,9 @@ export default class LlmWikiPlugin extends Plugin {
       provider: this.provider,
       model: this.settings.ollamaModel,
       folder: this.settings.defaultQueryFolder,
-      recentQuestions: this.recentQuestions,
+      chats: [],
+      activeChatId: null,
+      onChatsChanged: () => {},
       indexController: this.embeddingIndexController,
       onAnswered: ({ question, answer, bundle, elapsedMs }): void => {
         void (async (): Promise<void> => {

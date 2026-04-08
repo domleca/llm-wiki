@@ -12,7 +12,6 @@ import {
   QueryController,
   type QueryControllerState,
 } from "./query-controller.js";
-import { AnswerRenderer, type RenderTarget } from "./answer-renderer.js";
 import type { RetrievedBundle } from "../../query/types.js";
 import type {
   EmbeddingIndexController,
@@ -25,8 +24,17 @@ import {
   renderOllamaPill,
   type OllamaPingState,
 } from "./ollama-status-pill.js";
-
-const MAX_RECENTS_DISPLAYED = 5;
+import type { Chat, ChatTurn } from "../../chat/types.js";
+import {
+  createChat,
+  appendTurn,
+  updateChatTitle,
+  deleteChat,
+} from "../../chat/store.js";
+import { generateChatId } from "../../chat/id.js";
+import { generateChatTitle } from "../../chat/title.js";
+import { ChatTranscript, type TurnHandle } from "./chat-transcript.js";
+import { ChatList } from "./chat-list.js";
 
 export interface QueryModalArgs {
   app: App;
@@ -34,7 +42,9 @@ export interface QueryModalArgs {
   provider: LLMProvider;
   model: string;
   folder: string;
-  recentQuestions: readonly string[];
+  chats: readonly Chat[];
+  activeChatId: string | null;
+  onChatsChanged: (chats: readonly Chat[]) => void;
   indexController: EmbeddingIndexController;
   queryEmbedding?: number[] | null;
   onAnswered: (entry: {
@@ -48,29 +58,37 @@ export interface QueryModalArgs {
 export class QueryModal extends Modal {
   private inputEl!: HTMLInputElement;
   private clearBtn!: HTMLButtonElement;
-  private answerEl!: HTMLDivElement;
-  private sourcesEl!: HTMLDetailsElement;
   private terminalTextEl!: HTMLSpanElement;
-  private recentsEl!: HTMLDivElement;
-  private recentItemEls: HTMLDivElement[] = [];
-  private renderer!: AnswerRenderer;
   private controller: QueryController | null = null;
-  private currentAnswer = "";
+
+  // Per-turn streaming state
+  private currentStreamedAnswer = "";
+  private currentSourceIds: string[] = [];
+  private currentRewrittenQuery = "";
   private currentBundle: RetrievedBundle | null = null;
   private startMs = 0;
-  private selectedRecentIdx = -1;
-  private readonly recents: readonly string[];
+  private firstChunkMs = 0;
+  private lastSubmittedQuestion = "";
+  private currentHandle: TurnHandle | null = null;
+
+  private chats: readonly Chat[];
+  private activeChatId: string | null;
+
   private readonly mdComponent = new Component();
   private unsubscribeIndex: (() => void) | null = null;
   private ollamaPillEl: HTMLSpanElement | null = null;
   private ollamaPingState: OllamaPingState = "unknown";
   private ollamaPingTimer: number | null = null;
+  private chatList!: ChatList;
+  private transcript!: ChatTranscript;
+
   /** How often to re-check Ollama liveness while the modal is open. */
   private static readonly OLLAMA_PING_INTERVAL_MS = 2_000;
 
   constructor(private readonly args: QueryModalArgs) {
     super(args.app);
-    this.recents = args.recentQuestions.slice(0, MAX_RECENTS_DISPLAYED);
+    this.chats = args.chats;
+    this.activeChatId = args.activeChatId;
   }
 
   onOpen(): void {
@@ -80,8 +98,26 @@ export class QueryModal extends Modal {
     contentEl.setAttr("data-state", "idle");
     this.modalEl.addClass("llm-wiki-query-modal");
 
-    // Full-width input with inline clear button. Matches the command-palette
-    // look without inheriting Obsidian's prompt-input sizing constraints.
+    // Markdown renderer helper
+    const renderMarkdown = (el: HTMLElement, md: string): void => {
+      if (
+        "empty" in el &&
+        typeof (el as { empty?: () => void }).empty === "function"
+      ) {
+        (el as { empty: () => void }).empty();
+      } else {
+        el.innerHTML = "";
+      }
+      void MarkdownRenderer.render(this.app, md, el, "", this.mdComponent);
+    };
+
+    // Transcript (above input)
+    const transcriptEl = contentEl.createDiv({
+      cls: "llm-wiki-query-transcript",
+    });
+    this.transcript = new ChatTranscript(transcriptEl, { renderMarkdown });
+
+    // Full-width input with inline clear button
     const inputContainer = contentEl.createDiv({
       cls: "llm-wiki-query-input-container",
     });
@@ -99,7 +135,6 @@ export class QueryModal extends Modal {
       ev.preventDefault();
       this.inputEl.value = "";
       this.updateClearVisibility();
-      this.clearRecentSelection();
       this.inputEl.focus();
     };
 
@@ -109,9 +144,6 @@ export class QueryModal extends Modal {
       cls: "llm-wiki-query-pill",
       text: `model: ${this.args.model}`,
     });
-    // Ollama liveness pill — sits between model and folder so it doesn't
-    // shift the existing pills around when it appears. Hidden until the
-    // first ping reports `off`.
     this.ollamaPillEl = pills.createSpan({
       cls: "llm-wiki-query-pill llm-wiki-query-pill-ollama",
     });
@@ -122,22 +154,6 @@ export class QueryModal extends Modal {
       text: `folder: ${this.args.folder || "(whole vault)"}`,
     });
 
-    // Recent questions — full-width suggestion rows, no header/container
-    this.recentsEl = contentEl.createDiv({ cls: "llm-wiki-query-recents" });
-    this.recents.forEach((q, i) => {
-      const item = this.recentsEl.createDiv({
-        cls: "suggestion-item llm-wiki-query-recent-item",
-        text: q,
-      });
-      item.onclick = (): void => {
-        this.inputEl.value = q;
-        this.selectedRecentIdx = i;
-        this.refreshRecentHighlight();
-        this.submit();
-      };
-      this.recentItemEls.push(item);
-    });
-
     // Terminal-style status line
     const terminal = contentEl.createDiv({ cls: "llm-wiki-query-terminal" });
     this.terminalTextEl = terminal.createSpan({
@@ -145,66 +161,61 @@ export class QueryModal extends Modal {
     });
     terminal.createSpan({ cls: "llm-wiki-query-cursor" });
 
-    // Answer + sources
-    this.answerEl = contentEl.createDiv({ cls: "llm-wiki-query-answer" });
-    this.sourcesEl = contentEl.createEl("details", {
-      cls: "llm-wiki-query-sources",
+    // Chat list (below terminal)
+    const chatListEl = contentEl.createDiv({ cls: "llm-wiki-query-chat-list" });
+    this.chatList = new ChatList(chatListEl, {
+      onPick: (id) => this.pickChat(id),
+      onRename: (id, title) => this.handleRename(id, title),
+      onDelete: (id) => this.handleDelete(id),
     });
-    this.sourcesEl.setAttr("data-empty", "true");
-    this.sourcesEl.createEl("summary", { text: "Sources used (0)" });
+    this.chatList.render(this.chats, this.activeChatId);
 
-    // Keyboard hints — uses Obsidian's native .prompt-instructions classes
+    // If there's an active chat, render its turns
+    if (this.activeChatId) {
+      const active = this.chats.find((c) => c.id === this.activeChatId);
+      if (active) this.transcript.renderChat(active);
+    }
+
+    // Keyboard hints
     const footer = contentEl.createDiv({ cls: "prompt-instructions" });
     this.appendInstruction(footer, "↑↓", "to navigate");
     this.appendInstruction(footer, "↩", "to use");
     this.appendInstruction(footer, "esc", "to dismiss");
 
-    // Markdown rendering pipeline
-    const renderTarget: RenderTarget = {
-      setMarkdown: (md): void => {
-        this.answerEl.empty();
-        void MarkdownRenderer.render(
-          this.app,
-          md,
-          this.answerEl,
-          "",
-          this.mdComponent,
-        );
-      },
-    };
-    this.renderer = new AnswerRenderer(renderTarget, { debounceMs: 50 });
-
     // Input wiring
     this.inputEl.addEventListener("input", () => {
       this.updateClearVisibility();
-      this.clearRecentSelection();
     });
 
     this.inputEl.addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") {
         ev.preventDefault();
-        this.submit();
+        const selectedId = this.chatList.getSelectedId();
+        if (selectedId !== null && this.inputEl.value.trim() === "") {
+          this.pickChat(selectedId);
+        } else {
+          this.submit();
+        }
       } else if (ev.key === "ArrowDown") {
         ev.preventDefault();
-        this.moveRecentSelection(1);
+        this.chatList.moveSelection(1);
       } else if (ev.key === "ArrowUp") {
         ev.preventDefault();
-        this.moveRecentSelection(-1);
+        this.chatList.moveSelection(-1);
       } else if (ev.key === "Escape") {
         ev.preventDefault();
         this.close();
       }
     });
 
-    // Embedding index — subscribe first so the closed-modal guard works,
-    // then render the current state, then kick off the build.
+    // Embedding index subscription
     this.unsubscribeIndex = this.args.indexController.subscribe((s) =>
       this.applyIndexState(s),
     );
     this.applyIndexState(this.args.indexController.getState());
     void this.args.indexController.ensureBuilt();
 
-    // Kick off Ollama liveness probe + periodic re-check.
+    // Ollama liveness probe
     void this.pingOllama();
     this.ollamaPingTimer = window.setInterval(
       () => void this.pingOllama(),
@@ -219,7 +230,6 @@ export class QueryModal extends Modal {
     } catch {
       reachable = false;
     }
-    // Modal might have closed mid-flight.
     if (!this.ollamaPillEl) return;
     this.ollamaPingState = ollamaPingStateFromBool(reachable);
     const { visible, text } = renderOllamaPill(this.ollamaPingState);
@@ -235,8 +245,6 @@ export class QueryModal extends Modal {
       },
     });
     new Notice(fragment, 15_000);
-    // Re-ping shortly after — gives the user a moment to start Ollama and
-    // see the pill flip back to hidden without waiting for the next tick.
     window.setTimeout(() => void this.pingOllama(), 1500);
   }
 
@@ -250,25 +258,18 @@ export class QueryModal extends Modal {
       this.inputEl.setAttr("disabled", "true");
       return;
     }
-    // state.kind === "ready" | "error" — either way we hand the modal a usable
-    // (possibly empty) embedding index so keyword-only retrieval keeps working.
     const index: ReadonlyMap<string, number[]> =
       state.kind === "ready" ? state.index : new Map();
     if (!this.controller) {
       this.controller = this.buildQueryController(index);
     }
     if (state.kind === "error" && state.reason === "connect") {
-      // Index build hit a connect error → flip the liveness pill immediately
-      // without waiting for the next ping tick.
       this.ollamaPingState = ollamaPingStateFromBool(false);
       if (this.ollamaPillEl) {
         const r = renderOllamaPill(this.ollamaPingState);
         this.ollamaPillEl.style.display = r.visible ? "" : "none";
         if (r.visible) this.ollamaPillEl.setText(r.text);
       }
-      // Connect errors are recoverable: keep the status visible and clickable
-      // so the user can start Ollama and click to retry. Input still becomes
-      // enabled so keyword-only retrieval works in the meantime.
       this.contentEl.setAttr("data-state", "indexing");
       this.terminalTextEl.setText(formatIndexingStatus(state));
       this.terminalTextEl.addClass("llm-wiki-query-terminal-clickable");
@@ -279,7 +280,6 @@ export class QueryModal extends Modal {
             void navigator.clipboard?.writeText(cmd);
           },
         });
-        // 15s — long enough to read both commands and click a copy button.
         new Notice(fragment, 15_000);
         void this.args.indexController.retry();
       };
@@ -294,7 +294,6 @@ export class QueryModal extends Modal {
     }
     this.terminalTextEl.removeClass("llm-wiki-query-terminal-clickable");
     this.terminalTextEl.onclick = null;
-    // Hand off the terminal line to the query-controller state machine.
     this.applyState("idle");
     this.inputEl.focus();
   }
@@ -311,56 +310,155 @@ export class QueryModal extends Modal {
       queryEmbedding: this.args.queryEmbedding,
       onState: (s): void => {
         this.applyState(s);
-        if (s === "done" && this.currentBundle) {
-          this.args.onAnswered({
-            question: this.inputEl.value,
-            answer: this.currentAnswer,
-            bundle: this.currentBundle,
-            elapsedMs: Date.now() - this.startMs,
-          });
+        if (s === "done") {
+          void this.finalizeTurn();
         }
       },
       onContext: (bundle): void => {
         this.currentBundle = bundle;
-        const summary = this.sourcesEl.querySelector("summary");
-        if (summary) {
-          summary.setText(`Sources used (${bundle.sources.length})`);
-        }
-        this.sourcesEl.querySelector("ul")?.remove();
-        if (bundle.sources.length > 0) {
-          this.sourcesEl.setAttr("data-empty", "false");
-          const list = this.sourcesEl.createEl("ul");
-          for (const s of bundle.sources) {
-            list.createEl("li", { text: s.id });
-          }
-        } else {
-          this.sourcesEl.setAttr("data-empty", "true");
-        }
+        this.currentSourceIds = bundle.sources.map((src) => src.id);
+        this.currentHandle?.setSources(this.currentSourceIds);
       },
       onChunk: (t): void => {
-        this.currentAnswer += t;
-        this.renderer.append(t);
+        if (this.firstChunkMs === 0) this.firstChunkMs = Date.now();
+        this.currentStreamedAnswer += t;
+        this.currentHandle?.appendAnswerChunk(t);
       },
       onError: (msg): void => {
         new Notice(`Query failed: ${msg}`);
       },
+      onRetrievalQuery: (q): void => {
+        this.currentRewrittenQuery = q;
+      },
     });
+  }
+
+  private ensureActiveChat(): Chat {
+    if (this.activeChatId) {
+      const existing = this.chats.find((c) => c.id === this.activeChatId);
+      if (existing) return existing;
+    }
+    const now = Date.now();
+    const fresh = createChat({
+      id: generateChatId(),
+      now,
+      folder: this.args.folder,
+      model: this.args.model,
+    });
+    this.chats = [fresh, ...this.chats];
+    this.activeChatId = fresh.id;
+    this.args.onChatsChanged(this.chats);
+    this.chatList.render(this.chats, this.activeChatId);
+    return fresh;
   }
 
   private submit(): void {
     if (!this.controller) return;
     const q = this.inputEl.value.trim();
     if (!q) return;
-    this.currentAnswer = "";
-    this.currentBundle = null;
-    this.renderer.reset();
-    this.answerEl.empty();
-    this.sourcesEl.setAttr("data-empty", "true");
-    this.sourcesEl.querySelector("ul")?.remove();
-    const summary = this.sourcesEl.querySelector("summary");
-    if (summary) summary.setText("Sources used (0)");
+
+    const chat = this.ensureActiveChat();
+
+    this.currentHandle = this.transcript.beginTurn(q);
+    this.currentStreamedAnswer = "";
+    this.currentSourceIds = [];
+    this.currentRewrittenQuery = q;
     this.startMs = Date.now();
-    void this.controller.run(q);
+    this.firstChunkMs = 0;
+    this.currentBundle = null;
+    this.lastSubmittedQuestion = q;
+
+    void this.controller.runChatTurn({ chat, question: q });
+
+    this.inputEl.value = "";
+    this.updateClearVisibility();
+  }
+
+  private async finalizeTurn(): Promise<void> {
+    const chat = this.activeChatId
+      ? this.chats.find((c) => c.id === this.activeChatId)
+      : null;
+    if (!chat) {
+      this.currentHandle?.finalize();
+      this.currentHandle = null;
+      return;
+    }
+
+    const turn: ChatTurn = {
+      question: this.lastSubmittedQuestion,
+      answer: this.currentStreamedAnswer,
+      sourceIds: this.currentSourceIds,
+      rewrittenQuery:
+        this.currentRewrittenQuery !== this.lastSubmittedQuestion
+          ? this.currentRewrittenQuery
+          : null,
+      createdAt: Date.now(),
+    };
+
+    const updatedChat = appendTurn(chat, turn, Date.now());
+    this.chats = this.chats.map((c) => (c.id === updatedChat.id ? updatedChat : c));
+    this.args.onChatsChanged(this.chats);
+    this.chatList.render(this.chats, this.activeChatId);
+
+    this.currentHandle?.finalize();
+    this.currentHandle = null;
+
+    if (this.currentBundle) {
+      this.args.onAnswered({
+        question: this.lastSubmittedQuestion,
+        answer: this.currentStreamedAnswer,
+        bundle: this.currentBundle,
+        elapsedMs: Date.now() - this.startMs,
+      });
+    }
+
+    if (updatedChat.turns.length === 1) {
+      void this.runTitleGeneration(updatedChat);
+    }
+  }
+
+  private async runTitleGeneration(chat: Chat): Promise<void> {
+    try {
+      const title = await generateChatTitle({
+        provider: this.args.provider,
+        model: this.args.model,
+        firstTurn: chat.turns[0]!,
+      });
+      const updated = updateChatTitle(chat, title, Date.now());
+      this.chats = this.chats.map((c) => (c.id === updated.id ? updated : c));
+      this.args.onChatsChanged(this.chats);
+      this.chatList.render(this.chats, this.activeChatId);
+    } catch {
+      // Title generation failure must not crash the modal
+    }
+  }
+
+  private pickChat(id: string): void {
+    const chat = this.chats.find((c) => c.id === id);
+    if (!chat) return;
+    this.activeChatId = id;
+    this.chatList.render(this.chats, id);
+    this.transcript.renderChat(chat);
+    this.inputEl.focus();
+  }
+
+  private handleRename(id: string, newTitle: string): void {
+    const chat = this.chats.find((c) => c.id === id);
+    if (!chat) return;
+    const updated = updateChatTitle(chat, newTitle, Date.now());
+    this.chats = this.chats.map((c) => (c.id === updated.id ? updated : c));
+    this.args.onChatsChanged(this.chats);
+    this.chatList.render(this.chats, this.activeChatId);
+  }
+
+  private handleDelete(id: string): void {
+    this.chats = deleteChat(this.chats, id);
+    if (this.activeChatId === id) {
+      this.activeChatId = null;
+      this.transcript.clear();
+    }
+    this.args.onChatsChanged(this.chats);
+    this.chatList.render(this.chats, this.activeChatId);
   }
 
   private applyState(s: QueryControllerState): void {
@@ -395,39 +493,11 @@ export class QueryModal extends Modal {
     }
   }
 
-  private moveRecentSelection(delta: number): void {
-    if (this.recents.length === 0) return;
-    const next =
-      this.selectedRecentIdx === -1
-        ? delta > 0
-          ? 0
-          : this.recents.length - 1
-        : this.selectedRecentIdx + delta;
-    if (next < 0 || next >= this.recents.length) return;
-    this.selectedRecentIdx = next;
-    this.inputEl.value = this.recents[next]!;
-    this.updateClearVisibility();
-    this.refreshRecentHighlight();
-    this.recentItemEls[next]?.scrollIntoView({ block: "nearest" });
-  }
-
   private updateClearVisibility(): void {
     this.clearBtn.setAttr(
       "data-visible",
       this.inputEl.value.length > 0 ? "true" : "false",
     );
-  }
-
-  private clearRecentSelection(): void {
-    if (this.selectedRecentIdx === -1) return;
-    this.selectedRecentIdx = -1;
-    this.refreshRecentHighlight();
-  }
-
-  private refreshRecentHighlight(): void {
-    this.recentItemEls.forEach((el, i) => {
-      el.toggleClass("is-selected", i === this.selectedRecentIdx);
-    });
   }
 
   private appendInstruction(
@@ -445,7 +515,6 @@ export class QueryModal extends Modal {
 
   onClose(): void {
     this.controller?.cancel();
-    this.renderer.flush();
     this.mdComponent.unload();
     this.unsubscribeIndex?.();
     this.unsubscribeIndex = null;
