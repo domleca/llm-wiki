@@ -3,7 +3,6 @@ import { Setting } from "obsidian";
 export interface QuerySettings {
   embeddingModel: string;
   defaultQueryFolder: string;
-  recentQuestionCount: number;
   prebuildEmbeddingIndex: boolean;
 }
 
@@ -11,12 +10,7 @@ export function applyQuerySettingsPatch(
   prev: QuerySettings,
   patch: Partial<QuerySettings>,
 ): QuerySettings {
-  const merged = { ...prev, ...patch };
-  merged.recentQuestionCount = Math.max(
-    0,
-    Math.min(50, merged.recentQuestionCount),
-  );
-  return merged;
+  return { ...prev, ...patch };
 }
 
 export interface BuildQuerySectionArgs {
@@ -44,20 +38,6 @@ export function buildQuerySection(args: BuildQuerySectionArgs): void {
       t.setValue(args.settings.defaultQueryFolder).onChange((v: string) => {
         void args.onChange({ defaultQueryFolder: v.trim() });
       }),
-    );
-
-  new Setting(args.container)
-    .setName("Recent questions to remember")
-    .setDesc("How many recent questions to keep in the up/down history (0–50)")
-    .addText((t) =>
-      t
-        .setValue(String(args.settings.recentQuestionCount))
-        .onChange((v: string) => {
-          const n = Number.parseInt(v, 10);
-          if (!Number.isNaN(n)) {
-            void args.onChange({ recentQuestionCount: n });
-          }
-        }),
     );
 
   new Setting(args.container)

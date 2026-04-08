@@ -50,6 +50,8 @@ export interface LLMProvider {
    * "ollama: off" indicator that doesn't depend on the embedding-index path.
    */
   ping(signal?: AbortSignal): Promise<boolean>;
+  /** Fetch model metadata, notably the context window length. Never throws. */
+  showModel(model: string): Promise<{ contextLength: number | null }>;
 }
 
 /**

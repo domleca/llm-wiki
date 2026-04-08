@@ -1,3 +1,4 @@
+import type { ChatTurn } from "../chat/types.js";
 import type { KnowledgeBase } from "../core/kb.js";
 import type { LLMProvider } from "../llm/provider.js";
 import { formatContextMarkdown } from "./format-context.js";
@@ -7,6 +8,10 @@ import type { AnswerEvent } from "./types.js";
 
 export interface AskArgs {
   question: string;
+  /** If set, used for retrieval. Otherwise `question` is used. */
+  retrievalQuery?: string;
+  /** Prior turns rendered into the prompt as conversation context. */
+  history?: readonly ChatTurn[];
   kb: KnowledgeBase;
   provider: LLMProvider;
   model: string;
@@ -19,7 +24,7 @@ export interface AskArgs {
 export async function* ask(args: AskArgs): AsyncIterable<AnswerEvent> {
   try {
     const retrieveArgs: RetrieveArgs = {
-      question: args.question,
+      question: args.retrievalQuery ?? args.question,
       kb: args.kb,
       folder: args.folder,
       embeddingIndex: args.embeddingIndex,
@@ -29,7 +34,11 @@ export async function* ask(args: AskArgs): AsyncIterable<AnswerEvent> {
     yield { kind: "context", bundle };
 
     const context = formatContextMarkdown(bundle);
-    const prompt = buildAskPrompt({ question: args.question, context });
+    const prompt = buildAskPrompt({
+      question: args.question,
+      context,
+      history: args.history,
+    });
 
     for await (const chunk of args.provider.complete({
       prompt,
