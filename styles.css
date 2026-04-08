@@ -161,6 +161,20 @@
   line-height: 1.4;
 }
 
+/* Override Obsidian's top-anchored SuggestModal positioning for our pickers. */
+.llm-wiki-centered-suggest.prompt {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.llm-wiki-query-pill-clickable {
+  cursor: pointer;
+}
+
+.llm-wiki-query-pill-clickable:hover {
+  filter: brightness(1.15);
+}
+
 /* Ollama liveness pill — only ever rendered in the off state. */
 .llm-wiki-query-pill-ollama {
   background: var(--background-modifier-error);

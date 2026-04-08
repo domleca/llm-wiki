@@ -51,6 +51,31 @@ class Notice {
 
 class TFile {}
 
+class TFolder {
+  path = "";
+}
+
+class SuggestModal<T> {
+  constructor(_app: unknown) {}
+  setPlaceholder(_p: string): void {}
+  emptyStateText = "";
+  open(): void {}
+  close(): void {}
+  getSuggestions(_q: string): T[] | Promise<T[]> {
+    return [];
+  }
+  renderSuggestion(_item: T, _el: unknown): void {}
+  onChooseSuggestion(_item: T, _evt?: unknown): void {}
+}
+
+class App {
+  vault = {
+    getAllLoadedFiles(): unknown[] {
+      return [];
+    },
+  };
+}
+
 class MarkdownRenderer {
   static async render(
     _app: unknown,
@@ -64,6 +89,7 @@ class MarkdownRenderer {
 function setIcon(_el: unknown, _name: string): void {}
 
 export {
+  App,
   Setting,
   Component,
   Modal,
@@ -71,6 +97,8 @@ export {
   Plugin,
   Notice,
   TFile,
+  TFolder,
+  SuggestModal,
   MarkdownRenderer,
   setIcon,
 };

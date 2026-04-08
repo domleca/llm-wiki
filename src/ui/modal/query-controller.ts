@@ -34,11 +34,18 @@ export interface QueryControllerOptions {
 export class QueryController {
   private state: QueryControllerState = "idle";
   private abortCtrl: AbortController | null = null;
+  private currentModel: string;
 
-  constructor(private readonly opts: QueryControllerOptions) {}
+  constructor(private readonly opts: QueryControllerOptions) {
+    this.currentModel = opts.model;
+  }
 
   getState(): QueryControllerState {
     return this.state;
+  }
+
+  setModel(model: string): void {
+    this.currentModel = model;
   }
 
   async runChatTurn(args: { chat: Chat; question: string }): Promise<void> {
@@ -50,7 +57,7 @@ export class QueryController {
       const retrievalQuery = isFollowUp
         ? await rewriteFollowUp({
             provider: this.opts.provider,
-            model: this.opts.model,
+            model: this.currentModel,
             history: args.chat.turns,
             question: args.question,
             signal: this.abortCtrl.signal,
@@ -59,7 +66,7 @@ export class QueryController {
 
       this.opts.onRetrievalQuery?.(retrievalQuery);
 
-      const ctx = await getModelContextWindow(this.opts.provider, this.opts.model);
+      const ctx = await getModelContextWindow(this.opts.provider, this.currentModel);
       const history = budgetHistory(args.chat.turns, {
         availableTokens: Math.max(0, ctx - RESERVE_TOKENS),
       });
@@ -70,7 +77,7 @@ export class QueryController {
         history,
         kb: this.opts.kb,
         provider: this.opts.provider,
-        model: this.opts.model,
+        model: this.currentModel,
         folder: this.opts.folder,
         embeddingIndex: this.opts.embeddingIndex,
         queryEmbedding: this.opts.queryEmbedding,
@@ -104,7 +111,7 @@ export class QueryController {
       createdAt: Date.now(),
       updatedAt: Date.now(),
       folder: this.opts.folder ?? "",
-      model: this.opts.model,
+      model: this.currentModel,
       turns: [],
     };
     await this.runChatTurn({ chat: emptyChat, question });

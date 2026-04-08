@@ -18,6 +18,7 @@ import type {
   EmbeddingIndexState,
 } from "../../query/embedding-index-controller.js";
 import { formatIndexingStatus } from "./indexing-status.js";
+import { openModelPicker } from "./model-picker.js";
 import { buildOllamaHintFragment } from "./ollama-hint.js";
 import {
   ollamaPingStateFromBool,
@@ -45,6 +46,7 @@ export interface QueryModalArgs {
   chats: readonly Chat[];
   activeChatId: string | null;
   onChatsChanged: (chats: readonly Chat[]) => void;
+  onModelChanged: (model: string) => void;
   indexController: EmbeddingIndexController;
   queryEmbedding?: number[] | null;
   onAnswered: (entry: {
@@ -73,6 +75,8 @@ export class QueryModal extends Modal {
 
   private chats: readonly Chat[];
   private activeChatId: string | null;
+  private currentModel!: string;
+  private modelPillEl: HTMLSpanElement | null = null;
 
   private readonly mdComponent = new Component();
   private unsubscribeIndex: (() => void) | null = null;
@@ -89,6 +93,7 @@ export class QueryModal extends Modal {
     super(args.app);
     this.chats = args.chats;
     this.activeChatId = args.activeChatId;
+    this.currentModel = args.model;
   }
 
   onOpen(): void {
@@ -140,10 +145,12 @@ export class QueryModal extends Modal {
 
     // Pills row
     const pills = contentEl.createDiv({ cls: "llm-wiki-query-pills" });
-    pills.createSpan({
-      cls: "llm-wiki-query-pill",
-      text: `model: ${this.args.model}`,
+    this.modelPillEl = pills.createSpan({
+      cls: "llm-wiki-query-pill llm-wiki-query-pill-clickable",
+      text: `model: ${this.currentModel}`,
+      attr: { "aria-label": "Change Ollama model", role: "button" },
     });
+    this.modelPillEl.onclick = (): void => this.handleModelPillClick();
     this.ollamaPillEl = pills.createSpan({
       cls: "llm-wiki-query-pill llm-wiki-query-pill-ollama",
     });
@@ -237,6 +244,20 @@ export class QueryModal extends Modal {
     if (visible) this.ollamaPillEl.setText(text);
   }
 
+  private handleModelPillClick(): void {
+    void openModelPicker({
+      app: this.args.app,
+      provider: this.args.provider,
+      current: this.currentModel,
+      onPick: (model) => {
+        this.currentModel = model;
+        if (this.modelPillEl) this.modelPillEl.setText(`model: ${model}`);
+        this.controller?.setModel(model);
+        this.args.onModelChanged(model);
+      },
+    });
+  }
+
   private handleOllamaPillClick(): void {
     const fragment = buildOllamaHintFragment({
       doc: document,
@@ -304,7 +325,7 @@ export class QueryModal extends Modal {
     return new QueryController({
       kb: this.args.kb,
       provider: this.args.provider,
-      model: this.args.model,
+      model: this.currentModel,
       folder: this.args.folder,
       embeddingIndex,
       queryEmbedding: this.args.queryEmbedding,
@@ -343,7 +364,7 @@ export class QueryModal extends Modal {
       id: generateChatId(),
       now,
       folder: this.args.folder,
-      model: this.args.model,
+      model: this.currentModel,
     });
     this.chats = [fresh, ...this.chats];
     this.activeChatId = fresh.id;
@@ -421,7 +442,7 @@ export class QueryModal extends Modal {
     try {
       const title = await generateChatTitle({
         provider: this.args.provider,
-        model: this.args.model,
+        model: this.currentModel,
         firstTurn: chat.turns[0]!,
       });
       const updated = updateChatTitle(chat, title, Date.now());

@@ -29,7 +29,7 @@ import { appendInteractionLog } from "./vault/interaction-log.js";
 import { loadChats, saveChats } from "./chat/persistence.js";
 import type { Chat } from "./chat/types.js";
 import { QueryModal } from "./ui/modal/query-modal.js";
-import { buildEmbeddingIndex } from "./query/embeddings.js";
+import { buildEmbeddingIndex, EMBEDDING_MODEL } from "./query/embeddings.js";
 import { EmbeddingIndexController } from "./query/embedding-index-controller.js";
 import { generatePages, sourcePagePath } from "./pages/generator.js";
 import { safeDeletePage } from "./vault/safe-write.js";
@@ -40,9 +40,7 @@ interface LlmWikiSettings {
   ollamaModel: string;
   extractionCharLimit: number;
   lastExtractionRunIso: string | null;
-  embeddingModel: string;
   defaultQueryFolder: string;
-  prebuildEmbeddingIndex: boolean;
   filterSettings: FilterSettings;
   nightlyExtractionEnabled: boolean;
   nightlyExtractionHour: number;
@@ -54,11 +52,9 @@ const DEFAULT_SETTINGS: LlmWikiSettings = {
   ollamaModel: "qwen2.5:7b",
   extractionCharLimit: 12_000,
   lastExtractionRunIso: null,
-  embeddingModel: "nomic-embed-text",
   defaultQueryFolder: "",
-  prebuildEmbeddingIndex: true,
   filterSettings: defaultFilterSettings(),
-  nightlyExtractionEnabled: false,
+  nightlyExtractionEnabled: true,
   nightlyExtractionHour: 2,
 };
 
@@ -71,7 +67,7 @@ export default class LlmWikiPlugin extends Plugin {
   kbMtime = 0;
 
   progress = new ProgressEmitter();
-  private provider: LLMProvider = new OllamaProvider({
+  provider: LLMProvider = new OllamaProvider({
     url: this.settings.ollamaUrl,
   });
   private abortController: AbortController | null = null;
@@ -241,12 +237,10 @@ export default class LlmWikiPlugin extends Plugin {
       this.startScheduler();
     });
 
-    if (this.settings.prebuildEmbeddingIndex) {
-      this.prebuildTimer = window.setTimeout(() => {
-        this.prebuildTimer = null;
-        void this.embeddingIndexController?.ensureBuilt();
-      }, PREBUILD_DELAY_MS);
-    }
+    this.prebuildTimer = window.setTimeout(() => {
+      this.prebuildTimer = null;
+      void this.embeddingIndexController?.ensureBuilt();
+    }, PREBUILD_DELAY_MS);
   }
 
   onunload(): void {
@@ -316,7 +310,7 @@ export default class LlmWikiPlugin extends Plugin {
         const index = await buildEmbeddingIndex({
           kb: this.kb,
           provider: this.provider,
-          model: this.settings.embeddingModel,
+          model: EMBEDDING_MODEL,
           cache: this.embeddingsCache,
           onProgress,
         });
@@ -439,6 +433,10 @@ export default class LlmWikiPlugin extends Plugin {
       onChatsChanged: (chats): void => {
         this.chats = [...chats];
         void saveChats(this.app, this.chats);
+      },
+      onModelChanged: (model): void => {
+        this.settings.ollamaModel = model;
+        void this.saveSettings();
       },
       onAnswered: ({ question, answer, bundle, elapsedMs }): void => {
         void appendInteractionLog(this.app, {

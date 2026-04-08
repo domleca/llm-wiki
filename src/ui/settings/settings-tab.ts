@@ -30,28 +30,26 @@ export class LlmWikiSettingsTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl("h1", { text: "LLM Wiki" });
-    containerEl.createEl("p", {
-      text: "Phase 2 — Extraction. Query, filters, and cloud providers arrive in later phases.",
-    });
+    containerEl.createEl("h1", { text: "Settings" });
 
     renderIndexingSection(containerEl, this.plugin, {
       onIndexAll: () => this.plugin.runExtractAll(),
       onIndexCancel: () => this.plugin.cancelExtraction(),
       isRunning: () => this.plugin.isExtractionRunning(),
+      rerender: () => this.display(),
     });
 
     buildQuerySection({
+      app: this.app,
       container: containerEl,
       settings: {
-        embeddingModel: this.plugin.settings.embeddingModel,
         defaultQueryFolder: this.plugin.settings.defaultQueryFolder,
-        prebuildEmbeddingIndex: this.plugin.settings.prebuildEmbeddingIndex,
       },
       onChange: async (patch) => {
         Object.assign(this.plugin.settings, patch);
         await this.plugin.saveSettings();
       },
+      rerender: () => this.display(),
     });
 
     renderFiltersSection(

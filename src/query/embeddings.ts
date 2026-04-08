@@ -6,6 +6,11 @@ import {
   contextualTextForEntity,
 } from "./embedding-text.js";
 
+/** Ollama model used to vectorize entities and questions. Hardcoded: the
+ * embeddings cache is keyed only on source text, so swapping models would
+ * silently mix incompatible vector spaces. */
+export const EMBEDDING_MODEL = "nomic-embed-text";
+
 export function cosineSim(a: readonly number[], b: readonly number[]): number {
   const len = Math.min(a.length, b.length);
   let dot = 0;

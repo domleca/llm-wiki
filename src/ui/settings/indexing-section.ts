@@ -1,10 +1,12 @@
 import { Setting } from "obsidian";
 import type LlmWikiPlugin from "../../plugin.js";
+import { openModelPicker } from "../modal/model-picker.js";
 
 export interface IndexingSectionHandlers {
   onIndexAll: () => void;
   onIndexCancel: () => void;
   isRunning: () => boolean;
+  rerender: () => void;
 }
 
 export function renderIndexingSection(
@@ -31,16 +33,21 @@ export function renderIndexingSection(
   new Setting(containerEl)
     .setName("Ollama model")
     .setDesc(
-      "Tag of the Ollama model to use for extraction (e.g. qwen2.5:7b). Phase 5 adds a curated picker.",
+      `Model used for extraction and querying. Current: ${plugin.settings.ollamaModel}`,
     )
-    .addText((text) =>
-      text
-        .setPlaceholder("qwen2.5:7b")
-        .setValue(plugin.settings.ollamaModel)
-        .onChange(async (value) => {
-          plugin.settings.ollamaModel = value.trim() || "qwen2.5:7b";
-          await plugin.saveSettings();
-        }),
+    .addButton((btn) =>
+      btn.setButtonText("Change…").onClick(() => {
+        void openModelPicker({
+          app: plugin.app,
+          provider: plugin.provider,
+          current: plugin.settings.ollamaModel,
+          onPick: async (model) => {
+            plugin.settings.ollamaModel = model;
+            await plugin.saveSettings();
+            handlers.rerender();
+          },
+        });
+      }),
     );
 
   const running = handlers.isRunning();
@@ -78,9 +85,9 @@ export function renderIndexingSection(
   }
 
   new Setting(containerEl)
-    .setName("Nightly extraction")
+    .setName("Daily refresh")
     .setDesc(
-      "Automatically run extraction once per day. Missed runs (machine asleep at the scheduled hour) catch up at next launch.",
+      "Quietly processes changes and new notes in your vault once per day. Missed runs (machine asleep) catch up at next launch.",
     )
     .addToggle((toggle) =>
       toggle
@@ -89,23 +96,25 @@ export function renderIndexingSection(
           plugin.settings.nightlyExtractionEnabled = value;
           await plugin.saveSettings();
           plugin.startScheduler();
+          handlers.rerender();
         }),
     );
 
-  new Setting(containerEl)
-    .setName("Nightly extraction hour")
-    .setDesc("Hour of day (0–23, local time) at which the nightly run fires.")
-    .addText((text) =>
-      text
-        .setPlaceholder("2")
-        .setValue(String(plugin.settings.nightlyExtractionHour))
-        .onChange(async (value) => {
-          const parsed = Number.parseInt(value, 10);
-          if (!Number.isFinite(parsed) || parsed < 0 || parsed > 23) return;
-          plugin.settings.nightlyExtractionHour = parsed;
-          await plugin.saveSettings();
-          plugin.startScheduler();
-        }),
-    );
-
+  if (plugin.settings.nightlyExtractionEnabled) {
+    new Setting(containerEl)
+      .setName("Daily refresh hour")
+      .setDesc("Hour of day (0–23, local time) at which the daily refresh fires.")
+      .addText((text) =>
+        text
+          .setPlaceholder("2")
+          .setValue(String(plugin.settings.nightlyExtractionHour))
+          .onChange(async (value) => {
+            const parsed = Number.parseInt(value, 10);
+            if (!Number.isFinite(parsed) || parsed < 0 || parsed > 23) return;
+            plugin.settings.nightlyExtractionHour = parsed;
+            await plugin.saveSettings();
+            plugin.startScheduler();
+          }),
+      );
+  }
 }
