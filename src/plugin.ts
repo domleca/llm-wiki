@@ -26,11 +26,8 @@ import {
   type EmbeddingsCache,
 } from "./vault/plugin-data.js";
 import { appendInteractionLog } from "./vault/interaction-log.js";
-import {
-  loadRecentQuestions,
-  saveRecentQuestions,
-  pushRecentQuestion,
-} from "./vault/recent-questions.js";
+import { loadChats, saveChats } from "./chat/persistence.js";
+import type { Chat } from "./chat/types.js";
 import { QueryModal } from "./ui/modal/query-modal.js";
 import { buildEmbeddingIndex } from "./query/embeddings.js";
 import { EmbeddingIndexController } from "./query/embedding-index-controller.js";
@@ -45,7 +42,6 @@ interface LlmWikiSettings {
   lastExtractionRunIso: string | null;
   embeddingModel: string;
   defaultQueryFolder: string;
-  recentQuestionCount: number;
   prebuildEmbeddingIndex: boolean;
   filterSettings: FilterSettings;
   nightlyExtractionEnabled: boolean;
@@ -60,7 +56,6 @@ const DEFAULT_SETTINGS: LlmWikiSettings = {
   lastExtractionRunIso: null,
   embeddingModel: "nomic-embed-text",
   defaultQueryFolder: "",
-  recentQuestionCount: 5,
   prebuildEmbeddingIndex: true,
   filterSettings: defaultFilterSettings(),
   nightlyExtractionEnabled: false,
@@ -81,7 +76,7 @@ export default class LlmWikiPlugin extends Plugin {
   });
   private abortController: AbortController | null = null;
   private running = false;
-  private recentQuestions: string[] = [];
+  private chats: Chat[] = [];
   private embeddingsCache: EmbeddingsCache | null = null;
   private embeddingIndexController: EmbeddingIndexController | null = null;
   private prebuildTimer: number | null = null;
@@ -91,7 +86,7 @@ export default class LlmWikiPlugin extends Plugin {
     await this.loadSettings();
     this.rebuildProvider();
     await this.reloadKB();
-    this.recentQuestions = await loadRecentQuestions(this.app);
+    this.chats = await loadChats(this.app);
     this.embeddingIndexController = this.createIndexController();
 
     // Status bar
@@ -390,28 +385,23 @@ export default class LlmWikiPlugin extends Plugin {
       provider: this.provider,
       model: this.settings.ollamaModel,
       folder: this.settings.defaultQueryFolder,
-      chats: [],
+      chats: this.chats,
       activeChatId: null,
-      onChatsChanged: () => {},
       indexController: this.embeddingIndexController,
+      onChatsChanged: (chats): void => {
+        this.chats = [...chats];
+        void saveChats(this.app, this.chats);
+      },
       onAnswered: ({ question, answer, bundle, elapsedMs }): void => {
-        void (async (): Promise<void> => {
-          this.recentQuestions = pushRecentQuestion(
-            this.recentQuestions,
-            question,
-            this.settings.recentQuestionCount,
-          );
-          await saveRecentQuestions(this.app, this.recentQuestions);
-          await appendInteractionLog(this.app, {
-            question,
-            answer,
-            model: this.settings.ollamaModel,
-            queryType: bundle.queryType,
-            entityCount: bundle.entities.length,
-            conceptCount: bundle.concepts.length,
-            elapsedMs,
-          });
-        })();
+        void appendInteractionLog(this.app, {
+          question,
+          answer,
+          model: this.settings.ollamaModel,
+          queryType: bundle.queryType,
+          entityCount: bundle.entities.length,
+          conceptCount: bundle.concepts.length,
+          elapsedMs,
+        });
       },
     });
     modal.open();
