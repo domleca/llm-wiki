@@ -4,7 +4,6 @@ export interface QuerySettings {
   embeddingModel: string;
   defaultQueryFolder: string;
   recentQuestionCount: number;
-  showSourceLinks: boolean;
   prebuildEmbeddingIndex: boolean;
 }
 
@@ -59,15 +58,6 @@ export function buildQuerySection(args: BuildQuerySectionArgs): void {
             void args.onChange({ recentQuestionCount: n });
           }
         }),
-    );
-
-  new Setting(args.container)
-    .setName("Show source links in answer")
-    .setDesc("Render source citations as clickable links in the answer body")
-    .addToggle((t) =>
-      t.setValue(args.settings.showSourceLinks).onChange((v: boolean) => {
-        void args.onChange({ showSourceLinks: v });
-      }),
     );
 
   new Setting(args.container)

@@ -30,7 +30,7 @@ describe("buildEmbeddingIndex", () => {
       responses: [],
       embeddings: [[1, 0, 0]],
     });
-    const cache: EmbeddingsCache = { vaultId: "v1", entries: {} };
+    const cache: EmbeddingsCache = { entries: {} };
     const index = await buildEmbeddingIndex({
       kb,
       provider,
@@ -58,7 +58,6 @@ describe("buildEmbeddingIndex", () => {
     );
     const text = contextualTextForEntity(kb.allEntities()[0]!);
     const cache: EmbeddingsCache = {
-      vaultId: "v1",
       entries: {
         "alan-watts": { sourceText: text, vector: [9, 9, 9] },
       },
@@ -86,7 +85,6 @@ describe("buildEmbeddingIndex", () => {
       embeddings: [[1, 1, 1]],
     });
     const cache: EmbeddingsCache = {
-      vaultId: "v1",
       entries: {
         "alan-watts": { sourceText: "stale text", vector: [9, 9, 9] },
       },
@@ -129,7 +127,7 @@ describe("buildEmbeddingIndex", () => {
         [0, 0, 1],
       ],
     });
-    const cache: EmbeddingsCache = { vaultId: "v1", entries: {} };
+    const cache: EmbeddingsCache = { entries: {} };
     const events: Array<{ current: number; total: number }> = [];
     await buildEmbeddingIndex({
       kb,
@@ -158,7 +156,6 @@ describe("buildEmbeddingIndex", () => {
     );
     const text = contextualTextForEntity(kb.allEntities()[0]!);
     const cache: EmbeddingsCache = {
-      vaultId: "v1",
       entries: {
         "alan-watts": { sourceText: text, vector: [9, 9, 9] },
       },

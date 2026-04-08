@@ -8,7 +8,6 @@
 
 export const ALLOWED_PREFIXES: readonly string[] = Object.freeze([
   "wiki/knowledge.json",
-  "wiki/index.md",
   "wiki/log.md",
   "wiki/memory.md",
   "wiki/entities/",
@@ -146,7 +145,7 @@ function dirname(path: string): string {
 
 /**
  * Write a generated wiki page. Path must be under wiki/entities/, wiki/concepts/,
- * wiki/sources/, wiki/index.md, wiki/log.md, or wiki/memory.md.
+ * wiki/sources/, wiki/log.md, or wiki/memory.md.
  */
 export async function safeWritePage(
   app: SafeWriteApp,

@@ -7,7 +7,6 @@ describe("applyQuerySettingsPatch", () => {
       embeddingModel: "old",
       defaultQueryFolder: "",
       recentQuestionCount: 5,
-      showSourceLinks: true,
       prebuildEmbeddingIndex: true,
     };
     const after = applyQuerySettingsPatch(before, {
@@ -16,7 +15,6 @@ describe("applyQuerySettingsPatch", () => {
     expect(after.embeddingModel).toBe("new");
     expect(after.recentQuestionCount).toBe(5);
     expect(after.defaultQueryFolder).toBe("");
-    expect(after.showSourceLinks).toBe(true);
     expect(after.prebuildEmbeddingIndex).toBe(true);
   });
 
@@ -25,7 +23,6 @@ describe("applyQuerySettingsPatch", () => {
       embeddingModel: "x",
       defaultQueryFolder: "",
       recentQuestionCount: 5,
-      showSourceLinks: true,
       prebuildEmbeddingIndex: true,
     };
     expect(
@@ -47,7 +44,6 @@ describe("applyQuerySettingsPatch", () => {
       embeddingModel: "old",
       defaultQueryFolder: "",
       recentQuestionCount: 5,
-      showSourceLinks: true,
       prebuildEmbeddingIndex: true,
     };
     applyQuerySettingsPatch(before, {
@@ -64,7 +60,6 @@ describe("applyQuerySettingsPatch", () => {
       embeddingModel: "x",
       defaultQueryFolder: "",
       recentQuestionCount: 5,
-      showSourceLinks: true,
       prebuildEmbeddingIndex: true,
     };
     expect(

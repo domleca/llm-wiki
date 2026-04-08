@@ -4,7 +4,6 @@ import { isQualityEntity, isQualityConcept } from "../core/filters.js";
 import { renderEntityPage } from "./render-entity.js";
 import { renderConceptPage } from "./render-concept.js";
 import { renderSourcePage } from "./render-source.js";
-import { renderIndexPage } from "./render-index.js";
 import {
   safeWritePage,
   safeDeletePage,
@@ -57,14 +56,6 @@ export async function generatePages(
     );
     written.add(path);
   }
-
-  // Index page
-  await safeWritePage(
-    app,
-    "wiki/index.md",
-    renderIndexPage(kb, filterSettings),
-  );
-  written.add("wiki/index.md");
 
   // Prune stale pages
   const existing = [

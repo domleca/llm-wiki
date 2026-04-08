@@ -62,14 +62,4 @@ describe("retrieve", () => {
     expect(bundle.entities.find((e) => e.name === "Alan Watts")).toBeUndefined();
   });
 
-  it("accepts an optional dreamScores arg without consuming it", () => {
-    const kb = buildSampleKB();
-    const bundle = retrieve({
-      question: "who is Watts",
-      kb,
-      dreamScores: new Map([["alan-watts", 99]]),
-    });
-    // Phase 3 ignores dreamScores; assertion is just that it didn't throw
-    expect(bundle.entities.length).toBeGreaterThan(0);
-  });
 });

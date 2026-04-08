@@ -74,7 +74,6 @@ describe("ALLOWED_PREFIXES is exported and frozen", () => {
     expect(ALLOWED_PREFIXES).toContain("wiki/entities/");
     expect(ALLOWED_PREFIXES).toContain("wiki/concepts/");
     expect(ALLOWED_PREFIXES).toContain("wiki/sources/");
-    expect(ALLOWED_PREFIXES).toContain("wiki/index.md");
     expect(ALLOWED_PREFIXES).toContain("wiki/log.md");
     expect(ALLOWED_PREFIXES).toContain("wiki/memory.md");
     expect(ALLOWED_PREFIXES).toContain(".obsidian/plugins/llm-wiki/");

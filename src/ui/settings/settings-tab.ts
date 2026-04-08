@@ -33,7 +33,6 @@ export class LlmWikiSettingsTab extends PluginSettingTab {
         embeddingModel: this.plugin.settings.embeddingModel,
         defaultQueryFolder: this.plugin.settings.defaultQueryFolder,
         recentQuestionCount: this.plugin.settings.recentQuestionCount,
-        showSourceLinks: this.plugin.settings.showSourceLinks,
         prebuildEmbeddingIndex: this.plugin.settings.prebuildEmbeddingIndex,
       },
       onChange: async (patch) => {

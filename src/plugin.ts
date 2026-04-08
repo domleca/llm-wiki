@@ -46,7 +46,6 @@ interface LlmWikiSettings {
   embeddingModel: string;
   defaultQueryFolder: string;
   recentQuestionCount: number;
-  showSourceLinks: boolean;
   prebuildEmbeddingIndex: boolean;
   filterSettings: FilterSettings;
   nightlyExtractionEnabled: boolean;
@@ -62,7 +61,6 @@ const DEFAULT_SETTINGS: LlmWikiSettings = {
   embeddingModel: "nomic-embed-text",
   defaultQueryFolder: "",
   recentQuestionCount: 5,
-  showSourceLinks: true,
   prebuildEmbeddingIndex: true,
   filterSettings: defaultFilterSettings(),
   nightlyExtractionEnabled: false,

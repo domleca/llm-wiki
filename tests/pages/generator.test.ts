@@ -45,17 +45,11 @@ describe("generatePages", () => {
     expect(files.has("wiki/sources/notes/a.md")).toBe(true);
   });
 
-  it("writes wiki/index.md", async () => {
-    const { app, files } = createMockApp();
-    await generatePages(app as never, buildRichKb(), defaultFilterSettings());
-    expect(files.has("wiki/index.md")).toBe(true);
-  });
-
   it("returns correct written count", async () => {
     const { app } = createMockApp();
     const result = await generatePages(app as never, buildRichKb(), defaultFilterSettings());
-    // 1 entity + 1 concept + 3 sources + 1 index = 6
-    expect(result.written).toBe(6);
+    // 1 entity + 1 concept + 3 sources = 5
+    expect(result.written).toBe(5);
   });
 
   it("deletes stale entity pages after regeneration", async () => {

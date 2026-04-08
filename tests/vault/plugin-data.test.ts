@@ -29,14 +29,12 @@ describe("loadEmbeddingsCache / saveEmbeddingsCache", () => {
   it("returns an empty cache when no file exists", async () => {
     const { app } = createMockApp();
     const cache = await loadEmbeddingsCache(app as never);
-    expect(cache.vaultId).toBe("");
     expect(cache.entries).toEqual({});
   });
 
   it("round-trips a cache object", async () => {
     const { app } = createMockApp();
     const cache: EmbeddingsCache = {
-      vaultId: "test-vault-1",
       entries: {
         "alan-watts": { sourceText: "Entity [person]: Alan Watts.", vector: [0.1, 0.2] },
       },

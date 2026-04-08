@@ -14,7 +14,6 @@ export interface EmbeddingsCacheEntry {
 }
 
 export interface EmbeddingsCache {
-  vaultId: string;
   entries: Record<string, EmbeddingsCacheEntry>;
 }
 
@@ -38,7 +37,7 @@ export async function loadEmbeddingsCache(
   app: SafeWriteApp,
 ): Promise<EmbeddingsCache> {
   const text = await safeReadPluginData(app, EMBEDDINGS_CACHE_FILE);
-  if (!text) return { vaultId: "", entries: {} };
+  if (!text) return { entries: {} };
   return JSON.parse(text) as EmbeddingsCache;
 }
 

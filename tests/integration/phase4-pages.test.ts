@@ -83,8 +83,6 @@ describe("Phase 4 integration: extraction → page generation", () => {
     expect(files.has("wiki/entities/alan-watts.md")).toBe(true);
     // Zen Buddhism has a definition → concept page generated
     expect(files.has("wiki/concepts/zen-buddhism.md")).toBe(true);
-    // index page generated
-    expect(files.has("wiki/index.md")).toBe(true);
     // source pages generated
     expect(files.has("wiki/sources/Books/Watts.md")).toBe(true);
     expect(files.has("wiki/sources/Learn/Zen.md")).toBe(true);

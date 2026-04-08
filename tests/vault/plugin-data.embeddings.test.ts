@@ -15,13 +15,11 @@ describe("embeddings cache", () => {
   it("round-trips via save/load", async () => {
     const { app } = createMockApp();
     await saveEmbeddingsCache(app as never, {
-      vaultId: "v1",
       entries: {
         "alan-watts": { sourceText: "x", vector: [1, 2, 3] },
       },
     });
     const c = await loadEmbeddingsCache(app as never);
-    expect(c.vaultId).toBe("v1");
     expect(c.entries["alan-watts"]?.vector).toEqual([1, 2, 3]);
     expect(c.entries["alan-watts"]?.sourceText).toBe("x");
   });
@@ -29,7 +27,6 @@ describe("embeddings cache", () => {
   it("preserves multiple entries across save/load", async () => {
     const { app } = createMockApp();
     await saveEmbeddingsCache(app as never, {
-      vaultId: "v2",
       entries: {
         "alan-watts": { sourceText: "a", vector: [0.1, 0.2] },
         "zen-buddhism": { sourceText: "z", vector: [0.3, 0.4] },

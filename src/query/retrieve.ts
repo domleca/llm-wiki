@@ -33,12 +33,9 @@ export interface RetrieveArgs {
   embeddingIndex?: ReadonlyMap<string, number[]>;
   queryEmbedding?: number[] | null;
   folder?: string;
-  dreamScores?: ReadonlyMap<string, number>; // reserved for Phase 5
 }
 
 export function retrieve(args: RetrieveArgs): RetrievedBundle {
-  void args.dreamScores; // forward-compat reserved field
-
   const terms = extractQueryTerms(args.question);
   const queryType = classifyQuery(args.question);
   const [wKeyword, wEmbed, wPath] = QUERY_WEIGHTS[queryType];
