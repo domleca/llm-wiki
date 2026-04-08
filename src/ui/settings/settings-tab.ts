@@ -30,7 +30,7 @@ export class LlmWikiSettingsTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl("h1", { text: "Settings" });
+    containerEl.createEl("h2", { text: "Settings" });
 
     renderIndexingSection(containerEl, this.plugin, {
       onIndexAll: () => this.plugin.runExtractAll(),
