@@ -98,6 +98,27 @@ export class OllamaProvider implements LLMProvider {
     return json.embedding as number[];
   }
 
+  async showModel(model: string): Promise<{ contextLength: number | null }> {
+    try {
+      const res = await this.fetchImpl(`${this.url}/api/show`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: model }),
+      });
+      if (!res.ok) return { contextLength: null };
+      const json = (await res.json()) as { model_info?: Record<string, unknown> };
+      const info = json.model_info ?? {};
+      for (const [k, v] of Object.entries(info)) {
+        if (k.endsWith("context_length") && typeof v === "number") {
+          return { contextLength: v };
+        }
+      }
+      return { contextLength: null };
+    } catch {
+      return { contextLength: null };
+    }
+  }
+
   complete(opts: CompletionOptions): AsyncIterable<string> {
     const url = `${this.url}/api/generate`;
     const body = JSON.stringify({

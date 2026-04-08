@@ -61,6 +61,10 @@ export class MockLLMProvider implements LLMProvider {
     return this.pingResult;
   }
 
+  async showModel(_model: string): Promise<{ contextLength: number | null }> {
+    return { contextLength: null };
+  }
+
   async embed(opts: EmbedOptions): Promise<number[]> {
     this.embedCalls.push(opts);
     if (this.embedIdx >= this.embeddings.length) {
