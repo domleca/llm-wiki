@@ -133,7 +133,10 @@
 
 /* Hide recents while the LLM is working or an answer is on screen */
 .llm-wiki-query-modal[data-state="loading"] .llm-wiki-query-recents,
-.llm-wiki-query-modal[data-state="streaming"] .llm-wiki-query-recents {
+.llm-wiki-query-modal[data-state="streaming"] .llm-wiki-query-recents,
+.llm-wiki-query-modal[data-state="done"] .llm-wiki-query-recents,
+.llm-wiki-query-modal[data-state="error"] .llm-wiki-query-recents,
+.llm-wiki-query-modal[data-state="cancelled"] .llm-wiki-query-recents {
   display: none;
 }
 
@@ -174,15 +177,11 @@
 .llm-wiki-query-terminal {
   display: none;
   align-items: center;
-  font-family: var(--font-monospace);
-  font-size: var(--font-ui-small);
+  font-size: var(--font-ui-smaller);
   line-height: 1.4;
-  padding: var(--size-4-2) var(--size-4-3);
-  margin: var(--size-4-2) var(--size-4-3) 0;
-  background: var(--background-primary-alt);
-  color: var(--text-normal);
-  border-radius: var(--radius-s);
-  border-left: 2px solid var(--interactive-accent);
+  padding: 0 var(--size-4-4);
+  margin: var(--size-4-2) 0 0;
+  color: var(--text-muted);
 }
 
 .llm-wiki-query-modal[data-state="loading"] .llm-wiki-query-terminal,
@@ -191,12 +190,6 @@
 .llm-wiki-query-modal[data-state="error"] .llm-wiki-query-terminal,
 .llm-wiki-query-modal[data-state="cancelled"] .llm-wiki-query-terminal {
   display: flex;
-}
-
-.llm-wiki-query-terminal::before {
-  content: "$ ";
-  color: var(--interactive-accent);
-  margin-right: 0.25em;
 }
 
 .llm-wiki-query-terminal-text {
@@ -267,11 +260,6 @@
 }
 
 .llm-wiki-query-modal[data-state="error"] .llm-wiki-query-terminal {
-  border-left-color: var(--text-error);
-  color: var(--text-error);
-}
-
-.llm-wiki-query-modal[data-state="error"] .llm-wiki-query-terminal::before {
   color: var(--text-error);
 }
 
@@ -302,11 +290,11 @@
   min-height: 0;
   max-height: 50vh;
   overflow-y: auto;
-  padding: var(--size-4-3);
-  margin: var(--size-4-2) var(--size-4-3) 0;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-s);
-  background: var(--background-primary);
+  padding: var(--size-4-2) var(--size-4-4);
+  margin: 0;
+  font-size: var(--font-ui-medium);
+  line-height: 1.4;
+  color: var(--text-normal);
 }
 
 .llm-wiki-query-answer:empty {

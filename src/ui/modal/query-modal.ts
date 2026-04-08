@@ -483,7 +483,8 @@ export class QueryModal extends Modal {
       case "streaming":
         return "streaming";
       case "done": {
-        const secs = ((Date.now() - this.startMs) / 1000).toFixed(1);
+        const endMs = this.firstChunkMs || Date.now();
+        const secs = ((endMs - this.startMs) / 1000).toFixed(1);
         return `done in ${secs}s`;
       }
       case "error":
