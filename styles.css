@@ -380,3 +380,69 @@
   content: "• ";
   color: var(--text-faint);
 }
+
+/* Chat transcript */
+.llm-wiki-query-transcript {
+  max-height: 50vh;
+  overflow-y: auto;
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+}
+.llm-wiki-query-transcript:empty {
+  display: none;
+}
+.llm-wiki-query-transcript .turn {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.llm-wiki-query-transcript .turn:last-child { border-bottom: none; }
+.llm-wiki-query-transcript .turn-q {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+.llm-wiki-query-transcript .turn-a { margin-bottom: 0.25rem; }
+.llm-wiki-query-transcript .turn-sources { font-size: 0.85em; opacity: 0.8; }
+
+/* Chat list */
+.llm-wiki-query-chat-list { margin-top: 0.5rem; }
+.llm-wiki-query-chat-list .chat-row {
+  display: flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.llm-wiki-query-chat-list .chat-row:hover,
+.llm-wiki-query-chat-list .chat-row.is-selected {
+  background: var(--background-modifier-hover);
+}
+.llm-wiki-query-chat-list .chat-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.llm-wiki-query-chat-list .rename,
+.llm-wiki-query-chat-list .delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  padding: 0 0.25rem;
+  color: var(--text-muted);
+}
+.llm-wiki-query-chat-list .chat-row:hover .rename,
+.llm-wiki-query-chat-list .chat-row:hover .delete,
+.llm-wiki-query-chat-list .chat-row.is-selected .rename,
+.llm-wiki-query-chat-list .chat-row.is-selected .delete {
+  opacity: 1;
+}
+.llm-wiki-query-chat-list .chat-row input {
+  flex: 1;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  padding: 0.1rem 0.25rem;
+  border-radius: 3px;
+}
