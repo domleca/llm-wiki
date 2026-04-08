@@ -76,6 +76,24 @@ export default class LlmWikiPlugin extends Plugin {
   });
   private abortController: AbortController | null = null;
   private running = false;
+  private extractionStateListeners = new Set<() => void>();
+
+  onExtractionStateChange(listener: () => void): () => void {
+    this.extractionStateListeners.add(listener);
+    return () => this.extractionStateListeners.delete(listener);
+  }
+
+  private setRunning(value: boolean): void {
+    if (this.running === value) return;
+    this.running = value;
+    for (const l of this.extractionStateListeners) {
+      try {
+        l();
+      } catch {
+        /* ignore */
+      }
+    }
+  }
   private chats: Chat[] = [];
   private embeddingsCache: EmbeddingsCache | null = null;
   private embeddingIndexController: EmbeddingIndexController | null = null;
@@ -307,7 +325,25 @@ export default class LlmWikiPlugin extends Plugin {
       new Notice("LLM Wiki: extraction already running.");
       return;
     }
-    this.running = true;
+    // Preflight: Ollama reachable + model installed.
+    const reachable = await this.provider.ping();
+    if (!reachable) {
+      new Notice(
+        `LLM Wiki: Ollama unreachable at ${this.settings.ollamaUrl}. Start Ollama and retry.`,
+      );
+      return;
+    }
+    if (this.provider.listModels) {
+      const models = await this.provider.listModels();
+      if (models && !models.includes(this.settings.ollamaModel)) {
+        new Notice(
+          `LLM Wiki: model "${this.settings.ollamaModel}" not installed. Run \`ollama pull ${this.settings.ollamaModel}\`.`,
+        );
+        return;
+      }
+    }
+
+    this.setRunning(true);
     this.abortController = new AbortController();
 
     try {
@@ -318,6 +354,12 @@ export default class LlmWikiPlugin extends Plugin {
         dailiesFromIso: defaultDailiesFromIso(),
       };
       const walked = await walkVaultFiles(this.app as never, walkOpts);
+      if (walked.length === 0) {
+        new Notice(
+          "LLM Wiki: nothing to extract (all files filtered by skip dirs, min size, or dailies cutoff).",
+        );
+        return;
+      }
       const files: QueueFile[] = [];
       for (const w of walked) {
         const tfile = this.app.vault.getAbstractFileByPath(w.path);
@@ -365,7 +407,7 @@ export default class LlmWikiPlugin extends Plugin {
       });
       new Notice(`LLM Wiki: extraction failed — ${(e as Error).message}`);
     } finally {
-      this.running = false;
+      this.setRunning(false);
       this.abortController = null;
     }
   }
@@ -427,7 +469,7 @@ export default class LlmWikiPlugin extends Plugin {
       new Notice("LLM Wiki: wait for the current extraction to finish.");
       return;
     }
-    this.running = true;
+    this.setRunning(true);
     this.abortController = new AbortController();
     try {
       await this.reloadKB();
@@ -457,7 +499,7 @@ export default class LlmWikiPlugin extends Plugin {
     } catch (e) {
       new Notice(`LLM Wiki: extract failed — ${(e as Error).message}`);
     } finally {
-      this.running = false;
+      this.setRunning(false);
       this.abortController = null;
     }
   }

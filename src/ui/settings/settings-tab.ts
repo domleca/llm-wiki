@@ -6,13 +6,27 @@ import { renderFiltersSection } from "./filters-section.js";
 
 export class LlmWikiSettingsTab extends PluginSettingTab {
   private readonly plugin: LlmWikiPlugin;
+  private unsubscribeExtraction: (() => void) | null = null;
 
   constructor(app: App, plugin: LlmWikiPlugin) {
     super(app, plugin);
     this.plugin = plugin;
   }
 
+  hide(): void {
+    if (this.unsubscribeExtraction) {
+      this.unsubscribeExtraction();
+      this.unsubscribeExtraction = null;
+    }
+  }
+
   display(): void {
+    if (this.unsubscribeExtraction) {
+      this.unsubscribeExtraction();
+    }
+    this.unsubscribeExtraction = this.plugin.onExtractionStateChange(() => {
+      this.display();
+    });
     const { containerEl } = this;
     containerEl.empty();
 

@@ -52,6 +52,11 @@ export interface LLMProvider {
   ping(signal?: AbortSignal): Promise<boolean>;
   /** Fetch model metadata, notably the context window length. Never throws. */
   showModel(model: string): Promise<{ contextLength: number | null }>;
+  /**
+   * List installed model tags, or null if the backend is unreachable.
+   * Never throws. Used for preflight checks before extraction.
+   */
+  listModels?(): Promise<string[] | null>;
 }
 
 /**

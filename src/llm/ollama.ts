@@ -56,6 +56,27 @@ export class OllamaProvider implements LLMProvider {
     }
   }
 
+  /**
+   * Returns the list of installed model tags, or null if the server is
+   * unreachable. Used for preflight checks.
+   */
+  async listModels(): Promise<string[] | null> {
+    try {
+      const response = await this.fetchImpl(`${this.url}/api/tags`, {
+        method: "GET",
+      });
+      if (!response.ok) return null;
+      const json = (await response.json()) as {
+        models?: Array<{ name?: string }>;
+      };
+      return (json.models ?? [])
+        .map((m) => m.name)
+        .filter((n): n is string => typeof n === "string");
+    } catch {
+      return null;
+    }
+  }
+
   async embed(opts: EmbedOptions): Promise<number[]> {
     if (opts.signal?.aborted) throw new LLMAbortError();
 

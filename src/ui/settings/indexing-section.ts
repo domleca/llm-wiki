@@ -43,26 +43,39 @@ export function renderIndexingSection(
         }),
     );
 
-  new Setting(containerEl)
-    .setName("Last run")
-    .setDesc(
-      plugin.settings.lastExtractionRunIso
-        ? new Date(plugin.settings.lastExtractionRunIso).toLocaleString()
-        : "never",
-    );
+  const running = handlers.isRunning();
+  const lastRunText = plugin.settings.lastExtractionRunIso
+    ? new Date(plugin.settings.lastExtractionRunIso).toLocaleString()
+    : "never";
 
-  new Setting(containerEl)
+  const indexSetting = new Setting(containerEl)
     .setName("Index now")
-    .setDesc("Walks the vault and extracts new or modified files.")
-    .addButton((btn) =>
+    .setDesc("Walks the vault and extracts new or modified files.");
+
+  indexSetting.descEl.createEl("div", {
+    text: running ? "Extraction running…" : `Last run: ${lastRunText}`,
+    cls: "llm-wiki-indexing-status",
+  });
+
+  if (running) {
+    indexSetting.addButton((btn) =>
+      btn
+        .setButtonText("Cancel")
+        .setWarning()
+        .onClick(() => {
+          handlers.onIndexCancel();
+        }),
+    );
+  } else {
+    indexSetting.addButton((btn) =>
       btn
         .setButtonText("Run extraction")
         .setCta()
-        .setDisabled(handlers.isRunning())
         .onClick(() => {
           handlers.onIndexAll();
         }),
     );
+  }
 
   new Setting(containerEl)
     .setName("Nightly extraction")
@@ -95,16 +108,4 @@ export function renderIndexingSection(
         }),
     );
 
-  new Setting(containerEl)
-    .setName("Cancel running extraction")
-    .setDesc("Stops the extraction at the next file boundary.")
-    .addButton((btn) =>
-      btn
-        .setButtonText("Cancel")
-        .setWarning()
-        .setDisabled(!handlers.isRunning())
-        .onClick(() => {
-          handlers.onIndexCancel();
-        }),
-    );
 }
