@@ -86,7 +86,13 @@ export default class LlmWikiPlugin extends Plugin {
   private setRunning(value: boolean): void {
     if (this.running === value) return;
     this.running = value;
-    for (const l of this.extractionStateListeners) {
+    // Snapshot listeners before iterating: a listener may unsubscribe itself
+    // and subscribe a fresh one (e.g. the settings tab re-renders on state
+    // change, which re-binds its listener). `Set` iteration visits entries
+    // added during the loop, so without a snapshot this loops forever and
+    // freezes Obsidian the moment extraction starts.
+    const snapshot = Array.from(this.extractionStateListeners);
+    for (const l of snapshot) {
       try {
         l();
       } catch {
