@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { ask } from "../../src/query/ask.js";
 import { KnowledgeBase } from "../../src/core/kb.js";
 import { MockLLMProvider } from "../helpers/mock-llm-provider.js";
+import type { ChatTurn } from "../../src/chat/types.js";
 
 function buildKB() {
   const kb = new KnowledgeBase();
@@ -58,4 +59,38 @@ describe("ask", () => {
     }
     expect(events[events.length - 1]?.kind).toBe("error");
   });
+});
+
+describe("ask with history and retrievalQuery", () => {
+  it("threads history into the prompt", async () => {
+    const kb = buildKB();
+    const provider = new MockLLMProvider({
+      responses: ["Some answer."],
+      chunked: false,
+    });
+    const history: ChatTurn[] = [
+      {
+        question: "prior q",
+        answer: "prior a",
+        sourceIds: [],
+        rewrittenQuery: null,
+        createdAt: 0,
+      },
+    ];
+    for await (const _ev of ask({
+      question: "follow up?",
+      history,
+      kb,
+      provider,
+      model: "test",
+    })) {
+      // consume all events
+    }
+    const prompt = provider.calls[0]?.prompt ?? "";
+    expect(prompt).toContain("Conversation so far:");
+    expect(prompt).toContain("[user] prior q");
+    expect(prompt).toContain("[assistant] prior a");
+  });
+
+  // retrievalQuery test lives in ask-retrieval-query.test.ts (requires vi.mock hoisting)
 });
