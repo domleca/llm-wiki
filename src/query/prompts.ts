@@ -1,6 +1,9 @@
+import type { ChatTurn } from "../chat/types.js";
+
 export interface BuildAskPromptArgs {
   question: string;
   context: string;
+  history?: readonly ChatTurn[];
 }
 
 const RULES = [
@@ -12,21 +15,33 @@ const RULES = [
   "Quote facts exactly when accuracy matters; paraphrase when synthesizing.",
   "If two facts contradict, surface the contradiction rather than picking one.",
   "Be concise. Aim for the shortest answer that fully addresses the question.",
+  "If the user refers to something from earlier in the conversation, use that context to interpret the question.",
 ];
 
 export function buildAskPrompt(args: BuildAskPromptArgs): string {
   const rulesBlock = RULES.map((r, i) => `${i + 1}. ${r}`).join("\n");
-  return [
+  const parts: string[] = [
     "You answer questions using a personal knowledge base.",
     "",
     "Rules:",
     rulesBlock,
     "",
+  ];
+  if (args.history && args.history.length > 0) {
+    parts.push("Conversation so far:");
+    for (const t of args.history) {
+      parts.push(`[user] ${t.question}`);
+      parts.push(`[assistant] ${t.answer}`);
+    }
+    parts.push("");
+  }
+  parts.push(
     "Knowledge base context:",
     args.context,
     "",
     `Question: ${args.question}`,
     "",
     "Answer:",
-  ].join("\n");
+  );
+  return parts.join("\n");
 }
