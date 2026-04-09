@@ -45,7 +45,7 @@ describe("ChatTranscript", () => {
       "Sources (1)",
     );
     // Title resolved from basename (mock returns null for file lookup)
-    expect(root.querySelector(".transcript-source-item .internal-link")?.textContent).toBe("x");
+    expect(root.querySelector(".transcript-source-link")?.textContent).toBe("x");
   });
 
   it("streams an answer via beginTurn → appendAnswerChunk → setSources → finalize", () => {
@@ -54,7 +54,10 @@ describe("ChatTranscript", () => {
     const h = t.beginTurn("hello?");
     h.appendAnswerChunk("Hi");
     h.appendAnswerChunk(" there");
-    h.setSources(["a.md", "b.md"]);
+    h.setSources([
+      { id: "a.md", score: 1.0 },
+      { id: "b.md", score: 0.5 },
+    ]);
     h.finalize();
     expect(root.querySelector(".turn-q")?.textContent).toBe("hello?");
     // Sources consolidated at bottom

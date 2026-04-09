@@ -15,6 +15,7 @@
 
 import { type App, TFile } from "obsidian";
 import type { Chat } from "../../chat/types.js";
+import type { ScoredSource } from "./query-modal.js";
 
 export interface ChatTranscriptOptions {
   app: App;
@@ -23,7 +24,7 @@ export interface ChatTranscriptOptions {
 
 export interface TurnHandle {
   appendAnswerChunk(text: string): void;
-  setSources(sourceIds: readonly string[]): void;
+  setSources(sources: readonly ScoredSource[]): void;
   finalize(): void;
 }
 
@@ -58,8 +59,10 @@ export class ChatTranscript {
   /** When true, new content scrolls the viewport; flipped off when the user scrolls up. */
   private followStream = true;
 
-  /** Deduplicated source IDs accumulated across all turns, insertion-ordered. */
-  private allSourceIds: string[] = [];
+  /** Accumulated source scores across all turns, keyed by source ID. */
+  private sourceScores = new Map<string, number>();
+  /** Turn counter used for recency weighting. */
+  private turnIndex = 0;
 
   /** The persistent sources footer element (lives at the end of root). */
   private sourcesFooter: HTMLDivElement | null = null;
@@ -75,7 +78,8 @@ export class ChatTranscript {
 
   clear(): void {
     this.root.innerHTML = "";
-    this.allSourceIds = [];
+    this.sourceScores = new Map();
+    this.turnIndex = 0;
     this.sourcesFooter = null;
     this.followStream = true;
   }
@@ -87,7 +91,14 @@ export class ChatTranscript {
         withThinking: false,
       });
       this.opts.renderMarkdown(answerEl, t.answer);
-      this.addSources(t.sourceIds);
+      // Stored turns don't carry scores — assign decaying weight by position
+      // so earliest sources in the saved order rank higher, with a small
+      // recency boost per turn.
+      const scored: ScoredSource[] = t.sourceIds.map((id, i) => ({
+        id,
+        score: 1 / (i + 1),
+      }));
+      this.addSources(scored);
     }
     this.renderSourcesFooter();
     this.followStream = true;
@@ -139,8 +150,8 @@ export class ChatTranscript {
           renderTimer = setTimeout(flushRender, 80);
         }
       },
-      setSources: (ids: readonly string[]): void => {
-        this.addSources(ids);
+      setSources: (sources: readonly ScoredSource[]): void => {
+        this.addSources(sources);
         this.renderSourcesFooter();
       },
       finalize: (): void => {
@@ -201,20 +212,27 @@ export class ChatTranscript {
     return { answerEl: a, thinkingEl, thinkingLabelEl };
   }
 
-  /** Add source IDs, deduplicating against what we already have. */
-  private addSources(ids: readonly string[]): void {
-    const existing = new Set(this.allSourceIds);
-    for (const id of ids) {
-      if (!existing.has(id)) {
-        this.allSourceIds.push(id);
-        existing.add(id);
-      }
+  /** Accumulate scored sources. Later turns get a small recency boost. */
+  private addSources(sources: readonly ScoredSource[]): void {
+    const recencyBoost = 1 + this.turnIndex * 0.15;
+    for (const s of sources) {
+      const prev = this.sourceScores.get(s.id) ?? 0;
+      this.sourceScores.set(s.id, prev + s.score * recencyBoost);
     }
+    this.turnIndex++;
+  }
+
+  /** Return source IDs sorted by accumulated score (best first). */
+  private rankedSourceIds(): string[] {
+    return [...this.sourceScores.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([id]) => id);
   }
 
   /** Render (or re-render) the consolidated sources footer at the bottom. */
   private renderSourcesFooter(): void {
-    if (this.allSourceIds.length === 0) {
+    const ranked = this.rankedSourceIds();
+    if (ranked.length === 0) {
       this.sourcesFooter?.remove();
       this.sourcesFooter = null;
       return;
@@ -229,7 +247,7 @@ export class ChatTranscript {
     const footer = this.sourcesFooter;
     footer.innerHTML = "";
 
-    const total = this.allSourceIds.length;
+    const total = ranked.length;
     const label = document.createElement("div");
     label.className = "transcript-sources-label";
     label.textContent = `Sources (${total})`;
@@ -239,8 +257,8 @@ export class ChatTranscript {
     list.className = "transcript-sources-list";
     footer.appendChild(list);
 
-    const visible = this.allSourceIds.slice(0, VISIBLE_SOURCES);
-    const overflow = this.allSourceIds.slice(VISIBLE_SOURCES);
+    const visible = ranked.slice(0, VISIBLE_SOURCES);
+    const overflow = ranked.slice(VISIBLE_SOURCES);
 
     for (const id of visible) {
       list.appendChild(this.buildSourceRow(id));
@@ -267,11 +285,11 @@ export class ChatTranscript {
     row.className = "transcript-source-item";
 
     const link = document.createElement("a");
-    link.className = "internal-link";
-    link.dataset.href = id;
+    link.className = "transcript-source-link";
     link.textContent = this.resolveTitle(id);
-    link.addEventListener("click", (ev) => {
+    link.addEventListener("mousedown", (ev) => {
       ev.preventDefault();
+      ev.stopPropagation();
       this.openInBackground(id);
     });
     row.appendChild(link);
@@ -296,13 +314,13 @@ export class ChatTranscript {
     return cleanBasename(file.basename);
   }
 
-  /** Open a note in a new background tab without closing the modal. */
+  /** Open a note in a new tab. */
   private openInBackground(path: string): void {
     const app = this.opts.app;
-    const file = app.vault.getAbstractFileByPath(path);
-    if (!(file instanceof TFile)) return;
-    const leaf = app.workspace.getLeaf("tab");
-    void leaf.openFile(file, { active: false });
+    // Strip .md for openLinkText — it resolves the note by link text,
+    // not raw file path, so "folder/note" works even for iCloud-evicted files.
+    const linkText = path.endsWith(".md") ? path.slice(0, -3) : path;
+    void app.workspace.openLinkText(linkText, "", true);
   }
 
   private isAtBottom(): boolean {

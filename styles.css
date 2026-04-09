@@ -507,7 +507,7 @@
 .llm-wiki-query-modal[data-mode="chat"] .llm-wiki-query-input-container {
   order: 4;
   flex-shrink: 0;
-  border-top: 1px solid var(--background-modifier-border);
+  border-top: 1px solid rgb(246, 246, 246);
   border-bottom: none;
 }
 
@@ -573,9 +573,13 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.transcript-source-item .internal-link {
+.transcript-source-link {
   cursor: pointer;
   text-decoration: none;
+  color: var(--text-accent);
+}
+.transcript-source-link:hover {
+  text-decoration: underline;
 }
 .transcript-sources-more {
   font-size: var(--font-ui-smaller);

@@ -59,40 +59,83 @@ export interface QueryModalArgs {
 }
 
 /**
- * Rank source files by relevance to the query. The bundle's entity and concept
- * arrays are already sorted by retrieval score (best first), so we use array
- * position as a proxy for relevance: a source cited by the #1 entity gets a
- * much larger weight than one cited by #12. Multiple citations from different
- * items stack, so a file referenced by entities #2 and #5 outranks one only
- * referenced by #1. Connections contribute a flat small bonus (they carry no
- * inherent ranking). Capped at 15 results.
+ * Rank source files by relevance to the query.
+ *
+ * Two signals matter:
+ * 1. **Item rank** — the bundle's entity/concept arrays are sorted by retrieval
+ *    score (best first). A source from entity #1 is weighted more than one from
+ *    entity #8. Weight per source also decays within each item's source list
+ *    (capped at MAX_SOURCES_PER_ITEM) so an entity mentioned in 20 files
+ *    doesn't flood the results with passing mentions.
+ * 2. **Cross-citation** — a file cited by multiple retrieved items is almost
+ *    certainly relevant. After scoring, we apply a multiplier based on how
+ *    many distinct items cited each source.
+ *
+ * Connections contribute a flat small bonus (they carry no inherent ranking).
+ * Returns a scored map so callers can accumulate across turns.
  */
 const MAX_RANKED_SOURCES = 15;
+const MAX_SOURCES_PER_ITEM = 5;
 
-function rankSourcesByRelevance(bundle: RetrievedBundle): string[] {
+export interface ScoredSource {
+  id: string;
+  score: number;
+}
+
+function rankSourcesByRelevance(bundle: RetrievedBundle): ScoredSource[] {
   const scores = new Map<string, number>();
-  const add = (paths: readonly string[], weight: number): void => {
-    for (const p of paths) scores.set(p, (scores.get(p) ?? 0) + weight);
+  // Track how many distinct items (entities/concepts/connections) cite each source
+  const citations = new Map<string, number>();
+
+  const add = (
+    paths: readonly string[],
+    weight: number,
+    cap: number,
+  ): void => {
+    const limited = paths.slice(0, cap);
+    for (let j = 0; j < limited.length; j++) {
+      const p = limited[j]!;
+      // Decay within the source list: first source gets full weight,
+      // subsequent ones get progressively less (1.0, 0.67, 0.5, 0.4, …)
+      const intraWeight = weight / (j * 0.5 + 1);
+      scores.set(p, (scores.get(p) ?? 0) + intraWeight);
+    }
+    // Count one citation per item for each unique source
+    const seen = new Set<string>();
+    for (const p of limited) {
+      if (!seen.has(p)) {
+        citations.set(p, (citations.get(p) ?? 0) + 1);
+        seen.add(p);
+      }
+    }
   };
 
   // Entities are sorted best-first; weight decays with rank.
-  // Entity #0 → weight 1.0, #1 → 0.5, #2 → 0.33, …
   for (let i = 0; i < bundle.entities.length; i++) {
-    add(bundle.entities[i]!.sources, 1 / (i + 1));
+    add(bundle.entities[i]!.sources, 1 / (i + 1), MAX_SOURCES_PER_ITEM);
   }
   // Same for concepts.
   for (let i = 0; i < bundle.concepts.length; i++) {
-    add(bundle.concepts[i]!.sources, 1 / (i + 1));
+    add(bundle.concepts[i]!.sources, 1 / (i + 1), MAX_SOURCES_PER_ITEM);
   }
-  // Connections get a small flat bonus — they reinforce but don't dominate.
+  // Connections get a small flat bonus.
   for (const conn of bundle.connections) {
-    add(conn.sources, 0.1);
+    add(conn.sources, 0.1, MAX_SOURCES_PER_ITEM);
+  }
+
+  // Cross-citation boost: sources cited by 2+ items get a multiplier.
+  // 1 item → 1x, 2 items → 1.5x, 3 items → 2x, etc.
+  for (const [path, count] of citations) {
+    if (count > 1) {
+      const current = scores.get(path) ?? 0;
+      scores.set(path, current * (1 + (count - 1) * 0.5));
+    }
   }
 
   return [...scores.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, MAX_RANKED_SOURCES)
-    .map(([id]) => id);
+    .map(([id, score]) => ({ id, score }));
 }
 
 export class QueryModal extends Modal {
@@ -103,7 +146,7 @@ export class QueryModal extends Modal {
 
   // Per-turn streaming state
   private currentStreamedAnswer = "";
-  private currentSourceIds: string[] = [];
+  private currentScoredSources: ScoredSource[] = [];
   private currentRewrittenQuery = "";
   private currentBundle: RetrievedBundle | null = null;
   private startMs = 0;
@@ -524,7 +567,7 @@ export class QueryModal extends Modal {
       },
       onContext: (bundle): void => {
         this.currentBundle = bundle;
-        this.currentSourceIds = rankSourcesByRelevance(bundle);
+        this.currentScoredSources = rankSourcesByRelevance(bundle);
         // Sources are shown only after the answer is fully delivered (in
         // finalizeTurn) — showing them before feels like they're still being
         // fetched.
@@ -564,6 +607,7 @@ export class QueryModal extends Modal {
 
   private enterChatMode(): void {
     this.contentEl.setAttr("data-mode", "chat");
+    this.inputEl.placeholder = "Reply\u2026";
     // Footer is useless in chat mode — hide it
     this.footerEl.style.display = "none";
   }
@@ -578,7 +622,7 @@ export class QueryModal extends Modal {
 
     this.currentHandle = this.transcript.beginTurn(q);
     this.currentStreamedAnswer = "";
-    this.currentSourceIds = [];
+    this.currentScoredSources = [];
     this.currentRewrittenQuery = q;
     this.startMs = Date.now();
     this.firstChunkMs = 0;
@@ -601,8 +645,9 @@ export class QueryModal extends Modal {
     const chat = this.activeChatId
       ? this.chats.find((c) => c.id === this.activeChatId)
       : null;
+    const sourceIds = this.currentScoredSources.map((s) => s.id);
     if (!chat) {
-      this.currentHandle?.setSources(this.currentSourceIds);
+      this.currentHandle?.setSources(this.currentScoredSources);
       this.currentHandle?.finalize();
       this.currentHandle = null;
       return;
@@ -611,7 +656,7 @@ export class QueryModal extends Modal {
     const turn: ChatTurn = {
       question: this.lastSubmittedQuestion,
       answer: this.currentStreamedAnswer,
-      sourceIds: this.currentSourceIds,
+      sourceIds,
       rewrittenQuery:
         this.currentRewrittenQuery !== this.lastSubmittedQuestion
           ? this.currentRewrittenQuery
@@ -624,7 +669,7 @@ export class QueryModal extends Modal {
     this.args.onChatsChanged(this.chats);
     this.chatList.render(this.chats, this.activeChatId);
 
-    this.currentHandle?.setSources(this.currentSourceIds);
+    this.currentHandle?.setSources(this.currentScoredSources);
     this.currentHandle?.finalize();
     this.currentHandle = null;
 
@@ -796,7 +841,7 @@ export class QueryModal extends Modal {
     const turn: ChatTurn = {
       question: this.lastSubmittedQuestion,
       answer: this.currentStreamedAnswer,
-      sourceIds: this.currentSourceIds,
+      sourceIds: this.currentScoredSources.map((s) => s.id),
       rewrittenQuery:
         this.currentRewrittenQuery !== this.lastSubmittedQuestion
           ? this.currentRewrittenQuery
