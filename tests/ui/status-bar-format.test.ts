@@ -33,7 +33,7 @@ describe("formatEta", () => {
 
 describe("formatIndexingLabel", () => {
   it("composes the idle-state label", () => {
-    expect(formatIndexingLabel({ state: "idle" })).toBe("🧠 LLM Wiki");
+    expect(formatIndexingLabel({ state: "idle" })).toBe("LLM Wiki");
   });
 
   it("composes the indexing-state label with ETA", () => {
@@ -44,7 +44,7 @@ describe("formatIndexingLabel", () => {
         total: 10,
         elapsedMs: 3_000,
       }),
-    ).toBe("🧠 Indexing 3/10 · ~7s");
+    ).toBe("Indexing 3/10 · ~7s");
   });
 
   it("composes the indexing-state label while estimating", () => {
@@ -55,12 +55,12 @@ describe("formatIndexingLabel", () => {
         total: 10,
         elapsedMs: 1_000,
       }),
-    ).toBe("🧠 Indexing 1/10 · estimating…");
+    ).toBe("Indexing 1/10 · estimating…");
   });
 
   it("composes the error-state label", () => {
     expect(
       formatIndexingLabel({ state: "error", message: "Ollama unreachable" }),
-    ).toBe("🧠 ⚠ Ollama unreachable");
+    ).toBe("⚠ Ollama unreachable");
   });
 });

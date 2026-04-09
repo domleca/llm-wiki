@@ -55,6 +55,7 @@ interface LlmWikiSettings {
   defaultQueryFolder: string;
   nightlyExtractionEnabled: boolean;
   nightlyExtractionHour: number;
+  showStatusBar: boolean;
 }
 
 const DEFAULT_SETTINGS: LlmWikiSettings = {
@@ -67,8 +68,9 @@ const DEFAULT_SETTINGS: LlmWikiSettings = {
   extractionCharLimit: 12_000,
   lastExtractionRunIso: null,
   defaultQueryFolder: "",
-  nightlyExtractionEnabled: true,
+  nightlyExtractionEnabled: false,
   nightlyExtractionHour: 2,
+  showStatusBar: true,
 };
 
 /** Delay before kicking off the background pre-build, so plugin load stays snappy. */
@@ -119,19 +121,25 @@ export default class LlmWikiPlugin extends Plugin {
   private embeddingsCache: EmbeddingsCache | null = null;
   private embeddingIndexController: EmbeddingIndexController | null = null;
   private prebuildTimer: number | null = null;
+  private statusBarEl: HTMLElement | null = null;
   private scheduler: Scheduler | null = null;
   private onSaveWatcher: OnSaveWatcher | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
     this.rebuildProvider();
-    await this.reloadKB();
+    try {
+      await this.reloadKB();
+    } catch {
+      // First load on a fresh vault: wiki/knowledge.json may not exist yet.
+    }
     this.chats = await loadChats(this.app);
     this.embeddingIndexController = this.createIndexController();
 
     // Status bar
-    const statusEl = this.addStatusBarItem();
-    new StatusBarWidget(statusEl, this.progress);
+    this.statusBarEl = this.addStatusBarItem();
+    new StatusBarWidget(this.statusBarEl, this.progress);
+    this.applyStatusBarVisibility();
 
     // Settings tab
     this.addSettingTab(new LlmWikiSettingsTab(this.app, this));
@@ -312,6 +320,12 @@ export default class LlmWikiPlugin extends Plugin {
 
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
+  }
+
+  applyStatusBarVisibility(): void {
+    if (this.statusBarEl) {
+      this.statusBarEl.style.display = this.settings.showStatusBar ? "" : "none";
+    }
   }
 
   async reloadKB(): Promise<void> {

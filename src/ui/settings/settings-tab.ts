@@ -1,4 +1,4 @@
-import { App, PluginSettingTab } from "obsidian";
+import { App, PluginSettingTab, Setting } from "obsidian";
 import type LlmWikiPlugin from "../../plugin.js";
 import { renderCloudSection } from "./cloud-section.js";
 import { renderIndexingSection } from "./indexing-section.js";
@@ -55,5 +55,20 @@ export class LlmWikiSettingsTab extends PluginSettingTab {
       },
       rerender: () => this.display(),
     });
+
+    containerEl.createEl("h3", { text: "Appearance" });
+
+    new Setting(containerEl)
+      .setName("Show status bar")
+      .setDesc("Display the LLM Wiki indicator in the status bar.")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.showStatusBar)
+          .onChange(async (value) => {
+            this.plugin.settings.showStatusBar = value;
+            await this.plugin.saveSettings();
+            this.plugin.applyStatusBarVisibility();
+          }),
+      );
   }
 }
