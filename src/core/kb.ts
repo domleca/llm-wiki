@@ -232,15 +232,18 @@ export class KnowledgeBase {
 
   removeSource(path: string): void {
     delete this.data.sources[path];
-    for (const entity of Object.values(this.data.entities)) {
+    for (const [id, entity] of Object.entries(this.data.entities)) {
       entity.sources = entity.sources.filter((s) => s !== path);
+      if (entity.sources.length === 0) delete this.data.entities[id];
     }
-    for (const concept of Object.values(this.data.concepts)) {
+    for (const [id, concept] of Object.entries(this.data.concepts)) {
       concept.sources = concept.sources.filter((s) => s !== path);
+      if (concept.sources.length === 0) delete this.data.concepts[id];
     }
-    for (const conn of this.data.connections) {
+    this.data.connections = this.data.connections.filter((conn) => {
       conn.sources = conn.sources.filter((s) => s !== path);
-    }
+      return conn.sources.length > 0;
+    });
   }
 
   renameSource(oldPath: string, newPath: string): void {

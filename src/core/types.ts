@@ -31,7 +31,7 @@ export type ConnectionType =
   | "contrasts-with";
 
 /** Where a source file came from in the vault. */
-export type SourceOrigin = "user-note" | "promoted" | "daily" | "clipping";
+export type SourceOrigin = "user-note" | "promoted" | "daily";
 
 export interface Entity {
   id: string;

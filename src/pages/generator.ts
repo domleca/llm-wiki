@@ -1,5 +1,4 @@
 import type { KnowledgeBase } from "../core/kb.js";
-import type { FilterSettings } from "../core/filters.js";
 import { isQualityEntity, isQualityConcept } from "../core/filters.js";
 import { renderEntityPage } from "./render-entity.js";
 import { renderConceptPage } from "./render-concept.js";
@@ -19,13 +18,12 @@ export interface GenerateResult {
 export async function generatePages(
   app: SafeWriteApp,
   kb: KnowledgeBase,
-  filterSettings: FilterSettings,
 ): Promise<GenerateResult> {
   const written = new Set<string>();
 
   // Entities — only quality items get pages
   for (const entity of kb.allEntities()) {
-    if (!isQualityEntity(entity, filterSettings)) continue;
+    if (!isQualityEntity(entity)) continue;
     const path = `wiki/entities/${entity.id}.md`;
     const connections = kb.connectionsFor(entity.id);
     await safeWritePage(app, path, renderEntityPage(entity, connections));
@@ -34,7 +32,7 @@ export async function generatePages(
 
   // Concepts — only quality items get pages
   for (const concept of kb.allConcepts()) {
-    if (!isQualityConcept(concept, filterSettings)) continue;
+    if (!isQualityConcept(concept)) continue;
     const path = `wiki/concepts/${concept.id}.md`;
     await safeWritePage(app, path, renderConceptPage(concept));
     written.add(path);

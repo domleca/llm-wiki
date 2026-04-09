@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import { KnowledgeBase } from "../../src/core/kb.js";
 import { runExtraction } from "../../src/extract/queue.js";
 import { generatePages } from "../../src/pages/generator.js";
-import { defaultFilterSettings } from "../../src/core/filters.js";
 import { MockLLMProvider } from "../helpers/mock-llm-provider.js";
 import { ProgressEmitter } from "../../src/runtime/progress.js";
 import { createMockApp } from "../helpers/mock-app.js";
@@ -77,7 +76,7 @@ describe("Phase 4 integration: extraction → page generation", () => {
       checkpointEvery: 5,
     });
 
-    await generatePages(app as never, kb, defaultFilterSettings());
+    await generatePages(app as never, kb);
 
     // Alan Watts has 2 facts and 2 sources → entity page generated
     expect(files.has("wiki/entities/alan-watts.md")).toBe(true);
@@ -112,7 +111,7 @@ describe("Phase 4 integration: extraction → page generation", () => {
       emitter,
     });
 
-    await generatePages(app as never, kb, defaultFilterSettings());
+    await generatePages(app as never, kb);
 
     const entityContent = files.get("wiki/entities/alan-watts.md")!.content;
     // Must start with YAML frontmatter
@@ -135,7 +134,7 @@ describe("Phase 4 integration: extraction → page generation", () => {
     // thin: 1 fact, 1 source → fails
     kb.addEntity({ name: "Thin Entity", type: "other", facts: ["only"], source: "e.md" });
 
-    await generatePages(app as never, kb, defaultFilterSettings());
+    await generatePages(app as never, kb);
 
     const entityPages = Array.from(files.keys()).filter((p) =>
       p.startsWith("wiki/entities/"),
@@ -146,19 +145,20 @@ describe("Phase 4 integration: extraction → page generation", () => {
     expect(files.has("wiki/entities/thin-entity.md")).toBe(false);
   });
 
-  it("regenerate prunes stale pages when filter is tightened", async () => {
+  it("regenerate prunes stale pages when entity is removed", async () => {
     const { app, files } = createMockApp();
     const kb = new KnowledgeBase();
 
     // First run: entity passes filter (2 facts, 2 sources)
     kb.addEntity({ name: "Rich Entity", type: "person", facts: ["f1", "f2"], source: "a.md" });
     kb.addEntity({ name: "Rich Entity", type: "person", source: "b.md" });
-    await generatePages(app as never, kb, defaultFilterSettings());
+    await generatePages(app as never, kb);
     expect(files.has("wiki/entities/rich-entity.md")).toBe(true);
 
-    // Tighten filter: require 5 facts
-    const strictFilter = { ...defaultFilterSettings(), minFactsPerEntity: 5 };
-    await generatePages(app as never, kb, strictFilter);
+    // Remove the entity's source so it no longer qualifies
+    kb.removeSource("a.md");
+    kb.removeSource("b.md");
+    await generatePages(app as never, kb);
 
     // Entity no longer passes → page deleted
     expect(files.has("wiki/entities/rich-entity.md")).toBe(false);

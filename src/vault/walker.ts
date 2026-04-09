@@ -101,9 +101,7 @@ function parseDailyDate(path: string): string | null {
 
 function deriveOrigin(parts: string[]): SourceOrigin {
   for (const p of parts) {
-    const low = p.toLowerCase();
-    if (low === "clippings") return "clipping";
-    if (low === "dailies") return "daily";
+    if (p.toLowerCase() === "dailies") return "daily";
   }
   return "user-note";
 }

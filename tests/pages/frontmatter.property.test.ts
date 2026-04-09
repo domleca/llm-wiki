@@ -24,7 +24,6 @@ const originArb = fc.constantFrom(
   "user-note" as const,
   "promoted" as const,
   "daily" as const,
-  "clipping" as const,
 );
 
 const entityArb: fc.Arbitrary<Entity> = fc.record({

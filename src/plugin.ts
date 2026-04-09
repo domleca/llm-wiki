@@ -20,10 +20,6 @@ import { ProgressEmitter } from "./runtime/progress.js";
 import { Scheduler } from "./runtime/scheduler.js";
 import { OnSaveWatcher } from "./runtime/on-save-watcher.js";
 import { StatusBarWidget } from "./ui/status-bar.js";
-import {
-  defaultFilterSettings,
-  type FilterSettings,
-} from "./core/filters.js";
 import { LlmWikiSettingsTab } from "./ui/settings/settings-tab.js";
 import {
   loadEmbeddingsCache,
@@ -57,7 +53,6 @@ interface LlmWikiSettings {
   extractionCharLimit: number;
   lastExtractionRunIso: string | null;
   defaultQueryFolder: string;
-  filterSettings: FilterSettings;
   nightlyExtractionEnabled: boolean;
   nightlyExtractionHour: number;
 }
@@ -72,7 +67,6 @@ const DEFAULT_SETTINGS: LlmWikiSettings = {
   extractionCharLimit: 12_000,
   lastExtractionRunIso: null,
   defaultQueryFolder: "",
-  filterSettings: defaultFilterSettings(),
   nightlyExtractionEnabled: true,
   nightlyExtractionHour: 2,
 };
@@ -220,11 +214,7 @@ export default class LlmWikiPlugin extends Plugin {
             await saveKB(this.app as never, this.kb, this.kbMtime);
             const r = await loadKB(this.app as never);
             this.kbMtime = r.mtime;
-            await generatePages(
-              this.app as never,
-              this.kb,
-              this.settings.filterSettings,
-            );
+            await generatePages(this.app as never, this.kb);
           } catch {
             // best-effort
           }
@@ -245,11 +235,7 @@ export default class LlmWikiPlugin extends Plugin {
             const r = await loadKB(this.app as never);
             this.kbMtime = r.mtime;
             await safeDeletePage(this.app as never, oldSourcePage);
-            await generatePages(
-              this.app as never,
-              this.kb,
-              this.settings.filterSettings,
-            );
+            await generatePages(this.app as never, this.kb);
           } catch {
             // best-effort
           }
@@ -488,11 +474,7 @@ export default class LlmWikiPlugin extends Plugin {
       new Notice(
         `LLM Wiki: ${stats.succeeded} extracted, ${stats.failed} failed, ${stats.skipped} skipped (${Math.round(stats.elapsedMs / 1000)}s).`,
       );
-      await generatePages(
-        this.app as never,
-        this.kb,
-        this.settings.filterSettings,
-      );
+      await generatePages(this.app as never, this.kb);
     } catch (e) {
       this.progress.emit("batch-errored", {
         message: (e as Error).message ?? "Unknown error",
@@ -556,11 +538,7 @@ export default class LlmWikiPlugin extends Plugin {
 
   async runRegeneratePages(): Promise<void> {
     try {
-      const result = await generatePages(
-        this.app as never,
-        this.kb,
-        this.settings.filterSettings,
-      );
+      const result = await generatePages(this.app as never, this.kb);
       new Notice(
         `LLM Wiki: ${result.written} pages written, ${result.deleted} deleted.`,
       );
@@ -596,11 +574,7 @@ export default class LlmWikiPlugin extends Plugin {
       const reloaded = await loadKB(this.app as never);
       this.kbMtime = reloaded.mtime;
       new Notice(`LLM Wiki: extracted ${file.path}.`);
-      await generatePages(
-        this.app as never,
-        this.kb,
-        this.settings.filterSettings,
-      );
+      await generatePages(this.app as never, this.kb);
     } catch (e) {
       new Notice(`LLM Wiki: extract failed — ${(e as Error).message}`);
     } finally {

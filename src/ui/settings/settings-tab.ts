@@ -3,7 +3,6 @@ import type LlmWikiPlugin from "../../plugin.js";
 import { renderCloudSection } from "./cloud-section.js";
 import { renderIndexingSection } from "./indexing-section.js";
 import { buildQuerySection } from "./query-section.js";
-import { renderFiltersSection } from "./filters-section.js";
 
 export class LlmWikiSettingsTab extends PluginSettingTab {
   private readonly plugin: LlmWikiPlugin;
@@ -56,14 +55,5 @@ export class LlmWikiSettingsTab extends PluginSettingTab {
       },
       rerender: () => this.display(),
     });
-
-    renderFiltersSection(
-      containerEl,
-      this.plugin.settings.filterSettings,
-      async (patch) => {
-        Object.assign(this.plugin.settings.filterSettings, patch);
-        await this.plugin.saveSettings();
-      },
-    );
   }
 }

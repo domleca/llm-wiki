@@ -260,15 +260,15 @@ describe("KnowledgeBase.removeSource", () => {
     expect(kb.data.entities["alan-watts"]?.sources).toEqual(["Learn/Zen.md"]);
   });
 
-  it("removes the source from concept source lists", () => {
+  it("deletes concept when its last source is removed", () => {
     const kb = new KnowledgeBase();
     kb.addConcept({ name: "Zen", definition: "x", source: "Books/Watts.md" });
     kb.markSource({ path: "Books/Watts.md", mtime: 1, origin: "user-note" });
     kb.removeSource("Books/Watts.md");
-    expect(kb.data.concepts["zen"]?.sources).toEqual([]);
+    expect(kb.data.concepts["zen"]).toBeUndefined();
   });
 
-  it("removes the source from connection source lists", () => {
+  it("deletes connection when its last source is removed", () => {
     const kb = new KnowledgeBase();
     kb.addConnection({
       from: "Alan Watts",
@@ -278,7 +278,15 @@ describe("KnowledgeBase.removeSource", () => {
     });
     kb.markSource({ path: "Books/Watts.md", mtime: 1, origin: "user-note" });
     kb.removeSource("Books/Watts.md");
-    expect(kb.data.connections[0]?.sources).toEqual([]);
+    expect(kb.data.connections).toHaveLength(0);
+  });
+
+  it("deletes entity when its last source is removed", () => {
+    const kb = new KnowledgeBase();
+    kb.addEntity({ name: "Solo", type: "person", facts: ["f1"], source: "a.md" });
+    kb.markSource({ path: "a.md", mtime: 1, origin: "user-note" });
+    kb.removeSource("a.md");
+    expect(kb.data.entities["solo"]).toBeUndefined();
   });
 
   it("does not throw if the source does not exist", () => {
