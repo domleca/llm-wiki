@@ -396,6 +396,7 @@
   padding: 0.25rem 0.5rem;
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
+  user-select: text;
 }
 .llm-wiki-query-transcript:empty {
   display: none;
