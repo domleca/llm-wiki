@@ -47,7 +47,7 @@ describe("buildAskPrompt with history", () => {
     expect(out.indexOf("Question: and why?")).toBeGreaterThan(
       out.indexOf("[assistant]"),
     );
-    expect(out.indexOf("Knowledge base context:")).toBeGreaterThan(
+    expect(out.indexOf("Your notes")).toBeGreaterThan(
       out.indexOf("[assistant]"),
     );
   });
