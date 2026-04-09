@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { OnSaveWatcher } from "../../src/runtime/on-save-watcher.js";
 
 function createWatcher(overrides: Partial<Parameters<typeof OnSaveWatcher["prototype"]["handleModify"]> extends never[] ? Record<string, never> : Record<string, never>> = {}) {
@@ -78,7 +78,6 @@ describe("OnSaveWatcher", () => {
 
   it("skips trigger when extraction is already running", () => {
     let running = false;
-    const { watcher, triggered, flush } = createWatcher();
     // Override with a watcher that checks running state.
     const triggered2: string[] = [];
     const timers2 = new Map<number, () => void>();
@@ -108,7 +107,7 @@ describe("OnSaveWatcher", () => {
   });
 
   it("destroy cancels all pending timers", () => {
-    const { watcher, triggered, timers, flush } = createWatcher();
+    const { watcher, timers } = createWatcher();
     watcher.handleModify("Notes/a.md");
     watcher.handleModify("Notes/b.md");
     expect(timers.size).toBe(2);

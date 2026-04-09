@@ -4,12 +4,13 @@ import fs from "node:fs";
 import path from "node:path";
 import builtins from "builtin-modules";
 
-const TESTVAULT_PLUGIN_DIR =
-  "/Users/dominiqueleca/Library/Mobile Documents/com~apple~CloudDocs/TestVault/.obsidian/plugins/llm-wiki";
+const TESTVAULT_PLUGIN_DIR = process.env.LLM_WIKI_TESTVAULT
+  ? path.join(process.env.LLM_WIKI_TESTVAULT, ".obsidian/plugins/llm-wiki")
+  : null;
 
 function syncToTestVault() {
   try {
-    if (!fs.existsSync(TESTVAULT_PLUGIN_DIR)) return;
+    if (!TESTVAULT_PLUGIN_DIR || !fs.existsSync(TESTVAULT_PLUGIN_DIR)) return;
     for (const file of ["main.js", "manifest.json", "styles.css"]) {
       if (fs.existsSync(file)) {
         fs.copyFileSync(file, path.join(TESTVAULT_PLUGIN_DIR, file));

@@ -7,6 +7,14 @@ import { setIcon } from "obsidian";
 import type { Chat } from "../../chat/types.js";
 import { sortChatsByRecency } from "../../chat/store.js";
 
+function emptyEl(el: HTMLElement): void {
+  if (typeof (el as { empty?: () => void }).empty === "function") {
+    (el as { empty: () => void }).empty();
+  } else {
+    el.innerHTML = "";
+  }
+}
+
 /**
  * Case-insensitive substring match against the chat title and the first
  * turn's question. Cheap, predictable, and good enough as a "did I already
@@ -44,7 +52,7 @@ export class ChatList {
     this.selectedIdx = selectedId
       ? this.chats.findIndex((c) => c.id === selectedId)
       : -1;
-    this.root.innerHTML = "";
+    emptyEl(this.root);
     this.chats.forEach((c, i) => this.root.appendChild(this.buildRow(c, i)));
   }
 

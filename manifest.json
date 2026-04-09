@@ -1,7 +1,7 @@
 {
   "id": "llm-wiki",
   "name": "LLM Wiki",
-  "version": "0.1.0-phase1",
+  "version": "1.0.0",
   "minAppVersion": "1.5.0",
   "description": "Prompt your knowledge base privately, on your own hardware, with the model of your choice.",
   "author": "Dominique Leca",

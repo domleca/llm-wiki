@@ -54,6 +54,15 @@ function randomThinkingMessage(): string {
   return THINKING_MESSAGES[Math.floor(Math.random() * THINKING_MESSAGES.length)]!;
 }
 
+/** Clear all children from an element, using Obsidian's .empty() when available. */
+function emptyEl(el: HTMLElement): void {
+  if (typeof (el as { empty?: () => void }).empty === "function") {
+    (el as { empty: () => void }).empty();
+  } else {
+    el.innerHTML = "";
+  }
+}
+
 export class ChatTranscript {
   /** When true, new content scrolls the viewport; flipped off when the user scrolls up. */
   private followStream = true;
@@ -76,7 +85,7 @@ export class ChatTranscript {
   }
 
   clear(): void {
-    this.root.innerHTML = "";
+    emptyEl(this.root);
     this.sourceScores = new Map();
     this.turnIndex = 0;
     this.sourcesFooter = null;
@@ -244,7 +253,7 @@ export class ChatTranscript {
     }
 
     const footer = this.sourcesFooter;
-    footer.innerHTML = "";
+    emptyEl(footer);
 
     // Divider: left-aligned label + chevron, then line stretches right
     const divider = document.createElement("div");

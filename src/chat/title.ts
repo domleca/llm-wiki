@@ -4,7 +4,6 @@
  */
 
 import type { LLMProvider } from "../llm/provider.js";
-import type { ChatTurn } from "./types.js";
 
 export interface TitleArgs {
   provider: LLMProvider;

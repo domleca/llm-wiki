@@ -85,7 +85,7 @@ describe("walkVaultFiles", () => {
     );
     const result = await walkVaultFiles(app as never, opts);
     const byPath = new Map(result.map((r) => [r.path, r.origin]));
-    expect(byPath.get("Clippings/article.md")).toBe("clipping");
+    expect(byPath.get("Clippings/article.md")).toBe("user-note");
     expect(byPath.get("Dailies/06 April 2026.md")).toBe("daily");
     expect(byPath.get("Books/Watts.md")).toBe("user-note");
   });

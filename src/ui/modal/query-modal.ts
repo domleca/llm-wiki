@@ -19,7 +19,6 @@ import type {
   EmbeddingIndexState,
 } from "../../query/embedding-index-controller.js";
 import { formatIndexingStatus } from "./indexing-status.js";
-import { openModelPicker } from "./model-picker.js";
 import { buildOllamaHintFragment } from "./ollama-hint.js";
 import {
   ollamaPingStateFromBool,
@@ -826,7 +825,7 @@ export class QueryModal extends Modal {
   }
 
   private renderFooterHints(): void {
-    this.footerEl.innerHTML = "";
+    this.footerEl.empty();
     this.footerEl.style.display = "";
     this.appendInstruction(this.footerEl, "↑↓", "to navigate");
     this.appendInstruction(this.footerEl, "↩", "to use");
@@ -836,7 +835,7 @@ export class QueryModal extends Modal {
   private renderFooterIndexingWarning(): void {
     // Only show in picker mode — in chat mode the footer is hidden entirely.
     if (this.contentEl.getAttr("data-mode") === "chat") return;
-    this.footerEl.innerHTML = "";
+    this.footerEl.empty();
     this.footerEl.style.display = "";
     const warn = this.footerEl.createDiv({ cls: "llm-wiki-query-footer-warning" });
     warn.textContent = "Indexing in progress \u2014 results may be less accurate";

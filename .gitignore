@@ -26,6 +26,10 @@ npm-debug.log*
 coverage/
 .vitest-cache/
 
+# Plugin runtime data (vault-specific, not source)
+data.json
+embeddings-cache.json
+
 # Env
 .env
 .env.local

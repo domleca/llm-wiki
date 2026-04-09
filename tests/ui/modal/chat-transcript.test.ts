@@ -45,7 +45,7 @@ describe("ChatTranscript", () => {
       "Sources (1)",
     );
     // Title resolved from basename (mock returns null for file lookup)
-    expect(root.querySelector(".transcript-source-link")?.textContent).toBe("x");
+    expect(root.querySelector(".transcript-source-title")?.textContent).toBe("x");
   });
 
   it("streams an answer via beginTurn → appendAnswerChunk → setSources → finalize", () => {
@@ -64,7 +64,7 @@ describe("ChatTranscript", () => {
     expect(root.querySelector(".transcript-sources-label")?.textContent).toBe(
       "Sources (2)",
     );
-    expect(root.querySelectorAll(".transcript-source-item")).toHaveLength(2);
+    expect(root.querySelectorAll(".transcript-source-pill")).toHaveLength(2);
   });
 
   it("clear() empties the transcript", () => {
@@ -113,6 +113,6 @@ describe("ChatTranscript", () => {
     expect(root.querySelector(".transcript-sources-label")?.textContent).toBe(
       "Sources (3)",
     );
-    expect(root.querySelectorAll(".transcript-source-item")).toHaveLength(3);
+    expect(root.querySelectorAll(".transcript-source-pill")).toHaveLength(3);
   });
 });

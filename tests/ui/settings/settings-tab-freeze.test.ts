@@ -15,11 +15,13 @@ import LlmWikiPlugin from "../../../src/plugin.js";
  */
 describe("extraction state listener notification", () => {
   it("does not loop when a listener re-subscribes during notification", () => {
-    const plugin = new LlmWikiPlugin() as unknown as {
+    const plugin = Object.create(LlmWikiPlugin.prototype) as unknown as {
       onExtractionStateChange: (l: () => void) => () => void;
-      // Access private for test — simulating settings-tab re-render.
       setRunning: (v: boolean) => void;
     };
+    // Initialize only the fields the listener machinery needs.
+    (plugin as unknown as { running: boolean }).running = false;
+    (plugin as unknown as { extractionStateListeners: Set<() => void> }).extractionStateListeners = new Set();
 
     let calls = 0;
     let unsubscribe: () => void = () => {};

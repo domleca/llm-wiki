@@ -145,7 +145,6 @@ export default class LlmWikiPlugin extends Plugin {
     this.addCommand({
       id: "run-query",
       name: "Ask knowledge base",
-      hotkeys: [{ modifiers: ["Mod", "Shift"], key: "k" }],
       callback: () => {
         this.openQueryModal();
       },
