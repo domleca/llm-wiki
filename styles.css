@@ -38,7 +38,7 @@
   display: flex;
   align-items: center;
   padding: 0 24px;
-  border-bottom: 1px solid rgb(246, 246, 246);
+  border-bottom: 1px solid var(--background-modifier-border);
   box-sizing: border-box;
 }
 
@@ -436,7 +436,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: rgb(34, 34, 34);
+  color: var(--text-normal);
 }
 .llm-wiki-query-chat-list .rename,
 .llm-wiki-query-chat-list .delete {
@@ -508,7 +508,7 @@
 .llm-wiki-query-modal[data-mode="chat"] .llm-wiki-query-input-container {
   order: 4;
   flex-shrink: 0;
-  border-top: 1px solid rgb(246, 246, 246);
+  border-top: 1px solid var(--background-modifier-border);
   border-bottom: none;
 }
 

@@ -75,4 +75,10 @@ if (prod) {
   process.exit(0);
 } else {
   await context.watch();
+
+  // styles.css is not an esbuild entry point, so changes to it don't trigger
+  // a rebuild. Watch it separately and sync on change.
+  fs.watch("styles.css", { persistent: false }, () => {
+    syncToTestVault();
+  });
 }
