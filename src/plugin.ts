@@ -14,6 +14,7 @@ import {
 } from "./extract/defaults.js";
 import { ProgressEmitter } from "./runtime/progress.js";
 import { Scheduler } from "./runtime/scheduler.js";
+import { OnSaveWatcher } from "./runtime/on-save-watcher.js";
 import { StatusBarWidget } from "./ui/status-bar.js";
 import {
   defaultFilterSettings,
@@ -101,6 +102,7 @@ export default class LlmWikiPlugin extends Plugin {
   private embeddingIndexController: EmbeddingIndexController | null = null;
   private prebuildTimer: number | null = null;
   private scheduler: Scheduler | null = null;
+  private onSaveWatcher: OnSaveWatcher | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -237,6 +239,25 @@ export default class LlmWikiPlugin extends Plugin {
       this.startScheduler();
     });
 
+    // On-save watcher: re-extract a file shortly after it's saved.
+    this.onSaveWatcher = new OnSaveWatcher({
+      skipDirs: DEFAULT_SKIP_DIRS,
+      isExtractionRunning: () => this.running,
+      trigger: (path) => {
+        const tfile = this.app.vault.getAbstractFileByPath(path);
+        if (tfile instanceof TFile) {
+          void this.runExtractCurrent(tfile);
+        }
+      },
+    });
+    this.registerEvent(
+      this.app.vault.on("modify", (abstractFile) => {
+        if (!(abstractFile instanceof TFile)) return;
+        if (abstractFile.extension !== "md") return;
+        this.onSaveWatcher?.handleModify(abstractFile.path);
+      }),
+    );
+
     this.prebuildTimer = window.setTimeout(() => {
       this.prebuildTimer = null;
       void this.embeddingIndexController?.ensureBuilt();
@@ -246,6 +267,8 @@ export default class LlmWikiPlugin extends Plugin {
   onunload(): void {
     this.cancelExtraction();
     this.stopScheduler();
+    this.onSaveWatcher?.destroy();
+    this.onSaveWatcher = null;
     if (this.prebuildTimer !== null) {
       window.clearTimeout(this.prebuildTimer);
       this.prebuildTimer = null;
