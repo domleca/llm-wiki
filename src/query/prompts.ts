@@ -37,7 +37,7 @@ export function buildAskPrompt(args: BuildAskPromptArgs): string {
     parts.push("");
   }
   parts.push(
-    "Knowledge base context:",
+    "Your notes:",
     args.context,
     "",
     `Question: ${args.question}`,
