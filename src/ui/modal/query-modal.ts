@@ -5,6 +5,7 @@ import {
   Component,
   Notice,
   setIcon,
+  TFolder,
 } from "obsidian";
 import type { KnowledgeBase } from "../../core/kb.js";
 import type { LLMProvider } from "../../llm/provider.js";
@@ -76,7 +77,9 @@ export class QueryModal extends Modal {
   private chats: readonly Chat[];
   private activeChatId: string | null;
   private currentModel!: string;
+  private currentFolder!: string;
   private modelPillEl: HTMLSpanElement | null = null;
+  private folderPillEl: HTMLSpanElement | null = null;
 
   private readonly mdComponent = new Component();
   private unsubscribeIndex: (() => void) | null = null;
@@ -95,6 +98,7 @@ export class QueryModal extends Modal {
     this.chats = args.chats;
     this.activeChatId = args.activeChatId;
     this.currentModel = args.model;
+    this.currentFolder = args.folder;
   }
 
   onOpen(): void {
@@ -161,10 +165,12 @@ export class QueryModal extends Modal {
     });
     this.ollamaPillEl.style.display = "none";
     this.ollamaPillEl.onclick = (): void => this.handleOllamaPillClick();
-    pills.createSpan({
-      cls: "llm-wiki-query-pill",
-      text: `folder: ${this.args.folder || this.app.vault.getName()}`,
+    this.folderPillEl = pills.createSpan({
+      cls: "llm-wiki-query-pill llm-wiki-query-pill-clickable",
+      text: `folder: ${this.currentFolder || this.app.vault.getName()}`,
+      attr: { "aria-label": "Change folder scope", role: "button" },
     });
+    this.folderPillEl.onclick = (): void => this.handleFolderPillClick();
 
     // Terminal-style status line
     const terminal = contentEl.createDiv({ cls: "llm-wiki-query-terminal" });
@@ -320,6 +326,71 @@ export class QueryModal extends Modal {
     this.activeModelPopover = null;
     this.modelPopoverCleanup?.();
     this.modelPopoverCleanup = null;
+  }
+
+  private handleFolderPillClick(): void {
+    this.closeFolderPopover();
+    this.openFolderPopover();
+  }
+
+  private activeFolderPopover: HTMLDivElement | null = null;
+  private folderPopoverCleanup: (() => void) | null = null;
+
+  private openFolderPopover(): void {
+    const pill = this.folderPillEl;
+    if (!pill) return;
+
+    const vaultName = this.app.vault.getName();
+    const folders: string[] = [];
+    for (const f of this.app.vault.getAllLoadedFiles()) {
+      if (f instanceof TFolder && f.path !== "/" && f.path !== "") {
+        folders.push(f.path);
+      }
+    }
+    folders.sort((a, b) => a.localeCompare(b));
+    const options = [{ label: vaultName, value: "" }, ...folders.map((f) => ({ label: f, value: f }))];
+
+    const popover = document.createElement("div");
+    popover.className = "llm-wiki-model-popover";
+
+    for (const opt of options) {
+      const row = document.createElement("div");
+      row.className = "llm-wiki-model-popover-item";
+      if (opt.value === this.currentFolder) row.classList.add("is-active");
+      row.textContent = opt.label;
+      row.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        this.currentFolder = opt.value;
+        if (this.folderPillEl) {
+          this.folderPillEl.setText(`folder: ${opt.value || vaultName}`);
+        }
+        this.controller?.setFolder(opt.value);
+        this.closeFolderPopover();
+      });
+      popover.appendChild(row);
+    }
+
+    const rect = pill.getBoundingClientRect();
+    const modalRect = this.modalEl.getBoundingClientRect();
+    popover.style.top = `${rect.bottom - modalRect.top + 4}px`;
+    popover.style.left = `${rect.left - modalRect.left}px`;
+    this.modalEl.appendChild(popover);
+    this.activeFolderPopover = popover;
+
+    const onClickOutside = (ev: MouseEvent): void => {
+      if (!popover.contains(ev.target as Node) && ev.target !== pill) {
+        this.closeFolderPopover();
+      }
+    };
+    window.setTimeout(() => document.addEventListener("click", onClickOutside), 0);
+    this.folderPopoverCleanup = () => document.removeEventListener("click", onClickOutside);
+  }
+
+  private closeFolderPopover(): void {
+    this.activeFolderPopover?.remove();
+    this.activeFolderPopover = null;
+    this.folderPopoverCleanup?.();
+    this.folderPopoverCleanup = null;
   }
 
   private handleOllamaPillClick(): void {
@@ -636,6 +707,7 @@ export class QueryModal extends Modal {
 
   onClose(): void {
     this.closeModelPopover();
+    this.closeFolderPopover();
     this.controller?.cancel();
     this.mdComponent.unload();
     this.unsubscribeIndex?.();

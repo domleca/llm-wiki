@@ -35,9 +35,11 @@ export class QueryController {
   private state: QueryControllerState = "idle";
   private abortCtrl: AbortController | null = null;
   private currentModel: string;
+  private currentFolder: string | undefined;
 
   constructor(private readonly opts: QueryControllerOptions) {
     this.currentModel = opts.model;
+    this.currentFolder = opts.folder;
   }
 
   getState(): QueryControllerState {
@@ -46,6 +48,10 @@ export class QueryController {
 
   setModel(model: string): void {
     this.currentModel = model;
+  }
+
+  setFolder(folder: string): void {
+    this.currentFolder = folder || undefined;
   }
 
   async runChatTurn(args: { chat: Chat; question: string }): Promise<void> {
@@ -78,7 +84,7 @@ export class QueryController {
         kb: this.opts.kb,
         provider: this.opts.provider,
         model: this.currentModel,
-        folder: this.opts.folder,
+        folder: this.currentFolder,
         embeddingIndex: this.opts.embeddingIndex,
         queryEmbedding: this.opts.queryEmbedding,
         signal: this.abortCtrl.signal,
@@ -110,7 +116,7 @@ export class QueryController {
       title: "",
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      folder: this.opts.folder ?? "",
+      folder: this.currentFolder ?? "",
       model: this.currentModel,
       turns: [],
     };
