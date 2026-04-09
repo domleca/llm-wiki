@@ -32,8 +32,11 @@
 .llm-wiki-query-input-container {
   position: relative;
   width: 100%;
-  padding: var(--size-4-3) var(--size-4-4);
-  border-bottom: 1px solid var(--background-modifier-border);
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  border-bottom: 1px solid rgb(246, 246, 246);
   box-sizing: border-box;
 }
 
@@ -48,7 +51,7 @@
   border-radius: 0 !important;
   background: transparent !important;
   color: var(--text-normal);
-  font-size: var(--font-ui-large);
+  font-size: var(--font-ui-medium);
   font-family: inherit;
   padding: 0 calc(1.6em + var(--size-4-2)) 0 0 !important;
   margin: 0 !important;
@@ -146,7 +149,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--size-4-2);
-  padding: var(--size-4-3) var(--size-4-3) 0;
+  padding: var(--size-4-3) 24px 0;
 }
 
 .llm-wiki-query-pill {
@@ -408,12 +411,17 @@
 .llm-wiki-query-transcript .turn-sources { font-size: 0.85em; opacity: 0.8; }
 
 /* Chat list */
-.llm-wiki-query-chat-list { margin-top: 0.5rem; }
+.llm-wiki-query-chat-list {
+  margin-top: 0.5rem;
+  max-height: calc(5 * 2.5rem);
+  overflow-y: auto;
+  padding: 0 12px;
+}
 .llm-wiki-query-chat-list .chat-row {
   display: flex;
   align-items: center;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  padding: var(--size-4-2) 12px;
+  border-radius: var(--radius-s);
   cursor: pointer;
 }
 .llm-wiki-query-chat-list .chat-row:hover,
@@ -425,15 +433,26 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: rgb(34, 34, 34);
 }
 .llm-wiki-query-chat-list .rename,
 .llm-wiki-query-chat-list .delete {
-  background: none;
-  border: none;
+  display: inline-flex;
+  align-items: center;
   cursor: pointer;
   opacity: 0;
-  padding: 0 0.25rem;
+  padding: 0 0.2rem;
   color: var(--text-muted);
+  transition: color 0.15s ease;
+}
+.llm-wiki-query-chat-list .rename:hover,
+.llm-wiki-query-chat-list .delete:hover {
+  color: var(--text-normal);
+}
+.llm-wiki-query-chat-list .rename .svg-icon,
+.llm-wiki-query-chat-list .delete .svg-icon {
+  width: 14px;
+  height: 14px;
 }
 .llm-wiki-query-chat-list .chat-row:hover .rename,
 .llm-wiki-query-chat-list .chat-row:hover .delete,
@@ -443,8 +462,158 @@
 }
 .llm-wiki-query-chat-list .chat-row input {
   flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+
+/* =========================================================================
+ * Chat mode — reconfigures the modal into a real chat interface.
+ *
+ * Picker mode (default):
+ *   [input] [pills] [terminal] [chat list]  — transcript is empty & hidden
+ *
+ * Chat mode:
+ *   [pills] [terminal] [transcript flex:1]  [input pinned bottom]
+ *   chat list is hidden entirely (user is focused on current conversation)
+ * ========================================================================= */
+.llm-wiki-query-modal[data-mode="chat"].modal-content {
+  max-height: 80vh;
+}
+.llm-wiki-query-modal[data-mode="chat"] .llm-wiki-query-chat-list {
+  display: none;
+}
+.llm-wiki-query-modal[data-mode="chat"] .llm-wiki-query-transcript {
+  order: 3;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  border: none;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  background: transparent;
+}
+.llm-wiki-query-modal[data-mode="chat"] .llm-wiki-query-pills {
+  order: 1;
+}
+.llm-wiki-query-modal[data-mode="chat"] .llm-wiki-query-terminal {
+  order: 2;
+}
+.llm-wiki-query-modal[data-mode="chat"] .llm-wiki-query-input-container {
+  order: 4;
+  border-top: 1px solid var(--background-modifier-border);
+  border-bottom: none;
+}
+
+/* Transcript is hidden when empty (picker mode, no active chat) — but in
+ * chat mode we always want it visible so the thinking indicator shows up
+ * before the first chunk arrives. */
+.llm-wiki-query-modal[data-mode="chat"] .llm-wiki-query-transcript:empty {
+  display: block;
+}
+
+/* ---------- Bubbles ---------- */
+
+.llm-wiki-query-transcript .turn {
+  border-bottom: none;
+  padding: 0.75rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* User turn: right-offset bubble, not flush right — leaves breathing room
+ * on the left so long questions still wrap comfortably. */
+.llm-wiki-query-transcript .turn-q {
+  align-self: flex-end;
+  max-width: 85%;
+  margin-left: 15%;
+  padding: 0.6rem 0.9rem;
+  background: var(--background-secondary);
+  border-radius: 14px;
+  font-weight: 500;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Assistant turn: plain markdown, no bubble, full width. */
+.llm-wiki-query-transcript .turn-a {
+  align-self: stretch;
+  margin: 0;
+  padding: 0 0.25rem;
+}
+.llm-wiki-query-transcript .turn-a:empty {
+  display: none;
+}
+
+/* ---------- Thinking indicator ---------- */
+
+.llm-wiki-query-transcript .turn-thinking {
+  align-self: flex-start;
+  padding: 0.25rem 0.5rem;
+  color: var(--text-muted);
+  font-style: italic;
+  display: inline-flex;
+  gap: 0.15rem;
+}
+.llm-wiki-query-transcript .turn-thinking-dots {
+  display: inline-block;
+  width: 1.2em;
+  overflow: hidden;
+  white-space: nowrap;
+  animation: llm-wiki-thinking-dots 1.4s steps(4, end) infinite;
+}
+@keyframes llm-wiki-thinking-dots {
+  0%   { width: 0; }
+  100% { width: 1.2em; }
+}
+
+/* ---------- Model popover ---------- */
+
+.llm-wiki-model-popover {
+  position: absolute;
+  z-index: 10;
+  min-width: 180px;
+  max-height: 200px;
+  overflow-y: auto;
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
-  padding: 0.1rem 0.25rem;
-  border-radius: 3px;
+  border-radius: var(--radius-m);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  padding: var(--size-2-1) 0;
+}
+.llm-wiki-model-popover-item {
+  padding: var(--size-4-2) var(--size-4-3);
+  cursor: pointer;
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.llm-wiki-model-popover-item:hover {
+  background: var(--background-modifier-hover);
+}
+.llm-wiki-model-popover-item.is-active {
+  color: var(--text-accent);
+  font-weight: 500;
+}
+
+/* ---------- Footer ---------- */
+
+.llm-wiki-query-footer {
+  min-height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.llm-wiki-query-footer-warning {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  font-style: italic;
 }

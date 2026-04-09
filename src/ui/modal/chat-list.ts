@@ -3,8 +3,21 @@
  * hover reveals rename + delete buttons. Sorting is delegated to
  * `sortChatsByRecency`. Markdown-free — purely textual rows.
  */
+import { setIcon } from "obsidian";
 import type { Chat } from "../../chat/types.js";
 import { sortChatsByRecency } from "../../chat/store.js";
+
+/**
+ * Case-insensitive substring match against the chat title and the first
+ * turn's question. Cheap, predictable, and good enough as a "did I already
+ * ask something like this?" filter.
+ */
+function matchesFilter(chat: Chat, filter: string): boolean {
+  const needle = filter.toLowerCase();
+  if (chat.title.toLowerCase().includes(needle)) return true;
+  const firstQ = chat.turns[0]?.question ?? "";
+  return firstQ.toLowerCase().includes(needle);
+}
 
 export interface ChatListCallbacks {
   onPick(chatId: string): void;
@@ -21,8 +34,13 @@ export class ChatList {
     private readonly cb: ChatListCallbacks,
   ) {}
 
-  render(chats: readonly Chat[], selectedId: string | null): void {
-    this.chats = sortChatsByRecency(chats);
+  render(
+    chats: readonly Chat[],
+    selectedId: string | null,
+    filter = "",
+  ): void {
+    const sorted = sortChatsByRecency(chats);
+    this.chats = filter ? sorted.filter((c) => matchesFilter(c, filter)) : sorted;
     this.selectedIdx = selectedId
       ? this.chats.findIndex((c) => c.id === selectedId)
       : -1;
@@ -58,18 +76,16 @@ export class ChatList {
     title.textContent = chat.title;
     row.appendChild(title);
 
-    const rename = document.createElement("button");
+    const rename = document.createElement("span");
     rename.className = "rename";
-    rename.type = "button";
     rename.setAttribute("aria-label", "Rename chat");
-    rename.textContent = "✎";
+    setIcon(rename, "pencil");
     row.appendChild(rename);
 
-    const del = document.createElement("button");
+    const del = document.createElement("span");
     del.className = "delete";
-    del.type = "button";
     del.setAttribute("aria-label", "Delete chat");
-    del.textContent = "×";
+    setIcon(del, "x");
     row.appendChild(del);
 
     row.addEventListener("click", (ev) => {

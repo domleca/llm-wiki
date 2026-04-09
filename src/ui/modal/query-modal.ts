@@ -85,6 +85,7 @@ export class QueryModal extends Modal {
   private ollamaPingTimer: number | null = null;
   private chatList!: ChatList;
   private transcript!: ChatTranscript;
+  private footerEl!: HTMLDivElement;
 
   /** How often to re-check Ollama liveness while the modal is open. */
   private static readonly OLLAMA_PING_INTERVAL_MS = 2_000;
@@ -101,6 +102,10 @@ export class QueryModal extends Modal {
     contentEl.empty();
     contentEl.addClass("llm-wiki-query-modal");
     contentEl.setAttr("data-state", "idle");
+    // Picker mode shows the history list; chat mode hides it and pins the
+    // input at the bottom. Always start in picker mode — reopening the modal
+    // is the user's way of "getting back to history".
+    contentEl.setAttr("data-mode", "picker");
     this.modalEl.addClass("llm-wiki-query-modal");
 
     // Markdown renderer helper
@@ -158,7 +163,7 @@ export class QueryModal extends Modal {
     this.ollamaPillEl.onclick = (): void => this.handleOllamaPillClick();
     pills.createSpan({
       cls: "llm-wiki-query-pill",
-      text: `folder: ${this.args.folder || "(whole vault)"}`,
+      text: `folder: ${this.args.folder || this.app.vault.getName()}`,
     });
 
     // Terminal-style status line
@@ -177,21 +182,27 @@ export class QueryModal extends Modal {
     });
     this.chatList.render(this.chats, this.activeChatId);
 
-    // If there's an active chat, render its turns
-    if (this.activeChatId) {
-      const active = this.chats.find((c) => c.id === this.activeChatId);
-      if (active) this.transcript.renderChat(active);
-    }
+    // We always start in picker mode — even if an activeChatId was persisted,
+    // the user's expectation is that reopening the modal goes back to the
+    // history list, and the most recent chat sits at the top of it.
+    this.activeChatId = null;
 
-    // Keyboard hints
-    const footer = contentEl.createDiv({ cls: "prompt-instructions" });
-    this.appendInstruction(footer, "↑↓", "to navigate");
-    this.appendInstruction(footer, "↩", "to use");
-    this.appendInstruction(footer, "esc", "to dismiss");
+    // Keyboard hints (hidden in chat mode via CSS)
+    this.footerEl = contentEl.createDiv({ cls: "prompt-instructions llm-wiki-query-footer" });
+    this.renderFooterHints();
 
     // Input wiring
     this.inputEl.addEventListener("input", () => {
       this.updateClearVisibility();
+      // In picker mode the input doubles as a filter over recent chats so
+      // the user can notice "I already asked this" before hitting Enter.
+      if (this.contentEl.getAttr("data-mode") !== "chat") {
+        this.chatList.render(
+          this.chats,
+          this.activeChatId,
+          this.inputEl.value.trim(),
+        );
+      }
     });
 
     this.inputEl.addEventListener("keydown", (ev) => {
@@ -245,17 +256,70 @@ export class QueryModal extends Modal {
   }
 
   private handleModelPillClick(): void {
-    void openModelPicker({
-      app: this.args.app,
-      provider: this.args.provider,
-      current: this.currentModel,
-      onPick: (model) => {
+    // Close any existing popover first
+    this.closeModelPopover();
+    void this.openModelPopover();
+  }
+
+  private activeModelPopover: HTMLDivElement | null = null;
+  private modelPopoverCleanup: (() => void) | null = null;
+
+  private async openModelPopover(): Promise<void> {
+    if (!this.args.provider.listModels) {
+      new Notice("LLM Wiki: provider does not expose installed models.");
+      return;
+    }
+    const models = await this.args.provider.listModels();
+    if (!models || models.length === 0) {
+      new Notice("LLM Wiki: no models available.");
+      return;
+    }
+
+    const pill = this.modelPillEl;
+    if (!pill) return;
+
+    const popover = document.createElement("div");
+    popover.className = "llm-wiki-model-popover";
+
+    for (const model of models) {
+      const row = document.createElement("div");
+      row.className = "llm-wiki-model-popover-item";
+      if (model === this.currentModel) row.classList.add("is-active");
+      row.textContent = model;
+      row.addEventListener("click", (ev) => {
+        ev.stopPropagation();
         this.currentModel = model;
         if (this.modelPillEl) this.modelPillEl.setText(`model: ${model}`);
         this.controller?.setModel(model);
         this.args.onModelChanged(model);
-      },
-    });
+        this.closeModelPopover();
+      });
+      popover.appendChild(row);
+    }
+
+    // Position anchored below the pill
+    const rect = pill.getBoundingClientRect();
+    const modalRect = this.modalEl.getBoundingClientRect();
+    popover.style.top = `${rect.bottom - modalRect.top + 4}px`;
+    popover.style.left = `${rect.left - modalRect.left}px`;
+    this.modalEl.appendChild(popover);
+    this.activeModelPopover = popover;
+
+    // Close on click outside
+    const onClickOutside = (ev: MouseEvent): void => {
+      if (!popover.contains(ev.target as Node) && ev.target !== pill) {
+        this.closeModelPopover();
+      }
+    };
+    window.setTimeout(() => document.addEventListener("click", onClickOutside), 0);
+    this.modelPopoverCleanup = () => document.removeEventListener("click", onClickOutside);
+  }
+
+  private closeModelPopover(): void {
+    this.activeModelPopover?.remove();
+    this.activeModelPopover = null;
+    this.modelPopoverCleanup?.();
+    this.modelPopoverCleanup = null;
   }
 
   private handleOllamaPillClick(): void {
@@ -271,18 +335,26 @@ export class QueryModal extends Modal {
 
   private applyIndexState(state: EmbeddingIndexState): void {
     if (!this.unsubscribeIndex) return; // modal already closed
+
+    // Always create the controller (with an empty index if necessary) so the
+    // user can query with keyword-only retrieval while embeddings build.
+    if (!this.controller) {
+      const index: ReadonlyMap<string, number[]> =
+        state.kind === "ready" ? state.index : new Map();
+      this.controller = this.buildQueryController(index);
+    }
+
     if (state.kind === "idle" || state.kind === "building") {
       this.contentEl.setAttr("data-state", "indexing");
       this.terminalTextEl.setText(formatIndexingStatus(state));
       this.terminalTextEl.removeClass("llm-wiki-query-terminal-clickable");
       this.terminalTextEl.onclick = null;
-      this.inputEl.setAttr("disabled", "true");
+      // Input stays enabled — keyword-only retrieval works fine without
+      // embeddings. The user shouldn't have to wait for a full index rebuild.
+      this.inputEl.removeAttribute("disabled");
+      this.inputEl.focus();
+      this.renderFooterIndexingWarning();
       return;
-    }
-    const index: ReadonlyMap<string, number[]> =
-      state.kind === "ready" ? state.index : new Map();
-    if (!this.controller) {
-      this.controller = this.buildQueryController(index);
     }
     if (state.kind === "error" && state.reason === "connect") {
       this.ollamaPingState = ollamaPingStateFromBool(false);
@@ -316,6 +388,7 @@ export class QueryModal extends Modal {
     this.terminalTextEl.removeClass("llm-wiki-query-terminal-clickable");
     this.terminalTextEl.onclick = null;
     this.applyState("idle");
+    this.renderFooterHints();
     this.inputEl.focus();
   }
 
@@ -373,12 +446,19 @@ export class QueryModal extends Modal {
     return fresh;
   }
 
+  private enterChatMode(): void {
+    this.contentEl.setAttr("data-mode", "chat");
+    // Footer is useless in chat mode — hide it
+    this.footerEl.style.display = "none";
+  }
+
   private submit(): void {
     if (!this.controller) return;
     const q = this.inputEl.value.trim();
     if (!q) return;
 
     const chat = this.ensureActiveChat();
+    this.enterChatMode();
 
     this.currentHandle = this.transcript.beginTurn(q);
     this.currentStreamedAnswer = "";
@@ -458,8 +538,10 @@ export class QueryModal extends Modal {
     const chat = this.chats.find((c) => c.id === id);
     if (!chat) return;
     this.activeChatId = id;
-    this.chatList.render(this.chats, id);
     this.transcript.renderChat(chat);
+    this.enterChatMode();
+    this.inputEl.value = "";
+    this.updateClearVisibility();
     this.inputEl.focus();
   }
 
@@ -522,6 +604,23 @@ export class QueryModal extends Modal {
     );
   }
 
+  private renderFooterHints(): void {
+    this.footerEl.innerHTML = "";
+    this.footerEl.style.display = "";
+    this.appendInstruction(this.footerEl, "↑↓", "to navigate");
+    this.appendInstruction(this.footerEl, "↩", "to use");
+    this.appendInstruction(this.footerEl, "esc", "to dismiss");
+  }
+
+  private renderFooterIndexingWarning(): void {
+    // Only show in picker mode — in chat mode the footer is hidden entirely.
+    if (this.contentEl.getAttr("data-mode") === "chat") return;
+    this.footerEl.innerHTML = "";
+    this.footerEl.style.display = "";
+    const warn = this.footerEl.createDiv({ cls: "llm-wiki-query-footer-warning" });
+    warn.textContent = "Indexing in progress \u2014 results may be less accurate";
+  }
+
   private appendInstruction(
     parent: HTMLElement,
     cmd: string,
@@ -536,6 +635,7 @@ export class QueryModal extends Modal {
   }
 
   onClose(): void {
+    this.closeModelPopover();
     this.controller?.cancel();
     this.mdComponent.unload();
     this.unsubscribeIndex?.();
