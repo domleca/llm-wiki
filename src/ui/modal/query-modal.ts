@@ -13,7 +13,7 @@ import {
   QueryController,
   type QueryControllerState,
 } from "./query-controller.js";
-import type { RetrievedBundle } from "../../query/types.js";
+import type { RetrievedBundle, ScoredSource } from "../../query/types.js";
 import type {
   EmbeddingIndexController,
   EmbeddingIndexState,
@@ -37,6 +37,7 @@ import { generateChatId } from "../../chat/id.js";
 import { generateChatTitle } from "../../chat/title.js";
 import { ChatTranscript, type TurnHandle } from "./chat-transcript.js";
 import { ChatList } from "./chat-list.js";
+import { groundSources } from "../../query/ground-sources.js";
 
 export interface QueryModalArgs {
   app: App;
@@ -77,10 +78,7 @@ export interface QueryModalArgs {
 const MAX_RANKED_SOURCES = 15;
 const MAX_SOURCES_PER_ITEM = 5;
 
-export interface ScoredSource {
-  id: string;
-  score: number;
-}
+export type { ScoredSource } from "../../query/types.js";
 
 function rankSourcesByRelevance(bundle: RetrievedBundle): ScoredSource[] {
   const scores = new Map<string, number>();
@@ -645,6 +643,17 @@ export class QueryModal extends Modal {
     const chat = this.activeChatId
       ? this.chats.find((c) => c.id === this.activeChatId)
       : null;
+
+    // Re-score: keep only sources linked to entities/concepts the LLM
+    // actually mentioned in its answer.
+    if (this.currentBundle && this.currentStreamedAnswer) {
+      this.currentScoredSources = groundSources(
+        this.currentStreamedAnswer,
+        this.currentBundle,
+        this.currentScoredSources,
+      );
+    }
+
     const sourceIds = this.currentScoredSources.map((s) => s.id);
     if (!chat) {
       this.currentHandle?.setSources(this.currentScoredSources);

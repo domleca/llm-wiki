@@ -556,39 +556,68 @@
 /* ---------- Consolidated sources footer ---------- */
 
 .transcript-sources-footer {
-  margin-top: 1rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid rgb(246, 246, 246);
+  margin-top: 1.25rem;
+}
+.transcript-sources-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+.transcript-sources-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--background-modifier-border);
 }
 .transcript-sources-label {
-  font-size: var(--font-ui-small);
+  font-size: 10px;
   color: var(--text-muted);
   font-weight: 500;
-  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
-.transcript-source-item {
+.transcript-sources-chevron {
+  display: inline-flex;
+  color: var(--text-muted);
+  transition: transform 120ms ease;
+}
+.transcript-sources-chevron svg {
+  width: 12px;
+  height: 12px;
+}
+.transcript-sources-footer.is-expanded .transcript-sources-chevron {
+  transform: rotate(90deg);
+}
+.transcript-sources-list {
+  display: none;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+}
+.transcript-sources-footer.is-expanded .transcript-sources-list {
+  display: flex;
+}
+.transcript-source-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--background-secondary);
+  cursor: pointer;
+  max-width: 220px;
+  transition: background 120ms ease;
+}
+.transcript-source-pill:hover {
+  background: var(--background-modifier-hover);
+}
+.transcript-source-title {
   font-size: var(--font-ui-smaller);
-  padding: 0.15rem 0;
+  color: var(--text-normal);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.transcript-source-link {
-  cursor: pointer;
-  text-decoration: none;
-  color: var(--text-accent);
-}
-.transcript-source-link:hover {
-  text-decoration: underline;
-}
-.transcript-sources-more {
-  font-size: var(--font-ui-smaller);
-  color: var(--text-accent);
-  cursor: pointer;
-  padding: 0.3rem 0;
-}
-.transcript-sources-more:hover {
-  text-decoration: underline;
 }
 
 /* ---------- Thinking indicator ---------- */

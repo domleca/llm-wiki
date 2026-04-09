@@ -22,6 +22,11 @@ export interface RetrievedBundle {
   sources: SourceRecord[];
 }
 
+export interface ScoredSource {
+  id: string;
+  score: number;
+}
+
 export interface AnswerEvent {
   kind: "context" | "chunk" | "done" | "error";
   bundle?: RetrievedBundle;

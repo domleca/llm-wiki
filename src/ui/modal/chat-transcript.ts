@@ -13,7 +13,7 @@
  * rendering is injected so tests can stub Obsidian's renderer.
  */
 
-import { type App, TFile } from "obsidian";
+import { type App, TFile, setIcon } from "obsidian";
 import type { Chat } from "../../chat/types.js";
 import type { ScoredSource } from "./query-modal.js";
 
@@ -41,7 +41,6 @@ const THINKING_MESSAGES = [
   "On it",
 ];
 
-const VISIBLE_SOURCES = 10;
 
 /** Strip leading date prefix (e.g. "2025-12-23-") and replace hyphens with spaces. */
 function cleanBasename(name: string): string {
@@ -247,53 +246,52 @@ export class ChatTranscript {
     const footer = this.sourcesFooter;
     footer.innerHTML = "";
 
-    const total = ranked.length;
-    const label = document.createElement("div");
+    // Divider: left-aligned label + chevron, then line stretches right
+    const divider = document.createElement("div");
+    divider.className = "transcript-sources-divider";
+
+    const chevron = document.createElement("span");
+    chevron.className = "transcript-sources-chevron";
+    setIcon(chevron, "chevron-right");
+    divider.appendChild(chevron);
+
+    const label = document.createElement("span");
     label.className = "transcript-sources-label";
-    label.textContent = `Sources (${total})`;
-    footer.appendChild(label);
+    label.textContent = `Sources (${ranked.length})`;
+    divider.appendChild(label);
+
+    footer.appendChild(divider);
 
     const list = document.createElement("div");
     list.className = "transcript-sources-list";
     footer.appendChild(list);
 
-    const visible = ranked.slice(0, VISIBLE_SOURCES);
-    const overflow = ranked.slice(VISIBLE_SOURCES);
-
-    for (const id of visible) {
-      list.appendChild(this.buildSourceRow(id));
+    for (const id of ranked) {
+      list.appendChild(this.buildSourcePill(id));
     }
 
-    if (overflow.length > 0) {
-      const moreBtn = document.createElement("div");
-      moreBtn.className = "transcript-sources-more";
-      moreBtn.textContent = `Show ${overflow.length} more`;
-      list.appendChild(moreBtn);
-
-      moreBtn.addEventListener("click", () => {
-        moreBtn.remove();
-        for (const id of overflow) {
-          list.appendChild(this.buildSourceRow(id));
-        }
-        this.scrollToBottomIfFollowing(false);
-      });
-    }
+    // Toggle expand/collapse on divider click
+    divider.addEventListener("click", () => {
+      footer.classList.toggle("is-expanded");
+      this.scrollToBottomIfFollowing(false);
+    });
   }
 
-  private buildSourceRow(id: string): HTMLDivElement {
-    const row = document.createElement("div");
-    row.className = "transcript-source-item";
+  private buildSourcePill(id: string): HTMLDivElement {
+    const pill = document.createElement("div");
+    pill.className = "transcript-source-pill";
 
-    const link = document.createElement("a");
-    link.className = "transcript-source-link";
-    link.textContent = this.resolveTitle(id);
-    link.addEventListener("mousedown", (ev) => {
+    const title = document.createElement("span");
+    title.className = "transcript-source-title";
+    title.textContent = this.resolveTitle(id);
+    pill.appendChild(title);
+
+    pill.addEventListener("mousedown", (ev) => {
       ev.preventDefault();
       ev.stopPropagation();
       this.openInBackground(id);
     });
-    row.appendChild(link);
-    return row;
+    return pill;
   }
 
   /** Resolve a file path to its display title (frontmatter title, H1, or cleaned basename). */
