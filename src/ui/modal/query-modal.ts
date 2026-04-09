@@ -159,6 +159,7 @@ export class QueryModal extends Modal {
   private firstChunkMs = 0;
   private lastSubmittedQuestion = "";
   private currentHandle: TurnHandle | null = null;
+  private currentSourceCount = 0;
 
   private chats: readonly Chat[];
   private activeChatId: string | null;
@@ -608,12 +609,15 @@ export class QueryModal extends Modal {
           void this.finalizeTurn();
         }
       },
-      onContext: (bundle): void => {
+      onContext: (bundle, confidence): void => {
         this.currentBundle = bundle;
         this.currentScoredSources = rankSourcesByRelevance(bundle);
-        // Sources are shown only after the answer is fully delivered (in
-        // finalizeTurn) — showing them before feels like they're still being
-        // fetched.
+        this.currentSourceCount = bundle.sources.length;
+        if (confidence !== "confident") {
+          this.currentHandle?.setThinkingText(
+            "Uh oh\u2026 few matches in your vault",
+          );
+        }
       },
       onChunk: (t): void => {
         if (this.firstChunkMs === 0) this.firstChunkMs = Date.now();
@@ -670,6 +674,7 @@ export class QueryModal extends Modal {
     this.startMs = Date.now();
     this.firstChunkMs = 0;
     this.currentBundle = null;
+    this.currentSourceCount = 0;
     this.lastSubmittedQuestion = q;
 
     void this.controller.runChatTurn({ chat, question: q });
@@ -808,7 +813,9 @@ export class QueryModal extends Modal {
       case "done": {
         const endMs = this.firstChunkMs || Date.now();
         const secs = ((endMs - this.startMs) / 1000).toFixed(1);
-        return `done in ${secs}s`;
+        const n = this.currentSourceCount;
+        const srcLabel = n === 1 ? "1 source" : `${n} sources`;
+        return `done in ${secs}s \u00B7 ${srcLabel}`;
       }
       case "error":
         return "error — see notice";

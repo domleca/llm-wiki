@@ -4,6 +4,8 @@ import type { LLMProvider } from "../llm/provider.js";
 import { formatContextMarkdown } from "./format-context.js";
 import { buildAskPrompt } from "./prompts.js";
 import { retrieve, type RetrieveArgs } from "./retrieve.js";
+import { assessConfidence } from "./confidence.js";
+import { randomEmptyMessage } from "./confidence.js";
 import type { AnswerEvent } from "./types.js";
 
 export interface AskArgs {
@@ -32,6 +34,17 @@ export async function* ask(args: AskArgs): AsyncIterable<AnswerEvent> {
     };
     const bundle = retrieve(retrieveArgs);
     yield { kind: "context", bundle };
+
+    // Short-circuit: if retrieval found nothing, skip the LLM call entirely.
+    const confidence = assessConfidence(bundle);
+    if (confidence === "empty") {
+      yield {
+        kind: "chunk",
+        text: randomEmptyMessage(),
+      };
+      yield { kind: "done" };
+      return;
+    }
 
     const context = formatContextMarkdown(bundle);
     const prompt = buildAskPrompt({

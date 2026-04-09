@@ -78,7 +78,7 @@ describe("ask with history and retrievalQuery", () => {
       },
     ];
     for await (const _ev of ask({
-      question: "follow up?",
+      question: "tell me more about Alan Watts",
       history,
       kb,
       provider,

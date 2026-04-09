@@ -2,6 +2,7 @@ import type { KnowledgeBase } from "../../core/kb.js";
 import { ask } from "../../query/ask.js";
 import type { LLMProvider } from "../../llm/provider.js";
 import type { RetrievedBundle } from "../../query/types.js";
+import { assessConfidence, type ConfidenceLevel } from "../../query/confidence.js";
 import type { Chat } from "../../chat/types.js";
 import { rewriteFollowUp } from "../../chat/rewrite.js";
 import { getModelContextWindow } from "../../chat/model-context.js";
@@ -25,7 +26,7 @@ export interface QueryControllerOptions {
   embeddingIndex?: ReadonlyMap<string, number[]>;
   queryEmbedding?: number[] | null;
   onState: (s: QueryControllerState) => void;
-  onContext: (bundle: RetrievedBundle) => void;
+  onContext: (bundle: RetrievedBundle, confidence: ConfidenceLevel) => void;
   onChunk: (text: string) => void;
   onError?: (msg: string) => void;
   onRetrievalQuery?: (q: string) => void;
@@ -91,7 +92,7 @@ export class QueryController {
       })) {
         if (this.state === "cancelled") return;
         if (ev.kind === "context" && ev.bundle) {
-          this.opts.onContext(ev.bundle);
+          this.opts.onContext(ev.bundle, assessConfidence(ev.bundle));
           this.transition("streaming");
         } else if (ev.kind === "chunk" && ev.text) {
           this.opts.onChunk(ev.text);

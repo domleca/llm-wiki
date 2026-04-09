@@ -7,10 +7,14 @@ vi.mock("../../src/query/retrieve.js", () => ({
   retrieve: vi.fn(() => ({
     question: "standalone Q",
     queryType: "conceptual" as const,
-    entities: [],
+    entities: [
+      { id: "e1", name: "Test", type: "other", aliases: [], facts: ["f1", "f2", "f3"], sources: ["a.md"] },
+      { id: "e2", name: "Test2", type: "other", aliases: [], facts: ["f1"], sources: ["b.md"] },
+      { id: "e3", name: "Test3", type: "other", aliases: [], facts: ["f1"], sources: ["c.md"] },
+    ],
     concepts: [],
     connections: [],
-    sources: [],
+    sources: [{ id: "a.md", summary: "s", date: null, mtime: 0, origin: "user-note" }],
   })),
 }));
 

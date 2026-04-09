@@ -23,6 +23,7 @@ export interface ChatTranscriptOptions {
 }
 
 export interface TurnHandle {
+  setThinkingText(text: string): void;
   appendAnswerChunk(text: string): void;
   setSources(sources: readonly ScoredSource[]): void;
   finalize(): void;
@@ -39,6 +40,11 @@ const THINKING_MESSAGES = [
   "Leafing through your notes",
   "Reading your mind",
   "On it",
+  "Connecting the dots",
+  "\u21AF Sparking neurons",
+  "\u223F Tuning in",
+  "\u2318 Processing",
+  "Obsidianizing",
 ];
 
 
@@ -150,6 +156,16 @@ export class ChatTranscript {
     };
 
     return {
+      setThinkingText: (text: string): void => {
+        if (thinkingLabelEl) {
+          thinkingLabelEl.textContent = text;
+        }
+        // Lock: stop rotating away from a meaningful message
+        if (thinkingRotation !== null) {
+          clearInterval(thinkingRotation);
+          thinkingRotation = null;
+        }
+      },
       appendAnswerChunk: (text: string): void => {
         stopThinking();
         buffer += text;

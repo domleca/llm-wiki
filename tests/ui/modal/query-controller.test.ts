@@ -55,7 +55,7 @@ describe("QueryController", () => {
       onChunk: () => {},
       onContext: () => {},
     });
-    await ctrl.run("q");
+    await ctrl.run("who is Alan Watts");
     expect(states[states.length - 1]).toBe("error");
   });
 
@@ -75,7 +75,7 @@ describe("QueryController", () => {
       onChunk: () => {},
       onContext: () => {},
     });
-    const p = ctrl.run("q");
+    const p = ctrl.run("who is Alan Watts");
     await new Promise((r) => setTimeout(r, 10));
     ctrl.cancel();
     await p;
@@ -137,20 +137,20 @@ describe("QueryController.runChatTurn", () => {
       onRetrievalQuery: (q) => retrievalQueries.push(q),
     });
 
-    await ctrl.runChatTurn({ chat: buildEmptyChat(), question: "hello" });
+    await ctrl.runChatTurn({ chat: buildEmptyChat(), question: "who is Alan Watts" });
 
     // Only one complete() call (the ask, no rewrite)
     expect(provider.calls).toHaveLength(1);
     // The single call's prompt must NOT contain the rewrite prompt marker
     expect(provider.calls[0]!.prompt).not.toContain("Standalone question:");
     // onRetrievalQuery called with the raw question
-    expect(retrievalQueries).toEqual(["hello"]);
+    expect(retrievalQueries).toEqual(["who is Alan Watts"]);
   });
 
   it("turn 2 (non-empty history): calls complete twice — rewrite then ask", async () => {
     const kb = buildKB();
     const provider = new MockLLMProvider({
-      responses: ["rewritten standalone Q", "final answer chunk"],
+      responses: ["Why is Alan Watts important", "final answer chunk"],
       chunked: false,
     });
     const retrievalQueries: string[] = [];
@@ -174,7 +174,7 @@ describe("QueryController.runChatTurn", () => {
     expect(askPrompt).toContain("Conversation so far:");
     expect(askPrompt).toContain("[user]");
     // onRetrievalQuery called with the rewritten query
-    expect(retrievalQueries).toEqual(["rewritten standalone Q"]);
+    expect(retrievalQueries).toEqual(["Why is Alan Watts important"]);
   });
 
   it("emits state transitions: loading → streaming → done", async () => {
@@ -193,7 +193,7 @@ describe("QueryController.runChatTurn", () => {
       onContext: () => {},
     });
 
-    await ctrl.runChatTurn({ chat: buildEmptyChat(), question: "hello" });
+    await ctrl.runChatTurn({ chat: buildEmptyChat(), question: "who is Alan Watts" });
 
     expect(states).toEqual(["loading", "streaming", "done"]);
   });

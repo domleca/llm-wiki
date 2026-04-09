@@ -7,8 +7,8 @@ export interface BuildAskPromptArgs {
 }
 
 const RULES = [
-  "Use ONLY information present in the knowledge base context below. Do not invent facts.",
-  "If the context does not contain enough to answer, say so plainly — do not speculate.",
+  "Use ONLY information present below. Do not invent facts.",
+  "If you don't have enough information to answer, say so plainly using \"we\" (e.g. \"We don't seem to have information about that\") — do not speculate, and do not explain what your data does or doesn't cover.",
   "When the user asks a list question (\"what books\", \"how many\"), be comprehensive: list every matching item from the context.",
   "Prefer the entity's own facts over connection summaries when both are available.",
   "Do not include raw file paths in your prose answer. Sources are tracked separately.",
@@ -16,12 +16,13 @@ const RULES = [
   "If two facts contradict, surface the contradiction rather than picking one.",
   "Be concise. Aim for the shortest answer that fully addresses the question.",
   "If the user refers to something from earlier in the conversation, use that context to interpret the question.",
+  "Never mention the knowledge base, the context, the provided text, your sources of data, or where your information comes from. Answer as if you simply know the facts. When you don't know, just say so using \"we\" — never explain what your data covers or doesn't cover.",
 ];
 
 export function buildAskPrompt(args: BuildAskPromptArgs): string {
   const rulesBlock = RULES.map((r, i) => `${i + 1}. ${r}`).join("\n");
   const parts: string[] = [
-    "You answer questions using a personal knowledge base.",
+    "You answer questions about the user's personal notes and documents.",
     "",
     "Rules:",
     rulesBlock,
