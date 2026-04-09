@@ -500,7 +500,7 @@
   order: 1;
 }
 .llm-wiki-query-modal[data-mode="chat"] .llm-wiki-query-terminal {
-  order: 2;
+  display: none;
 }
 .llm-wiki-query-modal[data-mode="chat"] .llm-wiki-query-input-container {
   order: 4;
@@ -537,6 +537,8 @@
   font-weight: 500;
   white-space: pre-wrap;
   word-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+  transform: translateZ(0);
 }
 
 /* Assistant turn: plain markdown, no bubble, full width. */

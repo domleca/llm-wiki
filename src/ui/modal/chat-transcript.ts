@@ -25,6 +25,20 @@ export interface TurnHandle {
 /** Distance from the bottom (px) within which we still consider the user "at bottom". */
 const FOLLOW_THRESHOLD_PX = 24;
 
+const THINKING_MESSAGES = [
+  "Thinking",
+  "Digging through your notes",
+  "Sifting through your thoughts",
+  "Pulling threads together",
+  "Leafing through your notes",
+  "Reading your mind",
+  "On it",
+];
+
+function randomThinkingMessage(): string {
+  return THINKING_MESSAGES[Math.floor(Math.random() * THINKING_MESSAGES.length)]!;
+}
+
 export class ChatTranscript {
   /** When true, new content scrolls the viewport; flipped off when the user scrolls up. */
   private followStream = true;
@@ -57,12 +71,29 @@ export class ChatTranscript {
   }
 
   beginTurn(question: string): TurnHandle {
-    const { answerEl, sourcesEl, thinkingEl } = this.appendTurnBlock(question, {
-      withThinking: true,
-    });
+    const { answerEl, sourcesEl, thinkingEl, thinkingLabelEl } =
+      this.appendTurnBlock(question, { withThinking: true });
     // New turn counts as user intent to follow the latest content.
     this.followStream = true;
     this.scrollToBottomIfFollowing(true);
+
+    // Rotate the thinking message every 10s while waiting
+    let thinkingRotation: ReturnType<typeof setInterval> | null = null;
+    if (thinkingLabelEl) {
+      thinkingRotation = setInterval(() => {
+        thinkingLabelEl.textContent = randomThinkingMessage();
+      }, 10_000);
+    }
+
+    const stopThinking = (): void => {
+      if (thinkingEl && thinkingEl.parentNode) {
+        thinkingEl.remove();
+      }
+      if (thinkingRotation !== null) {
+        clearInterval(thinkingRotation);
+        thinkingRotation = null;
+      }
+    };
 
     let buffer = "";
     let renderTimer: ReturnType<typeof setTimeout> | null = null;
@@ -77,9 +108,7 @@ export class ChatTranscript {
 
     return {
       appendAnswerChunk: (text: string): void => {
-        if (thinkingEl && thinkingEl.parentNode) {
-          thinkingEl.remove();
-        }
+        stopThinking();
         buffer += text;
         // Debounce markdown re-renders so tokens accumulate between frames.
         // This makes it far less likely that a bold/italic marker opens in one
@@ -92,9 +121,7 @@ export class ChatTranscript {
       setSources: (ids: readonly string[]): void =>
         this.fillSources(sourcesEl, ids),
       finalize: (): void => {
-        if (thinkingEl && thinkingEl.parentNode) {
-          thinkingEl.remove();
-        }
+        stopThinking();
         // Flush any pending render immediately so the final state is complete.
         if (renderTimer) {
           clearTimeout(renderTimer);
@@ -115,6 +142,7 @@ export class ChatTranscript {
     answerEl: HTMLDivElement;
     sourcesEl: HTMLDetailsElement;
     thinkingEl: HTMLDivElement | null;
+    thinkingLabelEl: HTMLSpanElement | null;
   } {
     const turn = document.createElement("div");
     turn.className = "turn";
@@ -125,16 +153,17 @@ export class ChatTranscript {
     turn.appendChild(q);
 
     let thinkingEl: HTMLDivElement | null = null;
+    let thinkingLabelEl: HTMLSpanElement | null = null;
     if (opts.withThinking) {
       thinkingEl = document.createElement("div");
       thinkingEl.className = "turn-thinking";
-      const label = document.createElement("span");
-      label.className = "turn-thinking-label";
-      label.textContent = "Thinking";
+      thinkingLabelEl = document.createElement("span");
+      thinkingLabelEl.className = "turn-thinking-label";
+      thinkingLabelEl.textContent = randomThinkingMessage();
       const dots = document.createElement("span");
       dots.className = "turn-thinking-dots";
       dots.textContent = "...";
-      thinkingEl.append(label, dots);
+      thinkingEl.append(thinkingLabelEl, dots);
       turn.appendChild(thinkingEl);
     }
 
@@ -150,7 +179,7 @@ export class ChatTranscript {
     turn.appendChild(s);
 
     this.root.appendChild(turn);
-    return { answerEl: a, sourcesEl: s, thinkingEl };
+    return { answerEl: a, sourcesEl: s, thinkingEl, thinkingLabelEl };
   }
 
   private fillSources(

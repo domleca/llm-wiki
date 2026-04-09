@@ -137,7 +137,7 @@ export class QueryModal extends Modal {
     });
     this.inputEl = inputContainer.createEl("input", {
       type: "text",
-      placeholder: "Ask your knowledge base…",
+      placeholder: "Ask your knowledge base\u2026",
       cls: "llm-wiki-query-input",
     });
     this.clearBtn = inputContainer.createEl("button", {
