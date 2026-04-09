@@ -31,14 +31,7 @@ class VocabularyModal extends Modal {
       return;
     }
 
-    const pre = contentEl.createEl("pre");
-    pre.style.maxHeight = "60vh";
-    pre.style.overflow = "auto";
-    pre.style.whiteSpace = "pre-wrap";
-    pre.style.wordBreak = "break-word";
-    pre.style.userSelect = "text";
-    pre.style.fontSize = "0.85em";
-    pre.style.fontFamily = "var(--font-monospace)";
+    const pre = contentEl.createEl("pre", { cls: "llm-wiki-vocabulary-pre" });
     pre.setText(exportVocabulary(this.kb));
   }
 

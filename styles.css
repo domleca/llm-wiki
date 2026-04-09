@@ -705,3 +705,15 @@
   color: var(--text-muted);
   font-style: italic;
 }
+
+/* ---------- Vocabulary modal ---------- */
+
+.llm-wiki-vocabulary-pre {
+  max-height: 60vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  user-select: text;
+  font-size: 0.85em;
+  font-family: var(--font-monospace);
+}
