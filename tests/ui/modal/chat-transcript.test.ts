@@ -7,10 +7,23 @@ const renderMarkdown = (el: HTMLElement, md: string): void => {
   el.textContent = md;
 };
 
+// Minimal App mock — only what ChatTranscript touches for source rendering
+const mockApp = {
+  vault: {
+    getAbstractFileByPath: () => null,
+  },
+  metadataCache: {
+    getFileCache: () => null,
+  },
+  workspace: {
+    getLeaf: () => ({ openFile: () => Promise.resolve() }),
+  },
+} as never;
+
 describe("ChatTranscript", () => {
   it("renders all turns of a chat", () => {
     const root = document.createElement("div");
-    const t = new ChatTranscript(root, { renderMarkdown });
+    const t = new ChatTranscript(root, { app: mockApp, renderMarkdown });
     let chat = createChat({ id: "a", now: 0, folder: "", model: "m" });
     chat = appendTurn(
       chat,
@@ -31,12 +44,13 @@ describe("ChatTranscript", () => {
     expect(root.querySelector(".transcript-sources-label")?.textContent).toBe(
       "Sources (1)",
     );
-    expect(root.querySelector(".transcript-source-item")?.textContent).toBe("x.md");
+    // Title resolved from basename (mock returns null for file lookup)
+    expect(root.querySelector(".transcript-source-item .internal-link")?.textContent).toBe("x");
   });
 
   it("streams an answer via beginTurn → appendAnswerChunk → setSources → finalize", () => {
     const root = document.createElement("div");
-    const t = new ChatTranscript(root, { renderMarkdown });
+    const t = new ChatTranscript(root, { app: mockApp, renderMarkdown });
     const h = t.beginTurn("hello?");
     h.appendAnswerChunk("Hi");
     h.appendAnswerChunk(" there");
@@ -52,7 +66,7 @@ describe("ChatTranscript", () => {
 
   it("clear() empties the transcript", () => {
     const root = document.createElement("div");
-    const t = new ChatTranscript(root, { renderMarkdown });
+    const t = new ChatTranscript(root, { app: mockApp, renderMarkdown });
     t.beginTurn("q").finalize();
     expect(root.querySelectorAll(".turn")).toHaveLength(1);
     t.clear();
@@ -61,7 +75,7 @@ describe("ChatTranscript", () => {
 
   it("renderChat with multiple turns appends them in order", () => {
     const root = document.createElement("div");
-    const t = new ChatTranscript(root, { renderMarkdown });
+    const t = new ChatTranscript(root, { app: mockApp, renderMarkdown });
     let chat = createChat({ id: "a", now: 0, folder: "", model: "m" });
     chat = appendTurn(
       chat,
@@ -80,7 +94,7 @@ describe("ChatTranscript", () => {
 
   it("deduplicates sources across turns", () => {
     const root = document.createElement("div");
-    const t = new ChatTranscript(root, { renderMarkdown });
+    const t = new ChatTranscript(root, { app: mockApp, renderMarkdown });
     let chat = createChat({ id: "a", now: 0, folder: "", model: "m" });
     chat = appendTurn(
       chat,

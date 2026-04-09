@@ -13,9 +13,11 @@
  * rendering is injected so tests can stub Obsidian's renderer.
  */
 
+import { type App, TFile } from "obsidian";
 import type { Chat } from "../../chat/types.js";
 
 export interface ChatTranscriptOptions {
+  app: App;
   renderMarkdown: (el: HTMLElement, md: string) => void;
 }
 
@@ -39,6 +41,14 @@ const THINKING_MESSAGES = [
 ];
 
 const VISIBLE_SOURCES = 10;
+
+/** Strip leading date prefix (e.g. "2025-12-23-") and replace hyphens with spaces. */
+function cleanBasename(name: string): string {
+  return name
+    .replace(/^\d{4}-\d{2}-\d{2}-?/, "")
+    .replace(/-/g, " ")
+    .trim();
+}
 
 function randomThinkingMessage(): string {
   return THINKING_MESSAGES[Math.floor(Math.random() * THINKING_MESSAGES.length)]!;
@@ -255,8 +265,44 @@ export class ChatTranscript {
   private buildSourceRow(id: string): HTMLDivElement {
     const row = document.createElement("div");
     row.className = "transcript-source-item";
-    row.textContent = id;
+
+    const link = document.createElement("a");
+    link.className = "internal-link";
+    link.dataset.href = id;
+    link.textContent = this.resolveTitle(id);
+    link.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      this.openInBackground(id);
+    });
+    row.appendChild(link);
     return row;
+  }
+
+  /** Resolve a file path to its display title (frontmatter title, H1, or cleaned basename). */
+  private resolveTitle(path: string): string {
+    const app = this.opts.app;
+    const file = app.vault.getAbstractFileByPath(path);
+    if (!(file instanceof TFile)) {
+      return cleanBasename(path.replace(/\.md$/, "").split("/").pop() ?? path);
+    }
+    const cache = app.metadataCache.getFileCache(file);
+    // Frontmatter title takes priority
+    const fmTitle = cache?.frontmatter?.["title"];
+    if (typeof fmTitle === "string" && fmTitle.trim()) return fmTitle.trim();
+    // First H1 heading
+    const h1 = cache?.headings?.find((h) => h.level === 1);
+    if (h1) return h1.heading;
+    // Cleaned basename
+    return cleanBasename(file.basename);
+  }
+
+  /** Open a note in a new background tab without closing the modal. */
+  private openInBackground(path: string): void {
+    const app = this.opts.app;
+    const file = app.vault.getAbstractFileByPath(path);
+    if (!(file instanceof TFile)) return;
+    const leaf = app.workspace.getLeaf("tab");
+    void leaf.openFile(file, { active: false });
   }
 
   private isAtBottom(): boolean {

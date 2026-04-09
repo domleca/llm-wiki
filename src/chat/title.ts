@@ -9,17 +9,16 @@ import type { ChatTurn } from "./types.js";
 export interface TitleArgs {
   provider: LLMProvider;
   model: string;
-  firstTurn: ChatTurn;
+  question: string;
   signal?: AbortSignal;
 }
 
 export async function generateChatTitle(args: TitleArgs): Promise<string> {
   const prompt = [
-    "Summarize this Q&A as a short chat title of at most 6 words.",
+    "Summarize this question as a short chat title of at most 6 words.",
     "Output only the title. No quotes, no trailing punctuation, no preamble.",
     "",
-    `Q: ${args.firstTurn.question}`,
-    `A: ${args.firstTurn.answer}`,
+    `Q: ${args.question}`,
     "",
     "Title:",
   ].join("\n");

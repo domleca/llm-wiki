@@ -9,6 +9,8 @@
 .llm-wiki-query-modal.modal {
   width: min(720px, 92vw);
   padding: 0 !important;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 /* Hide the default Obsidian modal close button + title — Esc and click-outside already close */
@@ -538,7 +540,6 @@
   font-weight: 500;
   white-space: pre-wrap;
   word-wrap: break-word;
-  -webkit-font-smoothing: antialiased;
   transform: translateZ(0);
 }
 
@@ -567,11 +568,14 @@
 }
 .transcript-source-item {
   font-size: var(--font-ui-smaller);
-  color: var(--text-muted);
   padding: 0.15rem 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.transcript-source-item .internal-link {
+  cursor: pointer;
+  text-decoration: none;
 }
 .transcript-sources-more {
   font-size: var(--font-ui-smaller);
@@ -588,7 +592,8 @@
 .llm-wiki-query-transcript .turn-thinking {
   align-self: flex-start;
   padding: 0.25rem 0.5rem;
-  color: var(--text-muted);
+  color: var(--text-faint);
+  font-size: var(--font-ui-small);
   font-style: italic;
   display: inline-flex;
   gap: 0.15rem;

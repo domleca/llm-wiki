@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { generateChatTitle } from "../../src/chat/title.js";
 import type { LLMProvider } from "../../src/llm/provider.js";
-import type { ChatTurn } from "../../src/chat/types.js";
 
 function mockProvider(response: string): LLMProvider {
   return {
@@ -15,20 +14,12 @@ function mockProvider(response: string): LLMProvider {
   };
 }
 
-const firstTurn = (): ChatTurn => ({
-  question: "q",
-  answer: "a",
-  sourceIds: [],
-  rewrittenQuery: null,
-  createdAt: 0,
-});
-
 describe("generateChatTitle", () => {
   it("returns a trimmed ≤6-word title", async () => {
     const out = await generateChatTitle({
       provider: mockProvider("Embedding Index Runtime Details"),
       model: "m",
-      firstTurn: firstTurn(),
+      question: "How does the embedding index work at runtime?",
     });
     expect(out).toBe("Embedding Index Runtime Details");
   });
@@ -37,7 +28,7 @@ describe("generateChatTitle", () => {
     const out = await generateChatTitle({
       provider: mockProvider("one two three four five six seven eight"),
       model: "m",
-      firstTurn: firstTurn(),
+      question: "q",
     });
     expect(out.split(/\s+/).length).toBeLessThanOrEqual(6);
   });
@@ -46,7 +37,7 @@ describe("generateChatTitle", () => {
     const out = await generateChatTitle({
       provider: mockProvider('"Hello World."'),
       model: "m",
-      firstTurn: firstTurn(),
+      question: "q",
     });
     expect(out).toBe("Hello World");
   });
@@ -55,7 +46,7 @@ describe("generateChatTitle", () => {
     const out = await generateChatTitle({
       provider: mockProvider(""),
       model: "m",
-      firstTurn: firstTurn(),
+      question: "q",
     });
     expect(out).toBe("Untitled");
   });
@@ -73,7 +64,7 @@ describe("generateChatTitle", () => {
     const out = await generateChatTitle({
       provider: p,
       model: "m",
-      firstTurn: firstTurn(),
+      question: "q",
     });
     expect(out).toBe("Untitled");
   });

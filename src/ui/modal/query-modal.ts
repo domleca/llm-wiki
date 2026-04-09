@@ -166,7 +166,7 @@ export class QueryModal extends Modal {
     const transcriptEl = contentEl.createDiv({
       cls: "llm-wiki-query-transcript",
     });
-    this.transcript = new ChatTranscript(transcriptEl, { renderMarkdown });
+    this.transcript = new ChatTranscript(transcriptEl, { app: this.app, renderMarkdown });
 
     // Full-width input with inline clear button
     const inputContainer = contentEl.createDiv({
@@ -240,11 +240,17 @@ export class QueryModal extends Modal {
       // In picker mode the input doubles as a filter over recent chats so
       // the user can notice "I already asked this" before hitting Enter.
       if (this.contentEl.getAttr("data-mode") !== "chat") {
-        this.chatList.render(
-          this.chats,
-          this.activeChatId,
-          this.inputEl.value.trim(),
-        );
+        const filter = this.inputEl.value.trim();
+        // Lock the chat list height while filtering so the modal doesn't
+        // shrink and the input stays put. Release when the input is cleared.
+        if (filter) {
+          if (!chatListEl.style.minHeight) {
+            chatListEl.style.minHeight = `${chatListEl.offsetHeight}px`;
+          }
+        } else {
+          chatListEl.style.minHeight = "";
+        }
+        this.chatList.render(this.chats, this.activeChatId, filter);
       }
     });
 
@@ -581,6 +587,12 @@ export class QueryModal extends Modal {
 
     void this.controller.runChatTurn({ chat, question: q });
 
+    // Generate a title right away — only needs the question, no need to
+    // wait for the answer. Only for the first turn of a new chat.
+    if (chat.turns.length === 0) {
+      void this.runTitleGeneration(chat, q);
+    }
+
     this.inputEl.value = "";
     this.updateClearVisibility();
   }
@@ -625,17 +637,14 @@ export class QueryModal extends Modal {
       });
     }
 
-    if (updatedChat.turns.length === 1) {
-      void this.runTitleGeneration(updatedChat);
-    }
   }
 
-  private async runTitleGeneration(chat: Chat): Promise<void> {
+  private async runTitleGeneration(chat: Chat, question: string): Promise<void> {
     try {
       const title = await generateChatTitle({
         provider: this.args.provider,
         model: this.currentModel,
-        firstTurn: chat.turns[0]!,
+        question,
       });
       const updated = updateChatTitle(chat, title, Date.now());
       this.chats = this.chats.map((c) => (c.id === updated.id ? updated : c));
@@ -750,6 +759,11 @@ export class QueryModal extends Modal {
     this.closeModelPopover();
     this.closeFolderPopover();
     this.controller?.cancel();
+
+    // If a turn was in flight (user submitted a query and closed before it
+    // finished), save whatever we have so the chat isn't left empty/untitled.
+    this.saveInflightTurn();
+
     this.mdComponent.unload();
     this.unsubscribeIndex?.();
     this.unsubscribeIndex = null;
@@ -759,5 +773,43 @@ export class QueryModal extends Modal {
     }
     this.ollamaPillEl = null;
     this.contentEl.empty();
+  }
+
+  /**
+   * If a turn was submitted but never finalized (e.g. the user pressed Esc
+   * mid-stream), persist the partial turn and kick off title generation so
+   * the chat doesn't stay empty and untitled in the history list.
+   */
+  private saveInflightTurn(): void {
+    if (!this.lastSubmittedQuestion) return;
+    const chat = this.activeChatId
+      ? this.chats.find((c) => c.id === this.activeChatId)
+      : null;
+    if (!chat) return;
+
+    // If the turn was already finalized, the question will be in the chat.
+    const alreadySaved = chat.turns.some(
+      (t) => t.question === this.lastSubmittedQuestion,
+    );
+    if (alreadySaved) return;
+
+    const turn: ChatTurn = {
+      question: this.lastSubmittedQuestion,
+      answer: this.currentStreamedAnswer,
+      sourceIds: this.currentSourceIds,
+      rewrittenQuery:
+        this.currentRewrittenQuery !== this.lastSubmittedQuestion
+          ? this.currentRewrittenQuery
+          : null,
+      createdAt: Date.now(),
+    };
+
+    const updatedChat = appendTurn(chat, turn, Date.now());
+    this.chats = this.chats.map((c) =>
+      c.id === updatedChat.id ? updatedChat : c,
+    );
+    this.args.onChatsChanged(this.chats);
+    // Title generation was already fired at submit time — no need to
+    // re-trigger it here.
   }
 }
