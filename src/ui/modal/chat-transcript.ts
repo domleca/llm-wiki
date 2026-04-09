@@ -45,6 +45,48 @@ const THINKING_MESSAGES = [
   "\u223F Tuning in",
   "\u2318 Processing",
   "Obsidianizing",
+  "Piecing it together",
+  "Almost there, probably",
+  "Dusting off old pages",
+  "Flipping through the archives",
+  "Checking the index cards",
+  "Following the breadcrumbs",
+  "Warming up the synapses",
+  "Hold that thought",
+  "Shh, concentrating",
+  "Not lost, just exploring",
+  "Browsing the margins",
+  "Weaving the threads",
+  "Hmm, interesting question",
+  "Working on it, promise",
+  "Give me a second",
+  "This is a good one",
+  "Crunching away",
+  "Let me cook",
+  "Brewing an answer",
+  "Assembling the puzzle",
+  "Running the numbers",
+  "Trust the process",
+  "Going down the rabbit hole",
+  "Turning it over",
+  "Looking at this from every angle",
+  "Zooming in",
+  "Hang on a sec",
+  "Good question, actually",
+  "Let me think about that",
+  "Getting there",
+  "Bear with me",
+  "Almost got it",
+  "Working our magic",
+  "Just a moment",
+  "Wheels are turning",
+  "Percolating",
+  "Marinating on this",
+  "Chewing on that",
+  "Noodling",
+  "Loading brilliance",
+  "Summoning answers",
+  "Doing the thing",
 ];
 
 
@@ -126,12 +168,12 @@ export class ChatTranscript {
     this.followStream = true;
     this.scrollToBottomIfFollowing(true);
 
-    // Rotate the thinking message every 10s while waiting
+    // Rotate the thinking message every 5s while waiting
     let thinkingRotation: ReturnType<typeof setInterval> | null = null;
     if (thinkingLabelEl) {
       thinkingRotation = setInterval(() => {
         thinkingLabelEl.textContent = randomThinkingMessage();
-      }, 10_000);
+      }, 5_000);
     }
 
     const stopThinking = (): void => {
