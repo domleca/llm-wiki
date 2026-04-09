@@ -180,14 +180,14 @@
   filter: brightness(1.15);
 }
 
-/* Ollama liveness pill — only ever rendered in the off state. */
-.llm-wiki-query-pill-ollama {
+/* Provider liveness pill — only rendered when the provider is unreachable. */
+.llm-wiki-query-pill-status {
   background: var(--background-modifier-error);
   color: var(--text-on-accent);
   cursor: pointer;
 }
 
-.llm-wiki-query-pill-ollama:hover {
+.llm-wiki-query-pill-status:hover {
   filter: brightness(1.1);
 }
 

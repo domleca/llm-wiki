@@ -43,6 +43,15 @@ export interface QueryModalArgs {
   app: App;
   kb: KnowledgeBase;
   provider: LLMProvider;
+  /** Human label for the active provider (e.g. "ollama", "openai"). */
+  providerLabel: string;
+  /**
+   * When the completion provider has no embedding support (Anthropic),
+   * this is the local Ollama provider used for embeddings. The query
+   * modal pings it separately so the status pill can warn if Ollama is
+   * down even though the cloud API is fine.
+   */
+  embedFallbackProvider?: LLMProvider;
   model: string;
   folder: string;
   chats: readonly Chat[];
@@ -235,11 +244,11 @@ export class QueryModal extends Modal {
     this.modelPillEl = pills.createSpan({
       cls: "llm-wiki-query-pill llm-wiki-query-pill-clickable",
       text: `model: ${this.currentModel}`,
-      attr: { "aria-label": "Change Ollama model", role: "button" },
+      attr: { "aria-label": "Change model", role: "button" },
     });
     this.modelPillEl.onclick = (): void => this.handleModelPillClick();
     this.ollamaPillEl = pills.createSpan({
-      cls: "llm-wiki-query-pill llm-wiki-query-pill-ollama",
+      cls: "llm-wiki-query-pill llm-wiki-query-pill-status",
     });
     this.ollamaPillEl.style.display = "none";
     this.ollamaPillEl.onclick = (): void => this.handleOllamaPillClick();
@@ -331,16 +340,39 @@ export class QueryModal extends Modal {
     );
   }
 
+  /** Tracks which backend is actually down so the click handler shows the right message. */
+  private lastPingFailure: "provider" | "embed-fallback" | null = null;
+
   private async pingOllama(): Promise<void> {
-    let reachable = false;
+    let mainOk = false;
     try {
-      reachable = await this.args.provider.ping();
+      mainOk = await this.args.provider.ping();
     } catch {
-      reachable = false;
+      mainOk = false;
     }
+
+    let embedOk = true;
+    if (this.args.embedFallbackProvider) {
+      try {
+        embedOk = await this.args.embedFallbackProvider.ping();
+      } catch {
+        embedOk = false;
+      }
+    }
+
     if (!this.ollamaPillEl) return;
-    this.ollamaPingState = ollamaPingStateFromBool(reachable);
-    const { visible, text } = renderOllamaPill(this.ollamaPingState);
+
+    const allOk = mainOk && embedOk;
+    this.lastPingFailure = !mainOk
+      ? "provider"
+      : !embedOk
+        ? "embed-fallback"
+        : null;
+    this.ollamaPingState = ollamaPingStateFromBool(allOk);
+    const { visible, text } = renderOllamaPill(
+      this.ollamaPingState,
+      this.args.providerLabel,
+    );
     this.ollamaPillEl.style.display = visible ? "" : "none";
     if (visible) this.ollamaPillEl.setText(text);
   }
@@ -478,13 +510,24 @@ export class QueryModal extends Modal {
   }
 
   private handleOllamaPillClick(): void {
-    const fragment = buildOllamaHintFragment({
-      doc: document,
-      onCopy: (cmd) => {
-        void navigator.clipboard?.writeText(cmd);
-      },
-    });
-    new Notice(fragment, 15_000);
+    if (
+      this.lastPingFailure === "embed-fallback" ||
+      this.args.providerLabel === "ollama"
+    ) {
+      // Ollama is the thing that's down — show the restart commands
+      const fragment = buildOllamaHintFragment({
+        doc: document,
+        onCopy: (cmd) => {
+          void navigator.clipboard?.writeText(cmd);
+        },
+      });
+      new Notice(fragment, 15_000);
+    } else {
+      new Notice(
+        `${this.args.providerLabel} is not reachable. Check your API key and network connection.`,
+        8_000,
+      );
+    }
     window.setTimeout(() => void this.pingOllama(), 1500);
   }
 
@@ -514,7 +557,10 @@ export class QueryModal extends Modal {
     if (state.kind === "error" && state.reason === "connect") {
       this.ollamaPingState = ollamaPingStateFromBool(false);
       if (this.ollamaPillEl) {
-        const r = renderOllamaPill(this.ollamaPingState);
+        const r = renderOllamaPill(
+          this.ollamaPingState,
+          this.args.providerLabel,
+        );
         this.ollamaPillEl.style.display = r.visible ? "" : "none";
         if (r.visible) this.ollamaPillEl.setText(r.text);
       }

@@ -1,5 +1,5 @@
 /**
- * Pure helper for the Ollama liveness pill in the query modal.
+ * Pure helper for the provider liveness pill in the query modal.
  *
  * The pill has three logical states:
  *   - `unknown` — first render before any ping has resolved. Hidden.
@@ -7,7 +7,7 @@
  *   - `off`     — last ping returned false. Visible, red, clickable.
  *
  * The decision to hide-when-on matches the user's UX request: a third pill
- * appears between model and folder ONLY when Ollama is unreachable.
+ * appears between model and folder ONLY when the provider is unreachable.
  */
 
 export type OllamaPingState = "unknown" | "on" | "off";
@@ -24,7 +24,10 @@ export interface OllamaPillRender {
   text: string;
 }
 
-export function renderOllamaPill(state: OllamaPingState): OllamaPillRender {
-  if (state === "off") return { visible: true, text: "ollama: off" };
+export function renderOllamaPill(
+  state: OllamaPingState,
+  providerLabel = "ollama",
+): OllamaPillRender {
+  if (state === "off") return { visible: true, text: providerLabel };
   return { visible: false, text: "" };
 }

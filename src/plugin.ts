@@ -4,7 +4,11 @@ import { loadKB, saveKB } from "./vault/kb-store.js";
 import { walkVaultFiles, type WalkOptions } from "./vault/walker.js";
 import { openVocabularyModal } from "./ui/modal/vocabulary-modal.js";
 import { OllamaProvider } from "./llm/ollama.js";
+import { OpenAIProvider } from "./llm/openai.js";
+import { AnthropicProvider } from "./llm/anthropic.js";
+import { GoogleProvider } from "./llm/google.js";
 import type { LLMProvider } from "./llm/provider.js";
+import type { CloudProvider } from "./llm/catalog.js";
 import { runExtraction, type QueueFile } from "./extract/queue.js";
 import { extractFile } from "./extract/extractor.js";
 import {
@@ -35,10 +39,21 @@ import { EmbeddingIndexController } from "./query/embedding-index-controller.js"
 import { generatePages, sourcePagePath } from "./pages/generator.js";
 import { safeDeletePage } from "./vault/safe-write.js";
 
+/** Per-provider API keys, keyed by CloudProvider. */
+export type ApiKeys = Partial<Record<CloudProvider, string>>;
+
+export type ProviderType = "ollama" | CloudProvider;
+
 interface LlmWikiSettings {
   version: number;
+  /** Which backend to use for completion. */
+  providerType: ProviderType;
+  /** API keys for cloud providers. */
+  apiKeys: ApiKeys;
   ollamaUrl: string;
   ollamaModel: string;
+  /** Model used when providerType is a cloud provider. */
+  cloudModel: string;
   extractionCharLimit: number;
   lastExtractionRunIso: string | null;
   defaultQueryFolder: string;
@@ -49,8 +64,11 @@ interface LlmWikiSettings {
 
 const DEFAULT_SETTINGS: LlmWikiSettings = {
   version: 1,
+  providerType: "ollama",
+  apiKeys: {},
   ollamaUrl: "http://localhost:11434",
   ollamaModel: "qwen2.5:7b",
+  cloudModel: "",
   extractionCharLimit: 12_000,
   lastExtractionRunIso: null,
   defaultQueryFolder: "",
@@ -311,9 +329,48 @@ export default class LlmWikiPlugin extends Plugin {
     this.kbMtime = mtime;
   }
 
-  /** Called by the settings UI when the Ollama URL changes. */
+  /**
+   * Called by the settings UI when the provider type, API key, or Ollama URL
+   * changes. Instantiates the correct provider. For Anthropic, injects an
+   * Ollama embed-provider since Anthropic has no embedding API.
+   */
   rebuildProvider(): void {
-    this.provider = new OllamaProvider({ url: this.settings.ollamaUrl });
+    const s = this.settings;
+    const ollama = new OllamaProvider({ url: s.ollamaUrl });
+
+    switch (s.providerType) {
+      case "openai": {
+        const key = s.apiKeys.openai ?? "";
+        this.provider = key
+          ? new OpenAIProvider({ apiKey: key })
+          : ollama;
+        break;
+      }
+      case "anthropic": {
+        const key = s.apiKeys.anthropic ?? "";
+        this.provider = key
+          ? new AnthropicProvider({ apiKey: key, embedProvider: ollama })
+          : ollama;
+        break;
+      }
+      case "google": {
+        const key = s.apiKeys.google ?? "";
+        this.provider = key
+          ? new GoogleProvider({ apiKey: key })
+          : ollama;
+        break;
+      }
+      default:
+        this.provider = ollama;
+    }
+  }
+
+  /** The model to use for completion — cloud model if a cloud provider is active, otherwise Ollama. */
+  get activeModel(): string {
+    if (this.settings.providerType !== "ollama" && this.settings.cloudModel) {
+      return this.settings.cloudModel;
+    }
+    return this.settings.ollamaModel;
   }
 
   isExtractionRunning(): boolean {
@@ -348,19 +405,25 @@ export default class LlmWikiPlugin extends Plugin {
       new Notice("LLM Wiki: extraction already running.");
       return;
     }
-    // Preflight: Ollama reachable + model installed.
+    // Preflight: provider reachable + model available.
     const reachable = await this.provider.ping();
     if (!reachable) {
-      new Notice(
-        `LLM Wiki: Ollama unreachable at ${this.settings.ollamaUrl}. Start Ollama and retry.`,
-      );
+      const target =
+        this.settings.providerType === "ollama"
+          ? `Ollama at ${this.settings.ollamaUrl}`
+          : `${this.settings.providerType} API`;
+      new Notice(`LLM Wiki: ${target} unreachable. Check your connection and retry.`);
       return;
     }
     if (this.provider.listModels) {
       const models = await this.provider.listModels();
-      if (models && !models.includes(this.settings.ollamaModel)) {
+      if (models && !models.includes(this.activeModel)) {
+        const hint =
+          this.settings.providerType === "ollama"
+            ? ` Run \`ollama pull ${this.activeModel}\`.`
+            : " Choose a different model in settings.";
         new Notice(
-          `LLM Wiki: model "${this.settings.ollamaModel}" not installed. Run \`ollama pull ${this.settings.ollamaModel}\`.`,
+          `LLM Wiki: model "${this.activeModel}" not available.${hint}`,
         );
         return;
       }
@@ -406,7 +469,7 @@ export default class LlmWikiPlugin extends Plugin {
         provider: this.provider,
         kb: this.kb,
         files,
-        model: this.settings.ollamaModel,
+        model: this.activeModel,
         saveKB: saveCallback,
         emitter: this.progress,
         checkpointEvery: 5,
@@ -448,7 +511,12 @@ export default class LlmWikiPlugin extends Plugin {
       app: this.app,
       kb: this.kb,
       provider: this.provider,
-      model: this.settings.ollamaModel,
+      providerLabel: this.settings.providerType,
+      embedFallbackProvider:
+        this.settings.providerType === "anthropic"
+          ? new OllamaProvider({ url: this.settings.ollamaUrl })
+          : undefined,
+      model: this.activeModel,
       folder: this.settings.defaultQueryFolder,
       chats: this.chats,
       activeChatId: null,
@@ -458,14 +526,18 @@ export default class LlmWikiPlugin extends Plugin {
         void saveChats(this.app, this.chats);
       },
       onModelChanged: (model): void => {
-        this.settings.ollamaModel = model;
+        if (this.settings.providerType === "ollama") {
+          this.settings.ollamaModel = model;
+        } else {
+          this.settings.cloudModel = model;
+        }
         void this.saveSettings();
       },
       onAnswered: ({ question, answer, bundle, elapsedMs }): void => {
         void appendInteractionLog(this.app, {
           question,
           answer,
-          model: this.settings.ollamaModel,
+          model: this.activeModel,
           queryType: bundle.queryType,
           entityCount: bundle.entities.length,
           conceptCount: bundle.concepts.length,
@@ -510,7 +582,7 @@ export default class LlmWikiPlugin extends Plugin {
           mtime: file.stat.mtime,
           origin: "user-note",
         },
-        model: this.settings.ollamaModel,
+        model: this.activeModel,
         signal: this.abortController.signal,
         charLimit: this.settings.extractionCharLimit,
       });

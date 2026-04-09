@@ -1,6 +1,5 @@
 import { Setting } from "obsidian";
 import type LlmWikiPlugin from "../../plugin.js";
-import { openModelPicker } from "../modal/model-picker.js";
 
 export interface IndexingSectionHandlers {
   onIndexAll: () => void;
@@ -16,40 +15,25 @@ export function renderIndexingSection(
 ): void {
   containerEl.createEl("h2", { text: "Indexing" });
 
-  new Setting(containerEl)
-    .setName("Ollama URL")
-    .setDesc("Base URL of your local Ollama server.")
-    .addText((text) =>
-      text
-        .setPlaceholder("http://localhost:11434")
-        .setValue(plugin.settings.ollamaUrl)
-        .onChange(async (value) => {
-          plugin.settings.ollamaUrl = value.trim() || "http://localhost:11434";
-          await plugin.saveSettings();
-          plugin.rebuildProvider();
-        }),
-    );
-
-  new Setting(containerEl)
-    .setName("Ollama model")
-    .setDesc(
-      `Model used for extraction and querying. Current: ${plugin.settings.ollamaModel}`,
-    )
-    .addButton((btn) =>
-      btn.setButtonText("Change…").onClick(() => {
-        void openModelPicker({
-          app: plugin.app,
-          provider: plugin.provider,
-          current: plugin.settings.ollamaModel,
-          onPick: async (model) => {
-            plugin.settings.ollamaModel = model;
+  // ── Ollama URL (only visible when Ollama is the active provider) ──
+  if (plugin.settings.providerType === "ollama") {
+    new Setting(containerEl)
+      .setName("Ollama URL")
+      .setDesc("Base URL of your local Ollama server.")
+      .addText((text) =>
+        text
+          .setPlaceholder("http://localhost:11434")
+          .setValue(plugin.settings.ollamaUrl)
+          .onChange(async (value) => {
+            plugin.settings.ollamaUrl =
+              value.trim() || "http://localhost:11434";
             await plugin.saveSettings();
-            handlers.rerender();
-          },
-        });
-      }),
-    );
+            plugin.rebuildProvider();
+          }),
+      );
+  }
 
+  // ── Index now / cancel ────────────────────────────────────────────
   const running = handlers.isRunning();
   const lastRunText = plugin.settings.lastExtractionRunIso
     ? new Date(plugin.settings.lastExtractionRunIso).toLocaleString()
@@ -84,6 +68,7 @@ export function renderIndexingSection(
     );
   }
 
+  // ── Daily refresh ─────────────────────────────────────────────────
   new Setting(containerEl)
     .setName("Daily refresh")
     .setDesc(

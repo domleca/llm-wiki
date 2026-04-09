@@ -25,10 +25,17 @@ describe("renderOllamaPill", () => {
     expect(renderOllamaPill("on")).toEqual({ visible: false, text: "" });
   });
 
-  it("shows 'ollama: off' when off", () => {
+  it("shows provider label when off", () => {
     expect(renderOllamaPill("off")).toEqual({
       visible: true,
-      text: "ollama: off",
+      text: "ollama",
+    });
+  });
+
+  it("shows custom provider label when off", () => {
+    expect(renderOllamaPill("off", "anthropic")).toEqual({
+      visible: true,
+      text: "anthropic",
     });
   });
 });
