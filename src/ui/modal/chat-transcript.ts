@@ -4,6 +4,9 @@
  * underneath. A "Thinking…" indicator occupies the assistant slot until the
  * first stream chunk lands.
  *
+ * Sources are aggregated across all turns and displayed once at the bottom
+ * of the transcript (top 10 by default, expandable).
+ *
  * Scroll behavior: the transcript auto-follows the stream as long as the user
  * stays pinned near the bottom. The moment they scroll up, auto-follow is
  * released; it re-engages as soon as they scroll back to the bottom. Markdown
@@ -35,6 +38,8 @@ const THINKING_MESSAGES = [
   "On it",
 ];
 
+const VISIBLE_SOURCES = 10;
+
 function randomThinkingMessage(): string {
   return THINKING_MESSAGES[Math.floor(Math.random() * THINKING_MESSAGES.length)]!;
 }
@@ -42,6 +47,12 @@ function randomThinkingMessage(): string {
 export class ChatTranscript {
   /** When true, new content scrolls the viewport; flipped off when the user scrolls up. */
   private followStream = true;
+
+  /** Deduplicated source IDs accumulated across all turns, insertion-ordered. */
+  private allSourceIds: string[] = [];
+
+  /** The persistent sources footer element (lives at the end of root). */
+  private sourcesFooter: HTMLDivElement | null = null;
 
   constructor(
     private readonly root: HTMLElement,
@@ -54,24 +65,27 @@ export class ChatTranscript {
 
   clear(): void {
     this.root.innerHTML = "";
+    this.allSourceIds = [];
+    this.sourcesFooter = null;
     this.followStream = true;
   }
 
   renderChat(chat: Chat): void {
     this.clear();
     for (const t of chat.turns) {
-      const { answerEl, sourcesEl } = this.appendTurnBlock(t.question, {
+      const { answerEl } = this.appendTurnBlock(t.question, {
         withThinking: false,
       });
       this.opts.renderMarkdown(answerEl, t.answer);
-      this.fillSources(sourcesEl, t.sourceIds);
+      this.addSources(t.sourceIds);
     }
+    this.renderSourcesFooter();
     this.followStream = true;
     this.scrollToBottomIfFollowing(true);
   }
 
   beginTurn(question: string): TurnHandle {
-    const { answerEl, sourcesEl, thinkingEl, thinkingLabelEl } =
+    const { answerEl, thinkingEl, thinkingLabelEl } =
       this.appendTurnBlock(question, { withThinking: true });
     // New turn counts as user intent to follow the latest content.
     this.followStream = true;
@@ -110,19 +124,17 @@ export class ChatTranscript {
       appendAnswerChunk: (text: string): void => {
         stopThinking();
         buffer += text;
-        // Debounce markdown re-renders so tokens accumulate between frames.
-        // This makes it far less likely that a bold/italic marker opens in one
-        // render and closes in the next, which is what causes the visible pop.
         renderDirty = true;
         if (!renderTimer) {
           renderTimer = setTimeout(flushRender, 80);
         }
       },
-      setSources: (ids: readonly string[]): void =>
-        this.fillSources(sourcesEl, ids),
+      setSources: (ids: readonly string[]): void => {
+        this.addSources(ids);
+        this.renderSourcesFooter();
+      },
       finalize: (): void => {
         stopThinking();
-        // Flush any pending render immediately so the final state is complete.
         if (renderTimer) {
           clearTimeout(renderTimer);
           renderTimer = null;
@@ -140,7 +152,6 @@ export class ChatTranscript {
     opts: { withThinking: boolean },
   ): {
     answerEl: HTMLDivElement;
-    sourcesEl: HTMLDetailsElement;
     thinkingEl: HTMLDivElement | null;
     thinkingLabelEl: HTMLSpanElement | null;
   } {
@@ -171,33 +182,81 @@ export class ChatTranscript {
     a.className = "turn-a";
     turn.appendChild(a);
 
-    const s = document.createElement("details");
-    s.className = "turn-sources";
-    const summary = document.createElement("summary");
-    summary.textContent = "Sources used (0)";
-    s.appendChild(summary);
-    turn.appendChild(s);
-
-    this.root.appendChild(turn);
-    return { answerEl: a, sourcesEl: s, thinkingEl, thinkingLabelEl };
+    // Insert before the sources footer so it always stays at the bottom
+    if (this.sourcesFooter) {
+      this.root.insertBefore(turn, this.sourcesFooter);
+    } else {
+      this.root.appendChild(turn);
+    }
+    return { answerEl: a, thinkingEl, thinkingLabelEl };
   }
 
-  private fillSources(
-    details: HTMLDetailsElement,
-    ids: readonly string[],
-  ): void {
-    const summary = details.querySelector("summary");
-    if (summary) summary.textContent = `Sources used (${ids.length})`;
-    details.querySelector("ul")?.remove();
-    if (ids.length > 0) {
-      const ul = document.createElement("ul");
-      for (const id of ids) {
-        const li = document.createElement("li");
-        li.textContent = id;
-        ul.appendChild(li);
+  /** Add source IDs, deduplicating against what we already have. */
+  private addSources(ids: readonly string[]): void {
+    const existing = new Set(this.allSourceIds);
+    for (const id of ids) {
+      if (!existing.has(id)) {
+        this.allSourceIds.push(id);
+        existing.add(id);
       }
-      details.appendChild(ul);
     }
+  }
+
+  /** Render (or re-render) the consolidated sources footer at the bottom. */
+  private renderSourcesFooter(): void {
+    if (this.allSourceIds.length === 0) {
+      this.sourcesFooter?.remove();
+      this.sourcesFooter = null;
+      return;
+    }
+
+    if (!this.sourcesFooter) {
+      this.sourcesFooter = document.createElement("div");
+      this.sourcesFooter.className = "transcript-sources-footer";
+      this.root.appendChild(this.sourcesFooter);
+    }
+
+    const footer = this.sourcesFooter;
+    footer.innerHTML = "";
+
+    const total = this.allSourceIds.length;
+    const label = document.createElement("div");
+    label.className = "transcript-sources-label";
+    label.textContent = `Sources (${total})`;
+    footer.appendChild(label);
+
+    const list = document.createElement("div");
+    list.className = "transcript-sources-list";
+    footer.appendChild(list);
+
+    const visible = this.allSourceIds.slice(0, VISIBLE_SOURCES);
+    const overflow = this.allSourceIds.slice(VISIBLE_SOURCES);
+
+    for (const id of visible) {
+      list.appendChild(this.buildSourceRow(id));
+    }
+
+    if (overflow.length > 0) {
+      const moreBtn = document.createElement("div");
+      moreBtn.className = "transcript-sources-more";
+      moreBtn.textContent = `Show ${overflow.length} more`;
+      list.appendChild(moreBtn);
+
+      moreBtn.addEventListener("click", () => {
+        moreBtn.remove();
+        for (const id of overflow) {
+          list.appendChild(this.buildSourceRow(id));
+        }
+        this.scrollToBottomIfFollowing(false);
+      });
+    }
+  }
+
+  private buildSourceRow(id: string): HTMLDivElement {
+    const row = document.createElement("div");
+    row.className = "transcript-source-item";
+    row.textContent = id;
+    return row;
   }
 
   private isAtBottom(): boolean {

@@ -408,7 +408,7 @@
   margin-bottom: 0.25rem;
 }
 .llm-wiki-query-transcript .turn-a { margin-bottom: 0.25rem; }
-.llm-wiki-query-transcript .turn-sources { font-size: 0.85em; opacity: 0.8; }
+/* Per-turn sources removed — consolidated footer used instead. */
 
 /* Chat list */
 .llm-wiki-query-chat-list {
@@ -504,6 +504,7 @@
 }
 .llm-wiki-query-modal[data-mode="chat"] .llm-wiki-query-input-container {
   order: 4;
+  flex-shrink: 0;
   border-top: 1px solid var(--background-modifier-border);
   border-bottom: none;
 }
@@ -549,6 +550,37 @@
 }
 .llm-wiki-query-transcript .turn-a:empty {
   display: none;
+}
+
+/* ---------- Consolidated sources footer ---------- */
+
+.transcript-sources-footer {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgb(246, 246, 246);
+}
+.transcript-sources-label {
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-bottom: 0.4rem;
+}
+.transcript-source-item {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  padding: 0.15rem 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.transcript-sources-more {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-accent);
+  cursor: pointer;
+  padding: 0.3rem 0;
+}
+.transcript-sources-more:hover {
+  text-decoration: underline;
 }
 
 /* ---------- Thinking indicator ---------- */

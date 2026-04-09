@@ -58,6 +58,43 @@ export interface QueryModalArgs {
   }) => void;
 }
 
+/**
+ * Rank source files by relevance to the query. The bundle's entity and concept
+ * arrays are already sorted by retrieval score (best first), so we use array
+ * position as a proxy for relevance: a source cited by the #1 entity gets a
+ * much larger weight than one cited by #12. Multiple citations from different
+ * items stack, so a file referenced by entities #2 and #5 outranks one only
+ * referenced by #1. Connections contribute a flat small bonus (they carry no
+ * inherent ranking). Capped at 15 results.
+ */
+const MAX_RANKED_SOURCES = 15;
+
+function rankSourcesByRelevance(bundle: RetrievedBundle): string[] {
+  const scores = new Map<string, number>();
+  const add = (paths: readonly string[], weight: number): void => {
+    for (const p of paths) scores.set(p, (scores.get(p) ?? 0) + weight);
+  };
+
+  // Entities are sorted best-first; weight decays with rank.
+  // Entity #0 → weight 1.0, #1 → 0.5, #2 → 0.33, …
+  for (let i = 0; i < bundle.entities.length; i++) {
+    add(bundle.entities[i]!.sources, 1 / (i + 1));
+  }
+  // Same for concepts.
+  for (let i = 0; i < bundle.concepts.length; i++) {
+    add(bundle.concepts[i]!.sources, 1 / (i + 1));
+  }
+  // Connections get a small flat bonus — they reinforce but don't dominate.
+  for (const conn of bundle.connections) {
+    add(conn.sources, 0.1);
+  }
+
+  return [...scores.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, MAX_RANKED_SOURCES)
+    .map(([id]) => id);
+}
+
 export class QueryModal extends Modal {
   private inputEl!: HTMLInputElement;
   private clearBtn!: HTMLButtonElement;
@@ -481,8 +518,10 @@ export class QueryModal extends Modal {
       },
       onContext: (bundle): void => {
         this.currentBundle = bundle;
-        this.currentSourceIds = bundle.sources.map((src) => src.id);
-        this.currentHandle?.setSources(this.currentSourceIds);
+        this.currentSourceIds = rankSourcesByRelevance(bundle);
+        // Sources are shown only after the answer is fully delivered (in
+        // finalizeTurn) — showing them before feels like they're still being
+        // fetched.
       },
       onChunk: (t): void => {
         if (this.firstChunkMs === 0) this.firstChunkMs = Date.now();
@@ -551,6 +590,7 @@ export class QueryModal extends Modal {
       ? this.chats.find((c) => c.id === this.activeChatId)
       : null;
     if (!chat) {
+      this.currentHandle?.setSources(this.currentSourceIds);
       this.currentHandle?.finalize();
       this.currentHandle = null;
       return;
@@ -572,6 +612,7 @@ export class QueryModal extends Modal {
     this.args.onChatsChanged(this.chats);
     this.chatList.render(this.chats, this.activeChatId);
 
+    this.currentHandle?.setSources(this.currentSourceIds);
     this.currentHandle?.finalize();
     this.currentHandle = null;
 

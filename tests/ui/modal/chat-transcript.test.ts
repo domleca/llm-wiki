@@ -27,10 +27,11 @@ describe("ChatTranscript", () => {
     expect(root.querySelectorAll(".turn")).toHaveLength(1);
     expect(root.querySelector(".turn-q")?.textContent).toBe("q1");
     expect(root.querySelector(".turn-a")?.textContent).toBe("a1");
-    expect(root.querySelector(".turn-sources summary")?.textContent).toBe(
-      "Sources used (1)",
+    // Sources are consolidated in a single footer
+    expect(root.querySelector(".transcript-sources-label")?.textContent).toBe(
+      "Sources (1)",
     );
-    expect(root.querySelector(".turn-sources li")?.textContent).toBe("x.md");
+    expect(root.querySelector(".transcript-source-item")?.textContent).toBe("x.md");
   });
 
   it("streams an answer via beginTurn → appendAnswerChunk → setSources → finalize", () => {
@@ -42,11 +43,11 @@ describe("ChatTranscript", () => {
     h.setSources(["a.md", "b.md"]);
     h.finalize();
     expect(root.querySelector(".turn-q")?.textContent).toBe("hello?");
-    expect(root.querySelector(".turn-a")?.textContent).toBe("Hi there");
-    expect(root.querySelector(".turn-sources summary")?.textContent).toBe(
-      "Sources used (2)",
+    // Sources consolidated at bottom
+    expect(root.querySelector(".transcript-sources-label")?.textContent).toBe(
+      "Sources (2)",
     );
-    expect(root.querySelectorAll(".turn-sources li")).toHaveLength(2);
+    expect(root.querySelectorAll(".transcript-source-item")).toHaveLength(2);
   });
 
   it("clear() empties the transcript", () => {
@@ -75,5 +76,26 @@ describe("ChatTranscript", () => {
     t.renderChat(chat);
     const qs = [...root.querySelectorAll(".turn-q")].map((e) => e.textContent);
     expect(qs).toEqual(["first", "second"]);
+  });
+
+  it("deduplicates sources across turns", () => {
+    const root = document.createElement("div");
+    const t = new ChatTranscript(root, { renderMarkdown });
+    let chat = createChat({ id: "a", now: 0, folder: "", model: "m" });
+    chat = appendTurn(
+      chat,
+      { question: "q1", answer: "a1", sourceIds: ["x.md", "y.md"], rewrittenQuery: null, createdAt: 1 },
+      1,
+    );
+    chat = appendTurn(
+      chat,
+      { question: "q2", answer: "a2", sourceIds: ["y.md", "z.md"], rewrittenQuery: null, createdAt: 2 },
+      2,
+    );
+    t.renderChat(chat);
+    expect(root.querySelector(".transcript-sources-label")?.textContent).toBe(
+      "Sources (3)",
+    );
+    expect(root.querySelectorAll(".transcript-source-item")).toHaveLength(3);
   });
 });
