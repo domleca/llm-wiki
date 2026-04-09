@@ -89,6 +89,12 @@ export default class LlmWikiPlugin extends Plugin {
   provider: LLMProvider = new OllamaProvider({
     url: this.settings.ollamaUrl,
   });
+  /**
+   * In-memory cache of the last key validation result per provider.
+   * Not persisted — re-validated on each key change. Used by the settings
+   * UI to show green/red status without a separate "Test" button.
+   */
+  keyValidationCache: Partial<Record<CloudProvider, { valid: boolean; error: string | null }>> = {};
   private abortController: AbortController | null = null;
   private running = false;
   private extractionStateListeners = new Set<() => void>();

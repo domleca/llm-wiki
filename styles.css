@@ -690,3 +690,18 @@
   font-size: var(--font-ui-smaller);
   font-style: italic;
 }
+
+/* ---------- Cloud section: API key validation states ---------- */
+
+.llm-wiki-key-valid {
+  color: var(--color-green);
+}
+
+.llm-wiki-key-invalid {
+  color: var(--color-red);
+}
+
+.llm-wiki-key-validating {
+  color: var(--text-muted);
+  font-style: italic;
+}

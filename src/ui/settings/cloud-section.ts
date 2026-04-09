@@ -1,6 +1,6 @@
 /**
  * Settings UI section for cloud provider configuration: provider picker,
- * API key entry, and key validation.
+ * API key entry with auto-validation.
  */
 
 import { Setting } from "obsidian";
@@ -33,7 +33,7 @@ export function renderCloudSection(
   plugin: LlmWikiPlugin,
   handlers: CloudSectionHandlers,
 ): void {
-  containerEl.createEl("h2", { text: "Provider" });
+  containerEl.createEl("h2", { text: "Model" });
 
   // ── Provider picker ───────────────────────────────────────────────
   new Setting(containerEl)
@@ -46,7 +46,6 @@ export function renderCloudSection(
       dropdown.setValue(plugin.settings.providerType);
       dropdown.onChange(async (value) => {
         plugin.settings.providerType = value as ProviderType;
-        // Set a sensible default cloud model when switching
         if (value !== "ollama" && !plugin.settings.cloudModel) {
           plugin.settings.cloudModel = defaultCompletionModel(
             value as CloudProvider,
@@ -64,57 +63,68 @@ export function renderCloudSection(
 
   const providerKey = pt as CloudProvider;
   const currentKey = plugin.settings.apiKeys[providerKey] ?? "";
-  const masked = currentKey ? maskKey(currentKey) : "not set";
-  const detected = currentKey ? detectProvider(currentKey) : null;
-  const mismatch =
-    detected !== null && detected !== providerKey
-      ? ` (looks like a ${PROVIDER_LABELS[detected]} key)`
-      : "";
+  const cached = plugin.keyValidationCache[providerKey];
+  const masked = currentKey ? maskKey(currentKey) : "";
 
-  const keySetting = new Setting(containerEl)
-    .setName(`${PROVIDER_LABELS[pt]} API key`)
-    .setDesc(`Current: ${masked}${mismatch}`);
+  const keySetting = new Setting(containerEl).setName(
+    `${PROVIDER_LABELS[pt]} API key`,
+  );
 
+  // Description: "Current: sk-p••••-XgA" colored by validation state
+  if (currentKey) {
+    const descEl = keySetting.descEl;
+    const statusCls = cached
+      ? cached.valid
+        ? "llm-wiki-key-valid"
+        : "llm-wiki-key-invalid"
+      : "llm-wiki-key-validating";
+
+    descEl.createSpan({
+      text: `Current: ${masked}`,
+      cls: statusCls,
+    });
+
+    // Mismatch warning
+    const detected = detectProvider(currentKey);
+    if (detected !== null && detected !== providerKey) {
+      descEl.createEl("br");
+      descEl.createSpan({
+        text: `This looks like a ${PROVIDER_LABELS[detected]} key.`,
+        cls: "llm-wiki-key-invalid",
+      });
+    }
+
+    // Kick off validation if not yet cached
+    if (!cached) {
+      void validateKey(providerKey, currentKey).then((err) => {
+        plugin.keyValidationCache[providerKey] = {
+          valid: err === null,
+          error: err,
+        };
+        handlers.rerender();
+      });
+    }
+  } else {
+    keySetting.setDesc("No API key set.");
+  }
+
+  // Text field: shows the masked key so it doesn't feel like it vanished
   keySetting.addText((text) =>
     text
       .setPlaceholder("Paste your API key…")
-      .setValue("")
+      .setValue(masked)
       .onChange(async (value) => {
         const trimmed = value.trim();
-        if (!trimmed) return;
+        if (!trimmed || trimmed === masked) return;
         plugin.settings.apiKeys[providerKey] = trimmed;
+        delete plugin.keyValidationCache[providerKey];
         await plugin.saveSettings();
         plugin.rebuildProvider();
         handlers.rerender();
       }),
   );
 
-  // ── Validate key button ───────────────────────────────────────────
-  if (currentKey) {
-    const validateSetting = new Setting(containerEl)
-      .setName("Validate key")
-      .setDesc("Test that your API key is accepted by the provider.");
-
-    validateSetting.addButton((btn) =>
-      btn
-        .setButtonText("Test…")
-        .setCta()
-        .onClick(async () => {
-          btn.setButtonText("Testing…");
-          btn.setDisabled(true);
-          const err = await validateKey(providerKey, currentKey);
-          if (err) {
-            validateSetting.setDesc(`Key validation failed: ${err}`);
-          } else {
-            validateSetting.setDesc("Key is valid.");
-          }
-          btn.setButtonText("Test…");
-          btn.setDisabled(false);
-        }),
-    );
-  }
-
-  // ── Privacy & security notes ────────────────────────────────────────
+  // ── Privacy & security notes ──────────────────────────────────────
   const privacyEl = containerEl.createEl("p", {
     cls: "setting-item-description llm-wiki-privacy-note",
   });

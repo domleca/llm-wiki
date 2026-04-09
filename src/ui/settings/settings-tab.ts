@@ -1,7 +1,6 @@
 import { App, PluginSettingTab } from "obsidian";
 import type LlmWikiPlugin from "../../plugin.js";
 import { renderCloudSection } from "./cloud-section.js";
-import { renderModelsSection } from "./models-section.js";
 import { renderIndexingSection } from "./indexing-section.js";
 import { buildQuerySection } from "./query-section.js";
 import { renderFiltersSection } from "./filters-section.js";
@@ -35,10 +34,6 @@ export class LlmWikiSettingsTab extends PluginSettingTab {
     containerEl.createEl("h2", { text: "Settings" });
 
     renderCloudSection(containerEl, this.plugin, {
-      rerender: () => this.display(),
-    });
-
-    renderModelsSection(containerEl, this.plugin, {
       rerender: () => this.display(),
     });
 
