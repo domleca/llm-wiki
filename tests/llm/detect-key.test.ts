@@ -16,6 +16,10 @@ describe("detectProvider", () => {
     expect(detectProvider("AIzaSyB1234567890")).toBe("google");
   });
 
+  it("detects Mistral keys (mistral- prefix)", () => {
+    expect(detectProvider("mistral-abc123")).toBe("mistral");
+  });
+
   it("returns null for unrecognized keys", () => {
     expect(detectProvider("random-key-format")).toBeNull();
     expect(detectProvider("")).toBeNull();
@@ -74,6 +78,20 @@ describe("validateKey", () => {
     const mockFetch = async () =>
       ({ ok: false, status: 403 }) as Response;
     const result = await validateKey("google", "AIzaBad", mockFetch);
+    expect(result).toBe("Invalid API key");
+  });
+
+  it("validates Mistral: 200 is success", async () => {
+    const mockFetch = async () =>
+      ({ ok: true, status: 200 }) as Response;
+    const result = await validateKey("mistral", "mistral-test", mockFetch);
+    expect(result).toBeNull();
+  });
+
+  it("validates Mistral: 401 is invalid key", async () => {
+    const mockFetch = async () =>
+      ({ ok: false, status: 401 }) as Response;
+    const result = await validateKey("mistral", "mistral-bad", mockFetch);
     expect(result).toBe("Invalid API key");
   });
 });

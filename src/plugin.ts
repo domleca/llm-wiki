@@ -8,6 +8,7 @@ import { OllamaProvider } from "./llm/ollama.js";
 import { OpenAIProvider } from "./llm/openai.js";
 import { AnthropicProvider } from "./llm/anthropic.js";
 import { GoogleProvider } from "./llm/google.js";
+import { MistralProvider } from "./llm/mistral.js";
 import type { LLMProvider } from "./llm/provider.js";
 import type { CloudProvider } from "./llm/catalog.js";
 import { runExtraction, type QueueFile } from "./extract/queue.js";
@@ -405,6 +406,13 @@ export default class LlmWikiPlugin extends Plugin {
         const key = s.apiKeys.google ?? "";
         this.provider = key
           ? new GoogleProvider({ apiKey: key })
+          : ollama;
+        break;
+      }
+      case "mistral": {
+        const key = s.apiKeys.mistral ?? "";
+        this.provider = key
+          ? new MistralProvider({ apiKey: key })
           : ollama;
         break;
       }

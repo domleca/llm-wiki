@@ -19,6 +19,7 @@ const PROVIDER_LABELS: Record<ProviderType, string> = {
   openai: "OpenAI",
   anthropic: "Anthropic",
   google: "Google Gemini",
+  mistral: "Mistral",
 };
 
 const PROVIDER_OPTIONS: ProviderType[] = [
@@ -26,6 +27,7 @@ const PROVIDER_OPTIONS: ProviderType[] = [
   "openai",
   "anthropic",
   "google",
+  "mistral",
 ];
 
 export function renderCloudSection(

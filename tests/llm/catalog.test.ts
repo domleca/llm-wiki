@@ -11,10 +11,12 @@ import {
 } from "../../src/llm/catalog.js";
 
 describe("catalog", () => {
-  it("allModels returns entries for all three providers", () => {
+  it("allModels returns entries for all cloud providers", () => {
     const all = allModels();
     const providers = new Set(all.map((m) => m.provider));
-    expect(providers).toEqual(new Set(["openai", "anthropic", "google"]));
+    expect(providers).toEqual(
+      new Set(["openai", "anthropic", "google", "mistral"]),
+    );
   });
 
   it("modelsForProvider filters correctly", () => {
@@ -53,7 +55,7 @@ describe("catalog", () => {
   });
 
   it("defaultCompletionModel returns a valid model per provider", () => {
-    for (const p of ["openai", "anthropic", "google"] as const) {
+    for (const p of ["openai", "anthropic", "google", "mistral"] as const) {
       const id = defaultCompletionModel(p);
       expect(findModel(id)).toBeDefined();
     }
@@ -63,8 +65,8 @@ describe("catalog", () => {
     expect(defaultEmbeddingModel("anthropic")).toBeNull();
   });
 
-  it("defaultEmbeddingModel returns a valid model for OpenAI and Google", () => {
-    for (const p of ["openai", "google"] as const) {
+  it("defaultEmbeddingModel returns a valid model for providers with embedding support", () => {
+    for (const p of ["openai", "google", "mistral"] as const) {
       const id = defaultEmbeddingModel(p);
       expect(id).not.toBeNull();
       expect(findModel(id!)).toBeDefined();

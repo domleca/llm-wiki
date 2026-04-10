@@ -153,6 +153,18 @@ npm run build      # production build
 npm run dev        # watch mode
 ```
 
+## 🛠 Installation
+From source
+
+```
+git clone https://github.com/domleca/llm-wiki
+cd llm-wiki
+npm install
+npm run build
+```
+
+Then copy the plugin folder into your Obsidian plugins directory.
+
 ## License
 
 [MIT](LICENSE)
