@@ -694,7 +694,7 @@ export class QueryModal extends Modal {
     const fresh = createChat({
       id: generateChatId(),
       now,
-      folder: this.args.folder,
+      folder: this.currentFolders[0] ?? "",
       model: this.currentModel,
     });
     this.chats = [fresh, ...this.chats];

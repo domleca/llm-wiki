@@ -1,5 +1,5 @@
-import { App, Setting } from "obsidian";
-import { folderLabel, openFolderPicker } from "../modal/folder-picker.js";
+import { App } from "obsidian";
+import { openFolderPicker } from "../modal/folder-picker.js";
 
 export interface QuerySettings {
   queryFolders: string[];
@@ -33,7 +33,7 @@ export function buildQuerySection(args: BuildQuerySectionArgs): void {
 
   // Heading with title and add button
   const heading = settingGroup.createDiv({ cls: "setting-item setting-item-heading" });
-  const headingName = heading.createDiv({ cls: "setting-item-name", text: "Index folders" });
+  heading.createDiv({ cls: "setting-item-name", text: "Index folders" });
   const headingControl = heading.createDiv({ cls: "setting-item-control" });
 
   const addBtn = headingControl.createEl("button", {
@@ -63,15 +63,15 @@ export function buildQuerySection(args: BuildQuerySectionArgs): void {
     const settingItem = itemsContainer.createDiv({ cls: "setting-item" });
 
     const settingInfo = settingItem.createDiv({ cls: "setting-item-info" });
-    const settingName = settingInfo.createDiv({ cls: "setting-item-name", text: "Whole vault" });
-    const settingDesc = settingInfo.createDiv({ cls: "setting-item-description", text: "No folder restrictions (searching entire vault)" });
+    settingInfo.createDiv({ cls: "setting-item-name", text: "Whole vault" });
+    settingInfo.createDiv({ cls: "setting-item-description", text: "No folder restrictions (searching entire vault)" });
   } else {
     for (const folder of args.settings.queryFolders) {
       const settingItem = itemsContainer.createDiv({ cls: "setting-item" });
 
       const settingInfo = settingItem.createDiv({ cls: "setting-item-info" });
-      const settingName = settingInfo.createDiv({ cls: "setting-item-name", text: folder });
-      const settingDesc = settingInfo.createDiv({ cls: "setting-item-description", text: desc });
+      settingInfo.createDiv({ cls: "setting-item-name", text: folder });
+      settingInfo.createDiv({ cls: "setting-item-description", text: desc });
 
       const settingControl = settingItem.createDiv({ cls: "setting-item-control" });
       const removeBtn = settingControl.createEl("button", {

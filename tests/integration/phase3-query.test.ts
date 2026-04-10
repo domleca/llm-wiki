@@ -70,7 +70,7 @@ describe("Phase 3 integration", () => {
   it("respects folder scope on the real fixture", () => {
     const kb = loadFixture();
     const all = retrieve({ question: "philosopher", kb });
-    const scoped = retrieve({ question: "philosopher", kb, folder: "Books" });
+    const scoped = retrieve({ question: "philosopher", kb, folders: ["Books"] });
     // Scoped result must be a subset of unscoped
     expect(scoped.entities.length).toBeLessThanOrEqual(all.entities.length);
     for (const e of scoped.entities) {
