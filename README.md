@@ -1,91 +1,131 @@
 # LLM Wiki
 
-Turn your Obsidian vault into a queryable knowledge base. LLM Wiki extracts entities, concepts, and relationships from your notes, then lets you ask questions grounded in your own writing.
+## Acknowledgments
 
-Runs locally with [Ollama](https://ollama.com) by default. Cloud providers (OpenAI, Anthropic, Google) are available as an option.
+This project was inspired by [Andrej Karpathy's post on LLM knowledge bases](https://x.com/karpathy/status/2039805659525644595) — using LLMs to compile personal notes into a structured, queryable wiki. LLM Wiki is an attempt to package that workflow into something anyone can use, privately, right inside Obsidian.
 
-## Features
+---
 
-- **Structured extraction** — walks your vault and uses an LLM to pull out entities (people, organizations, tools, books, places, events), concepts (ideas, theories, frameworks), and the connections between them.
-- **Chat-style query modal** — ask your vault questions in natural language. Answers stream token by token with clickable source links back to your notes.
-- **Hybrid retrieval** — BM25 keyword matching, semantic embeddings, and path-based scoring fused with Reciprocal Rank Fusion. Question type is auto-classified to adjust ranker weights.
-- **Page generation** — writes structured markdown pages for each entity, concept, and source into `wiki/` folders, compatible with Obsidian [Bases](https://obsidian.md/bases).
-- **Multi-turn chat** — conversations are saved and resumable. Browse past chats from the query modal.
-- **On-save re-extraction** — when you edit and save a note, it is re-extracted in the background.
-- **Nightly scheduler** — configurable background re-indexing of the full vault (default: 2 AM).
-- **Multiple providers** — Ollama (local, free), OpenAI, Anthropic, or Google. Switch in settings.
+Your notes already contain a wealth of knowledge — scattered across files, half-connected, hard to query. LLM Wiki reads your Obsidian vault, extracts the people, ideas & connections, and lets you ask questions in natural language.
 
-## Requirements
+Everything runs locally on your machine. No cloud account required. Your notes never leave your computer. You can also use Anthropic, OpenAI or Gemini if you wish.
 
-- Obsidian 1.5.0+ (desktop only)
-- [Ollama](https://ollama.com) running locally (if using the default local provider)
-- Two models pulled in Ollama:
-  - A chat model for extraction and answering (default: `qwen2.5:7b`)
-  - An embedding model for semantic search (default: `nomic-embed-text`)
+![LLM Wiki demo — asking questions about your notes](docs/assets/hero-demo.gif)
 
-## Install
+## Quick start
 
-1. Pull the models in Ollama:
-   ```
-   ollama pull qwen2.5:7b
-   ollama pull nomic-embed-text
-   ```
-2. Install LLM Wiki from the Community Plugins browser, or manually drop a release into `.obsidian/plugins/llm-wiki/`.
-3. Enable the plugin in Settings > Community plugins.
+You need two things: [Ollama](https://ollama.com) (a free, local LLM runtime) and the plugin itself.
 
-## Getting started
+**1. Install Ollama and pull the models**
 
-1. Open Settings > LLM Wiki. The defaults (Ollama at `localhost:11434`, `qwen2.5:7b`) work out of the box.
-2. Run the command **LLM Wiki: Run extraction now** to build your knowledge base. Progress shows in the status bar.
-3. Open the command palette and run **Ask knowledge base**, or click the ribbon icon.
+Download Ollama from [ollama.com](https://ollama.com), then open a terminal and run:
 
-To use a cloud provider instead, select it in settings and enter your API key.
+```bash
+ollama pull qwen2.5:7b
+ollama pull nomic-embed-text
+```
+
+The first model (`qwen2.5:7b`, ~4.7 GB) reads your notes and answers your questions. The second (`nomic-embed-text`, ~275 MB) powers semantic search — it's what lets the plugin find relevant notes even when you don't use the exact same words.
+
+As of April 2026, both models are the most reasonable option for an average local setup.
+
+**2. Install the plugin**
+
+Install LLM Wiki from the Community Plugins browser in Obsidian, or manually drop a [release](https://github.com/domleca/llm-wiki/releases) into `.obsidian/plugins/llm-wiki/`. Enable it in Settings > Community plugins.
+
+<!-- Once accepted in the community directory, users can also install via: obsidian://show-plugin?id=llm-wiki -->
+
+**3. Index your knowledge base**
+
+Open the command palette (`Cmd+P` / `Ctrl+P`) and run **LLM Wiki: Run extraction now**. The plugin walks your vault, sends each note to the local model, and builds a structured knowledge base. Progress shows in the status bar.
+
+**4. Ask your vault a question**
+
+Run the command **Ask knowledge base** (or click the ribbon icon). Type a question. Answers stream in with clickable links back to the source notes.
+
+That's it. You're running.
+
+## What it does
+
+- **Extracts knowledge from your notes** — entities (people, organizations, tools, books, places, events), concepts (ideas, theories, frameworks), and 9 types of connections between them.
+- **Answers questions in natural language** — a chat interface grounded in your own writing, with source links so you can verify every answer.
+- **Hybrid search** — combines keyword matching, semantic similarity, and vault structure to find the right context, even when your question uses different words than your notes.
+- **Knows when it doesn't know** — if your vault doesn't have enough on a topic, it says so instead of making things up.
+- **Generates wiki pages** — structured markdown pages for every entity, concept, and source, organized in `wiki/` folders compatible with Obsidian [Bases](https://obsidian.md/bases).
+- **Keeps up with your writing** — saving a note triggers background re-extraction. Optional nightly full re-index of new items.
+- **Multi-turn conversations** — chats are saved and resumable. Pick up where you left off.
+- **Multiple providers** — Ollama (local, free) by default. OpenAI, Anthropic, and Google available as options in settings.
+
+| | |
+|---|---|
+| ![Query modal](docs/assets/query-modal.png) | ![Chat answer](docs/assets/chat-answer.png) |
+| ![Sources](docs/assets/chat-sources.png) | ![Settings](docs/assets/settings.png) |
 
 ## Commands
 
-| Command | Description |
+| Command | What it does |
 |---|---|
-| Ask knowledge base | Open the query modal |
-| Run extraction now | Re-index the entire vault |
+| Ask knowledge base | Open the chat modal |
+| Run extraction now | Re-index your entire vault |
 | Extract current file | Re-extract only the active note |
 | Cancel running extraction | Stop an in-progress extraction |
 | Regenerate pages from KB | Rebuild all wiki pages |
-| Reload knowledge base from disk | Reload `wiki/kb.json` without re-extracting |
-| Show vocabulary | Inspect raw KB data |
+| Reload knowledge base from disk | Reload the KB without re-extracting |
+| Show vocabulary | Inspect the raw knowledge base |
 
-## What it writes
+## Cloud providers (optional)
 
-All generated files live under `wiki/` in your vault:
+The default setup is fully local — nothing to sign up for, nothing to pay for. If you want to use a cloud model instead (faster, or for larger vaults), go to Settings > LLM Wiki, pick a provider, and enter your API key.
+
+| Provider | Chat models | Embedding |
+|---|---|---|
+| Ollama (default) | qwen2.5:7b and others | nomic-embed-text |
+| OpenAI | GPT-4o, GPT-4o mini | text-embedding-3-small |
+| Anthropic | Claude Sonnet, Haiku | uses Ollama fallback |
+| Google | Gemini 2.0 Flash | text-embedding-004 |
+
+Cloud providers send note content to the provider's API. If privacy matters, stick with Ollama.
+
+## What it writes to your vault
+
+All generated files live under `wiki/`. Your existing notes are never modified.
 
 ```
 wiki/
-  kb.json            # knowledge base
-  index.md           # catalog page
-  entities/          # one page per entity
-  concepts/          # one page per concept
-  sources/           # one page per source note
+  kb.json            knowledge base (the structured data)
+  index.md           catalog page
+  entities/          one page per entity
+  concepts/          one page per concept
+  sources/           one page per source note
 ```
 
-The plugin only writes to `wiki/` and its own data folder. Your existing notes are never modified.
+## How it works
 
-## Network access
+LLM Wiki turns your unstructured notes into a structured knowledge base, then uses that structure to answer questions. Here's what happens under the hood:
 
-This plugin connects to LLM providers for extraction and query answering:
+**Extraction.** When you run extraction, the plugin reads each note in your vault and sends it to an LLM with a prompt like "what entities, concepts, and connections are in this text?" The model returns structured data — names, types, descriptions, relationships — which gets merged into a single knowledge base (`wiki/kb.json`). Think of it as the plugin reading all your notes and building a mental map of everything in them.
 
-- **Ollama (default)**: `http://localhost:11434` — local, no data leaves your machine
-- **OpenAI** (optional): `api.openai.com`
-- **Anthropic** (optional): `api.anthropic.com`
-- **Google** (optional): `generativelanguage.googleapis.com`
+**Page generation.** From that knowledge base, the plugin writes one markdown page per entity, concept, and source note into `wiki/` folders. These pages are plain markdown with frontmatter, so they work with Obsidian's Bases feature for filtering and sorting. You get a browsable wiki of your own knowledge, automatically maintained.
 
-Cloud providers are opt-in and require your own API key. No telemetry, analytics, or other network calls are made.
+**Retrieval.** When you ask a question, the plugin doesn't send your entire vault to the LLM — that would be too slow and too large. Instead, it searches the knowledge base to find the most relevant pieces of context. It uses three strategies in parallel: keyword matching (finding notes that contain the same terms), semantic similarity (finding notes that mean similar things, even with different words — this is what the embedding model does), and vault structure (prioritizing notes in folders you've scoped). The results are merged using a technique called Reciprocal Rank Fusion, which combines multiple ranked lists into one.
+
+**Answering.** The top-ranked context gets bundled into a prompt along with your question and any conversation history, then sent to the LLM. The answer streams back token by token. Afterward, the plugin cross-references the answer against the retrieved sources and shows them as clickable links so you can verify the grounding yourself.
+
+**Keeping up to date.** When you save a note, the plugin re-extracts just that file in the background — no need to re-index the whole vault. There's also an optional nightly scheduler for a full refresh.
+
+## Privacy
+
+- With Ollama (the default), all processing happens on your machine. Nothing is sent anywhere.
+- Cloud providers require sending note content to their APIs. This is opt-in and clearly labeled in settings.
+- No telemetry, analytics, or tracking of any kind.
 
 ## Development
 
 ```bash
 npm install
-npm test           # vitest (472 tests)
+npm test           # 476 tests
 npm run typecheck  # strict TypeScript
-npm run lint       # ESLint
+npm run lint
 npm run build      # production build
 npm run dev        # watch mode
 ```
