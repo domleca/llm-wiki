@@ -28,7 +28,7 @@ export function buildQuerySection(args: BuildQuerySectionArgs): void {
       ? "No folder restrictions (searching entire vault)"
       : `Indexing ${args.settings.queryFolders.length} folder${args.settings.queryFolders.length === 1 ? "" : "s"}`;
 
-  const setting = new Setting(args.container)
+  new Setting(args.container)
     .setName("Index folders")
     .setDesc(desc)
     .addButton((btn) =>
@@ -48,9 +48,11 @@ export function buildQuerySection(args: BuildQuerySectionArgs): void {
       }),
     );
 
-  // Display list of current folders with remove buttons as part of the setting
+  // Display list of current folders with remove buttons as separate section with divider
   if (args.settings.queryFolders.length > 0) {
-    const listContainer = setting.settingEl.createDiv({
+    args.container.createEl("hr", { cls: "llm-wiki-folder-divider" });
+    
+    const listContainer = args.container.createDiv({
       cls: "llm-wiki-folder-list",
     });
     for (const folder of args.settings.queryFolders) {
@@ -61,6 +63,7 @@ export function buildQuerySection(args: BuildQuerySectionArgs): void {
       itemContainer.style.justifyContent = "space-between";
       itemContainer.style.alignItems = "center";
       itemContainer.style.width = "100%";
+      itemContainer.style.padding = "8px 0";
       
       const folderSpan = itemContainer.createSpan({ text: folder });
       folderSpan.style.flex = "1";
