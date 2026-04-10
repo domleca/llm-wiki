@@ -23,10 +23,7 @@ export interface BuildQuerySectionArgs {
 export function buildQuerySection(args: BuildQuerySectionArgs): void {
   args.container.createEl("h3", { text: "Query" });
 
-  const desc =
-    args.settings.queryFolders.length === 0
-      ? "No folder restrictions (searching entire vault)"
-      : `Indexing ${args.settings.queryFolders.length} folder${args.settings.queryFolders.length === 1 ? "" : "s"}`;
+  const wholeVaultDesc = "No folder restrictions (searching entire vault)";
 
   // Create a setting group for the index folders
   const settingGroup = args.container.createDiv({ cls: "setting-group" });
@@ -64,14 +61,13 @@ export function buildQuerySection(args: BuildQuerySectionArgs): void {
 
     const settingInfo = settingItem.createDiv({ cls: "setting-item-info" });
     settingInfo.createDiv({ cls: "setting-item-name", text: "Whole vault" });
-    settingInfo.createDiv({ cls: "setting-item-description", text: "No folder restrictions (searching entire vault)" });
+    settingInfo.createDiv({ cls: "setting-item-description", text: wholeVaultDesc });
   } else {
     for (const folder of args.settings.queryFolders) {
       const settingItem = itemsContainer.createDiv({ cls: "setting-item" });
 
       const settingInfo = settingItem.createDiv({ cls: "setting-item-info" });
       settingInfo.createDiv({ cls: "setting-item-name", text: folder });
-      settingInfo.createDiv({ cls: "setting-item-description", text: desc });
 
       const settingControl = settingItem.createDiv({ cls: "setting-item-control" });
       const removeBtn = settingControl.createEl("button", {

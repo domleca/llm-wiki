@@ -1,12 +1,13 @@
-import { describe, it, expect } from "vitest";
-import { readFileSync } from "fs";
-import { fileURLToPath } from "url";
-import { resolve, dirname } from "path";
-import { KnowledgeBase } from "../../src/core/kb.js";
+import { describe, expect, it } from "vitest";
+import { dirname, resolve } from "path";
+
 import type { KBData } from "../../src/core/types.js";
-import { ask } from "../../src/query/ask.js";
-import { retrieve } from "../../src/query/retrieve.js";
+import { KnowledgeBase } from "../../src/core/kb.js";
 import { MockLLMProvider } from "../helpers/mock-llm-provider.js";
+import { ask } from "../../src/query/ask.js";
+import { fileURLToPath } from "url";
+import { readFileSync } from "fs";
+import { retrieve } from "../../src/query/retrieve.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturePath = resolve(__dirname, "../fixtures/sample-kb.json");
