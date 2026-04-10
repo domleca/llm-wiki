@@ -54,7 +54,7 @@ interface LlmWikiSettings {
   cloudModel: string;
   extractionCharLimit: number;
   lastExtractionRunIso: string | null;
-  defaultQueryFolder: string;
+  queryFolders: string[];
   nightlyExtractionEnabled: boolean;
   nightlyExtractionHour: number;
   showStatusBar: boolean;
@@ -70,7 +70,7 @@ const DEFAULT_SETTINGS: LlmWikiSettings = {
   cloudModel: "",
   extractionCharLimit: 12_000,
   lastExtractionRunIso: null,
-  defaultQueryFolder: "",
+  queryFolders: [],
   nightlyExtractionEnabled: false,
   nightlyExtractionHour: 2,
   showStatusBar: true,
@@ -358,8 +358,16 @@ export default class LlmWikiPlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    const data = (await this.loadData()) as Partial<LlmWikiSettings> | null;
-    this.settings = { ...DEFAULT_SETTINGS, ...(data ?? {}) };
+    const data = (await this.loadData()) as Partial<LlmWikiSettings & { defaultQueryFolder?: string }> | null;
+    const { defaultQueryFolder, ...settingsData } = data ?? {};
+    this.settings = { ...DEFAULT_SETTINGS, ...settingsData };
+    
+    // Migrate from old defaultQueryFolder to new queryFolders format
+    if (defaultQueryFolder !== undefined && this.settings.queryFolders.length === 0) {
+      if (defaultQueryFolder) {
+        this.settings.queryFolders = [defaultQueryFolder];
+      }
+    }
   }
 
   async saveSettings(): Promise<void> {
@@ -569,7 +577,7 @@ export default class LlmWikiPlugin extends Plugin {
           ? new OllamaProvider({ url: this.settings.ollamaUrl })
           : undefined,
       model: this.activeModel,
-      folder: this.settings.defaultQueryFolder,
+      folders: this.settings.queryFolders,
       chats: this.chats,
       activeChatId: null,
       indexController: this.embeddingIndexController,

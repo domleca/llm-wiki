@@ -1,6 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { retrieve } from "../../src/query/retrieve.js";
+import { describe, expect, it } from "vitest";
+
 import { KnowledgeBase } from "../../src/core/kb.js";
+import { retrieve } from "../../src/query/retrieve.js";
 
 function buildSampleKB() {
   const kb = new KnowledgeBase();
@@ -57,7 +58,7 @@ describe("retrieve", () => {
     const bundle = retrieve({
       question: "philosopher",
       kb,
-      folder: "Learn",
+      folders: ["Learn"],
     });
     expect(bundle.entities.find((e) => e.name === "Alan Watts")).toBeUndefined();
   });

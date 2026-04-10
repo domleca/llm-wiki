@@ -22,7 +22,7 @@ export interface QueryControllerOptions {
   kb: KnowledgeBase;
   provider: LLMProvider;
   model: string;
-  folder?: string;
+  folders?: string[];
   embeddingIndex?: ReadonlyMap<string, number[]>;
   queryEmbedding?: number[] | null;
   onState: (s: QueryControllerState) => void;
@@ -36,11 +36,11 @@ export class QueryController {
   private state: QueryControllerState = "idle";
   private abortCtrl: AbortController | null = null;
   private currentModel: string;
-  private currentFolder: string | undefined;
+  private currentFolders: string[] | undefined;
 
   constructor(private readonly opts: QueryControllerOptions) {
     this.currentModel = opts.model;
-    this.currentFolder = opts.folder;
+    this.currentFolders = opts.folders;
   }
 
   getState(): QueryControllerState {
@@ -51,8 +51,8 @@ export class QueryController {
     this.currentModel = model;
   }
 
-  setFolder(folder: string): void {
-    this.currentFolder = folder || undefined;
+  setFolders(folders: string[]): void {
+    this.currentFolders = folders.length > 0 ? folders : undefined;
   }
 
   async runChatTurn(args: { chat: Chat; question: string }): Promise<void> {
@@ -85,7 +85,7 @@ export class QueryController {
         kb: this.opts.kb,
         provider: this.opts.provider,
         model: this.currentModel,
-        folder: this.currentFolder,
+        folders: this.currentFolders,
         embeddingIndex: this.opts.embeddingIndex,
         queryEmbedding: this.opts.queryEmbedding,
         signal: this.abortCtrl.signal,
@@ -112,12 +112,17 @@ export class QueryController {
   }
 
   async run(question: string): Promise<void> {
+    const chatFolder =
+      this.currentFolders && this.currentFolders.length === 1
+        ? this.currentFolders[0]
+        : "";
+
     const emptyChat: Chat = {
       id: "transient",
       title: "",
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      folder: this.currentFolder ?? "",
+      folder: chatFolder,
       model: this.currentModel,
       turns: [],
     };

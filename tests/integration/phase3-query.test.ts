@@ -1,12 +1,13 @@
-import { describe, it, expect } from "vitest";
-import { readFileSync } from "fs";
-import { fileURLToPath } from "url";
-import { resolve, dirname } from "path";
-import { KnowledgeBase } from "../../src/core/kb.js";
+import { describe, expect, it } from "vitest";
+import { dirname, resolve } from "path";
+
 import type { KBData } from "../../src/core/types.js";
-import { ask } from "../../src/query/ask.js";
-import { retrieve } from "../../src/query/retrieve.js";
+import { KnowledgeBase } from "../../src/core/kb.js";
 import { MockLLMProvider } from "../helpers/mock-llm-provider.js";
+import { ask } from "../../src/query/ask.js";
+import { fileURLToPath } from "url";
+import { readFileSync } from "fs";
+import { retrieve } from "../../src/query/retrieve.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixturePath = resolve(__dirname, "../fixtures/sample-kb.json");
@@ -70,7 +71,7 @@ describe("Phase 3 integration", () => {
   it("respects folder scope on the real fixture", () => {
     const kb = loadFixture();
     const all = retrieve({ question: "philosopher", kb });
-    const scoped = retrieve({ question: "philosopher", kb, folder: "Books" });
+    const scoped = retrieve({ question: "philosopher", kb, folders: ["Books"] });
     // Scoped result must be a subset of unscoped
     expect(scoped.entities.length).toBeLessThanOrEqual(all.entities.length);
     for (const e of scoped.entities) {

@@ -1,19 +1,20 @@
-import type { KnowledgeBase } from "../core/kb.js";
 import type { Concept, Entity } from "../core/types.js";
-import { classifyQuery } from "./classify.js";
-import { rankByKeyword } from "./keyword-ranker.js";
-import { rankByPath } from "./path-ranker.js";
-import { rankByEmbedding } from "./embedding-ranker.js";
-import { rrfFuse } from "./rrf.js";
+import type { QueryType, RankedItem, RetrievedBundle } from "./types.js";
 import {
   RETRIEVAL_CONCEPT_BLACKLIST,
   RETRIEVAL_ENTITY_BLACKLIST,
   detectTypeHint,
   qualityMultiplier,
 } from "./quality.js";
+
+import type { KnowledgeBase } from "../core/kb.js";
+import { classifyQuery } from "./classify.js";
 import { extractQueryTerms } from "./terms.js";
 import { filterBundleByFolder } from "./folder-scope.js";
-import type { QueryType, RankedItem, RetrievedBundle } from "./types.js";
+import { rankByEmbedding } from "./embedding-ranker.js";
+import { rankByKeyword } from "./keyword-ranker.js";
+import { rankByPath } from "./path-ranker.js";
+import { rrfFuse } from "./rrf.js";
 
 const QUERY_WEIGHTS: Record<QueryType, [number, number, number]> = {
   entity_lookup: [2.0, 0.5, 0.3],
@@ -32,7 +33,7 @@ export interface RetrieveArgs {
   kb: KnowledgeBase;
   embeddingIndex?: ReadonlyMap<string, number[]>;
   queryEmbedding?: number[] | null;
-  folder?: string;
+  folders?: string[];
 }
 
 export function retrieve(args: RetrieveArgs): RetrievedBundle {
@@ -126,5 +127,5 @@ export function retrieve(args: RetrieveArgs): RetrievedBundle {
     sources,
   };
 
-  return filterBundleByFolder(bundle, args.folder ?? "");
+  return filterBundleByFolder(bundle, args.folders ?? []);
 }
