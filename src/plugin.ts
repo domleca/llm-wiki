@@ -56,6 +56,7 @@ interface LlmWikiSettings {
   nightlyExtractionEnabled: boolean;
   nightlyExtractionHour: number;
   showStatusBar: boolean;
+  hideWikiFromSearch: boolean;
 }
 
 const DEFAULT_SETTINGS: LlmWikiSettings = {
@@ -71,6 +72,7 @@ const DEFAULT_SETTINGS: LlmWikiSettings = {
   nightlyExtractionEnabled: false,
   nightlyExtractionHour: 2,
   showStatusBar: true,
+  hideWikiFromSearch: true,
 };
 
 /** Delay before kicking off the background pre-build, so plugin load stays snappy. */
@@ -128,6 +130,7 @@ export default class LlmWikiPlugin extends Plugin {
   async onload(): Promise<void> {
     await this.loadSettings();
     this.rebuildProvider();
+    this.applySearchExclusion();
     try {
       await this.reloadKB();
     } catch {
@@ -557,6 +560,32 @@ export default class LlmWikiPlugin extends Plugin {
       );
     } catch (e) {
       new Notice(`LLM Wiki: page generation failed — ${(e as Error).message}`);
+    }
+  }
+
+  /**
+   * Adds or removes "wiki/" from Obsidian's excluded-files filter based on
+   * the hideWikiFromSearch setting. When hidden, generated pages won't
+   * appear in search, Quick Switcher, or graph view.
+   */
+  applySearchExclusion(): void {
+    const FILTER = "wiki/";
+    // getConfig/setConfig are undocumented but stable Vault internals
+    // used by many community plugins to read/write app.json settings.
+    const vault = this.app.vault as unknown as {
+      getConfig(key: string): unknown;
+      setConfig(key: string, value: unknown): void;
+    };
+    if (typeof vault.getConfig !== "function") return;
+
+    const raw = vault.getConfig("userIgnoreFilters");
+    const filters: string[] = Array.isArray(raw) ? (raw as string[]) : [];
+    const present = filters.includes(FILTER);
+
+    if (this.settings.hideWikiFromSearch && !present) {
+      vault.setConfig("userIgnoreFilters", [...filters, FILTER]);
+    } else if (!this.settings.hideWikiFromSearch && present) {
+      vault.setConfig("userIgnoreFilters", filters.filter((f) => f !== FILTER));
     }
   }
 

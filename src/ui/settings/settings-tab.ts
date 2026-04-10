@@ -70,5 +70,20 @@ export class LlmWikiSettingsTab extends PluginSettingTab {
             this.plugin.applyStatusBarVisibility();
           }),
       );
+
+    new Setting(containerEl)
+      .setName("Hide wiki from search")
+      .setDesc(
+        "Exclude generated wiki pages from search, Quick Switcher, and graph view. Turn off to browse them like regular notes.",
+      )
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.hideWikiFromSearch)
+          .onChange(async (value) => {
+            this.plugin.settings.hideWikiFromSearch = value;
+            await this.plugin.saveSettings();
+            this.plugin.applySearchExclusion();
+          }),
+      );
   }
 }
