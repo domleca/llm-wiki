@@ -3,6 +3,7 @@ import { KnowledgeBase } from "./core/kb.js";
 import { loadKB, saveKB } from "./vault/kb-store.js";
 import { walkVaultFiles, type WalkOptions } from "./vault/walker.js";
 import { openVocabularyModal } from "./ui/modal/vocabulary-modal.js";
+import { WelcomeModal } from "./ui/modal/welcome-modal.js";
 import { OllamaProvider } from "./llm/ollama.js";
 import { OpenAIProvider } from "./llm/openai.js";
 import { AnthropicProvider } from "./llm/anthropic.js";
@@ -257,6 +258,7 @@ export default class LlmWikiPlugin extends Plugin {
     // missed-run catch-up doesn't race the rest of plugin startup.
     this.app.workspace.onLayoutReady(() => {
       this.startScheduler();
+      void this.showWelcomeIfNeeded();
     });
 
     // On-save watcher: re-extract a file shortly after it's saved.
@@ -314,6 +316,44 @@ export default class LlmWikiPlugin extends Plugin {
       this.scheduler.stop();
       this.scheduler = null;
     }
+  }
+
+  /**
+   * On first load (no KB yet), show a welcome modal with a note count,
+   * time estimate, and two options: extract now or defer to tonight.
+   */
+  private async showWelcomeIfNeeded(): Promise<void> {
+    const { sources } = this.kb.stats();
+    if (sources > 0) return;
+
+    const walkOpts: WalkOptions = {
+      skipDirs: DEFAULT_SKIP_DIRS,
+      minFileSize: DEFAULT_MIN_FILE_SIZE,
+      dailiesFromIso: defaultDailiesFromIso(),
+    };
+    const walked = await walkVaultFiles(this.app as never, walkOpts);
+    if (walked.length === 0) return; // empty vault, nothing to show
+
+    new WelcomeModal(
+      this.app,
+      walked.length,
+      this.settings.providerType === "ollama",
+      {
+        onStartNow: () => {
+          void this.runExtractAll();
+        },
+        onLater: () => {
+          if (!this.settings.nightlyExtractionEnabled) {
+            this.settings.nightlyExtractionEnabled = true;
+            void this.saveSettings();
+            this.startScheduler();
+          }
+          new Notice(
+            `LLM Wiki: extraction will run tonight at ${String(this.settings.nightlyExtractionHour).padStart(2, "0")}:00.`,
+          );
+        },
+      },
+    ).open();
   }
 
   async loadSettings(): Promise<void> {

@@ -19,7 +19,17 @@ You need two things: [Ollama](https://ollama.com) (a free, local LLM runtime) an
 
 **1. Install Ollama and pull the models**
 
-Download Ollama from [ollama.com](https://ollama.com), or install it from the terminal with `brew install ollama` (Mac) or `curl -fsSL https://ollama.com/install.sh | sh` (Linux). Then run:
+Download Ollama from [ollama.com](https://ollama.com), or install it from the terminal:
+
+```bash
+# Mac
+brew install ollama
+
+# Linux
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+Then pull the models:
 
 ```bash
 ollama pull qwen2.5:7b
