@@ -29,7 +29,7 @@ function bundle(
     sources: Array.from({ length: sources }, (_, i) => ({
       id: `src${i}.md`,
       summary: "summary",
-      date: null,
+      date: "",
       mtime: 0,
       origin: "user-note" as const,
     })),
