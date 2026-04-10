@@ -57,11 +57,21 @@ export function buildQuerySection(args: BuildQuerySectionArgs): void {
       const itemContainer = listContainer.createDiv({
         cls: "llm-wiki-folder-list-item",
       });
-      itemContainer.createSpan({ text: folder });
+      itemContainer.style.display = "flex";
+      itemContainer.style.justifyContent = "space-between";
+      itemContainer.style.alignItems = "center";
+      itemContainer.style.width = "100%";
+      
+      const folderSpan = itemContainer.createSpan({ text: folder });
+      folderSpan.style.flex = "1";
+      
       const removeBtn = itemContainer.createEl("button", {
         text: "Remove",
         cls: "llm-wiki-folder-remove-btn",
       });
+      removeBtn.style.marginLeft = "8px";
+      removeBtn.style.flexShrink = "0";
+      
       removeBtn.addEventListener("click", async () => {
         const filtered = args.settings.queryFolders.filter((f) => f !== folder);
         await args.onChange({ queryFolders: filtered });
