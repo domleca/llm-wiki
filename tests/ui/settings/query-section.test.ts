@@ -3,16 +3,24 @@ import { applyQuerySettingsPatch } from "../../../src/ui/settings/query-section.
 
 describe("applyQuerySettingsPatch", () => {
   it("merges patch into existing settings", () => {
-    const before = { defaultQueryFolder: "" };
+    const before = { queryFolders: [] };
     const after = applyQuerySettingsPatch(before, {
-      defaultQueryFolder: "notes",
+      queryFolders: ["notes"],
     });
-    expect(after.defaultQueryFolder).toBe("notes");
+    expect(after.queryFolders).toEqual(["notes"]);
   });
 
   it("does not mutate the previous settings object", () => {
-    const before = { defaultQueryFolder: "" };
-    applyQuerySettingsPatch(before, { defaultQueryFolder: "notes" });
-    expect(before.defaultQueryFolder).toBe("");
+    const before = { queryFolders: [] };
+    applyQuerySettingsPatch(before, { queryFolders: ["notes"] });
+    expect(before.queryFolders).toEqual([]);
+  });
+
+  it("handles multiple folders", () => {
+    const before = { queryFolders: ["projects"] };
+    const after = applyQuerySettingsPatch(before, {
+      queryFolders: ["projects", "zettel"],
+    });
+    expect(after.queryFolders).toEqual(["projects", "zettel"]);
   });
 });

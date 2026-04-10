@@ -57,7 +57,7 @@ describe("retrieve", () => {
     const bundle = retrieve({
       question: "philosopher",
       kb,
-      folder: "Learn",
+      folders: ["Learn"],
     });
     expect(bundle.entities.find((e) => e.name === "Alan Watts")).toBeUndefined();
   });

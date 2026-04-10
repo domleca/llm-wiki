@@ -17,7 +17,7 @@ export interface AskArgs {
   kb: KnowledgeBase;
   provider: LLMProvider;
   model: string;
-  folder?: string;
+  folders?: string[];
   embeddingIndex?: ReadonlyMap<string, number[]>;
   queryEmbedding?: number[] | null;
   signal?: AbortSignal;
@@ -28,7 +28,7 @@ export async function* ask(args: AskArgs): AsyncIterable<AnswerEvent> {
     const retrieveArgs: RetrieveArgs = {
       question: args.retrievalQuery ?? args.question,
       kb: args.kb,
-      folder: args.folder,
+      folders: args.folders,
       embeddingIndex: args.embeddingIndex,
       queryEmbedding: args.queryEmbedding,
     };

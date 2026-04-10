@@ -52,7 +52,7 @@ export interface QueryModalArgs {
    */
   embedFallbackProvider?: LLMProvider;
   model: string;
-  folder: string;
+  folders: string[];
   chats: readonly Chat[];
   activeChatId: string | null;
   onChatsChanged: (chats: readonly Chat[]) => void;
@@ -164,7 +164,7 @@ export class QueryModal extends Modal {
   private chats: readonly Chat[];
   private activeChatId: string | null;
   private currentModel!: string;
-  private currentFolder!: string;
+  private currentFolders!: string[];
   private modelPillEl: HTMLSpanElement | null = null;
   private folderPillEl: HTMLSpanElement | null = null;
 
@@ -185,7 +185,7 @@ export class QueryModal extends Modal {
     this.chats = args.chats;
     this.activeChatId = args.activeChatId;
     this.currentModel = args.model;
-    this.currentFolder = args.folder;
+    this.currentFolders = args.folders;
   }
 
   onOpen(): void {
@@ -253,7 +253,7 @@ export class QueryModal extends Modal {
     this.ollamaPillEl.onclick = (): void => this.handleOllamaPillClick();
     this.folderPillEl = pills.createSpan({
       cls: "llm-wiki-query-pill llm-wiki-query-pill-clickable",
-      text: `folder: ${this.currentFolder || this.app.vault.getName()}`,
+      text: this.getFolderPillText(),
       attr: { "aria-label": "Change folder scope", role: "button" },
     });
     this.folderPillEl.onclick = (): void => this.handleFolderPillClick();
@@ -443,6 +443,22 @@ export class QueryModal extends Modal {
     this.modelPopoverCleanup = null;
   }
 
+  private getFolderPillText(): string {
+    if (this.currentFolders.length === 0) {
+      return `folder: ${this.app.vault.getName()}`;
+    } else if (this.currentFolders.length === 1) {
+      return `folder: ${this.currentFolders[0]}`;
+    } else {
+      return `folder: ${this.currentFolders.length} folders`;
+    }
+  }
+
+  private updateFolderPill(): void {
+    if (this.folderPillEl) {
+      this.folderPillEl.setText(this.getFolderPillText());
+    }
+  }
+
   private handleFolderPillClick(): void {
     this.closeFolderPopover();
     this.openFolderPopover();
@@ -463,24 +479,56 @@ export class QueryModal extends Modal {
       }
     }
     folders.sort((a, b) => a.localeCompare(b));
-    const options = [{ label: vaultName, value: "" }, ...folders.map((f) => ({ label: f, value: f }))];
 
     const popover = document.createElement("div");
     popover.className = "llm-wiki-model-popover";
 
-    for (const opt of options) {
+    // "All folders" (whole vault) option
+    const allRow = document.createElement("div");
+    allRow.className = "llm-wiki-model-popover-item";
+    if (this.currentFolders.length === 0) allRow.classList.add("is-active");
+    const allCheckbox = document.createElement("input");
+    allCheckbox.type = "checkbox";
+    allCheckbox.checked = this.currentFolders.length === 0;
+    const allLabel = document.createElement("span");
+    allLabel.textContent = `${vaultName} (all)`;
+    allRow.appendChild(allCheckbox);
+    allRow.appendChild(allLabel);
+    allRow.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      this.currentFolders = [];
+      this.updateFolderPill();
+      this.controller?.setFolders(this.currentFolders);
+      this.refreshFolderPopover();
+    });
+    popover.appendChild(allRow);
+
+    // Individual folder options
+    for (const folder of folders) {
       const row = document.createElement("div");
       row.className = "llm-wiki-model-popover-item";
-      if (opt.value === this.currentFolder) row.classList.add("is-active");
-      row.textContent = opt.label;
+      if (this.currentFolders.includes(folder)) row.classList.add("is-active");
+      
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = this.currentFolders.includes(folder);
+      
+      const label = document.createElement("span");
+      label.textContent = folder;
+      
+      row.appendChild(checkbox);
+      row.appendChild(label);
+      
       row.addEventListener("click", (ev) => {
         ev.stopPropagation();
-        this.currentFolder = opt.value;
-        if (this.folderPillEl) {
-          this.folderPillEl.setText(`folder: ${opt.value || vaultName}`);
+        if (this.currentFolders.includes(folder)) {
+          this.currentFolders = this.currentFolders.filter((f) => f !== folder);
+        } else {
+          this.currentFolders = [...this.currentFolders, folder];
         }
-        this.controller?.setFolder(opt.value);
-        this.closeFolderPopover();
+        this.updateFolderPill();
+        this.controller?.setFolders(this.currentFolders);
+        this.refreshFolderPopover();
       });
       popover.appendChild(row);
     }
@@ -499,6 +547,11 @@ export class QueryModal extends Modal {
     };
     window.setTimeout(() => document.addEventListener("click", onClickOutside), 0);
     this.folderPopoverCleanup = () => document.removeEventListener("click", onClickOutside);
+  }
+
+  private refreshFolderPopover(): void {
+    this.closeFolderPopover();
+    this.openFolderPopover();
   }
 
   private closeFolderPopover(): void {
@@ -599,7 +652,7 @@ export class QueryModal extends Modal {
       kb: this.args.kb,
       provider: this.args.provider,
       model: this.currentModel,
-      folder: this.args.folder,
+      folders: this.currentFolders,
       embeddingIndex,
       queryEmbedding: this.args.queryEmbedding,
       onState: (s): void => {
