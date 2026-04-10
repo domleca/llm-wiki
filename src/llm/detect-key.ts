@@ -21,6 +21,7 @@ export function detectProvider(key: string): CloudProvider | null {
   if (trimmed.startsWith("sk-ant-")) return "anthropic";
   if (trimmed.startsWith("sk-")) return "openai";
   if (trimmed.startsWith("AIza")) return "google";
+  if (trimmed.startsWith("mistral-")) return "mistral";
 
   return null;
 }
@@ -45,6 +46,8 @@ export async function validateKey(
         return await validateAnthropic(apiKey, fetchImpl);
       case "google":
         return await validateGoogle(apiKey, fetchImpl);
+      case "mistral":
+        return await validateMistral(apiKey, fetchImpl);
     }
   } catch (err) {
     return `Connection failed: ${(err as Error).message}`;
@@ -100,6 +103,20 @@ async function validateGoogle(
   );
   if (res.ok) return null;
   if (res.status === 400 || res.status === 403) return "Invalid API key";
+  if (res.status === 429) return "Rate limited — key is valid but quota exceeded";
+  return `Unexpected status ${res.status}`;
+}
+
+async function validateMistral(
+  apiKey: string,
+  fetchImpl: typeof globalThis.fetch,
+): Promise<string | null> {
+  const res = await fetchImpl("https://api.mistral.ai/v1/models", {
+    method: "GET",
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  if (res.ok) return null;
+  if (res.status === 401) return "Invalid API key";
   if (res.status === 429) return "Rate limited — key is valid but quota exceeded";
   return `Unexpected status ${res.status}`;
 }

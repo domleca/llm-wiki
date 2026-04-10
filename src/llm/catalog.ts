@@ -1,10 +1,10 @@
 /**
  * Static catalog of well-known cloud models. Ollama models are discovered
  * dynamically via `listModels()` — this catalog covers OpenAI, Anthropic,
- * and Google models whose identifiers and capabilities are stable.
+ * Google, and Mistral models whose identifiers and capabilities are stable.
  */
 
-export type CloudProvider = "openai" | "anthropic" | "google";
+export type CloudProvider = "openai" | "anthropic" | "google" | "mistral";
 
 export interface CatalogEntry {
   /** Model identifier sent to the API (e.g. "gpt-4o"). */
@@ -156,12 +156,50 @@ const google: CatalogEntry[] = [
   },
 ];
 
+// ── Mistral ──────────────────────────────────────────────────────────────
+
+const mistral: CatalogEntry[] = [
+  {
+    id: "ministral-3b-latest",
+    label: "Ministral 3B (fastest)",
+    provider: "mistral",
+    contextLength: 128_000,
+    canComplete: true,
+    canEmbed: false,
+  },
+  {
+    id: "ministral-8b-latest",
+    label: "Ministral 8B",
+    provider: "mistral",
+    contextLength: 128_000,
+    canComplete: true,
+    canEmbed: false,
+  },
+  {
+    id: "mistral-small-latest",
+    label: "Mistral Small",
+    provider: "mistral",
+    contextLength: 128_000,
+    canComplete: true,
+    canEmbed: false,
+  },
+  {
+    id: "mistral-embed",
+    label: "Mistral Embed",
+    provider: "mistral",
+    contextLength: 8_192,
+    canComplete: false,
+    canEmbed: true,
+  },
+];
+
 // ── Public API ──────────────────────────────────────────────────────────
 
 const ALL_ENTRIES: readonly CatalogEntry[] = [
   ...openai,
   ...anthropic,
   ...google,
+  ...mistral,
 ];
 
 /** All catalog entries. */
@@ -208,6 +246,8 @@ export function defaultCompletionModel(provider: CloudProvider): string {
       return "claude-3-5-haiku-20241022";
     case "google":
       return "gemini-2.0-flash";
+    case "mistral":
+      return "ministral-3b-latest";
   }
 }
 
@@ -222,6 +262,8 @@ export function defaultEmbeddingModel(
       return null; // no embedding API — uses Ollama fallback
     case "google":
       return "text-embedding-004";
+    case "mistral":
+      return "mistral-embed";
   }
 }
 
