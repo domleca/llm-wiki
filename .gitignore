@@ -29,6 +29,8 @@ coverage/
 # Plugin runtime data (vault-specific, not source)
 data.json
 embeddings-cache.json
+chats.json
+interactions/
 
 # Internal dev docs (plans, specs, runbooks)
 docs/superpowers/
