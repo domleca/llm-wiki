@@ -1,6 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { filterBundleByFolder } from "../../src/query/folder-scope.js";
+import { describe, expect, it } from "vitest";
+
 import type { RetrievedBundle } from "../../src/query/types.js";
+import { filterBundleByFolder } from "../../src/query/folder-scope.js";
 
 const bundle: RetrievedBundle = {
   question: "q",

@@ -28,7 +28,7 @@ export function buildQuerySection(args: BuildQuerySectionArgs): void {
       ? "No folder restrictions (searching entire vault)"
       : `Indexing ${args.settings.queryFolders.length} folder${args.settings.queryFolders.length === 1 ? "" : "s"}`;
 
-  new Setting(args.container)
+  const setting = new Setting(args.container)
     .setName("Index folders")
     .setDesc(desc)
     .addButton((btn) =>
@@ -48,9 +48,9 @@ export function buildQuerySection(args: BuildQuerySectionArgs): void {
       }),
     );
 
-  // Display list of current folders with remove buttons
+  // Display list of current folders with remove buttons as part of the setting
   if (args.settings.queryFolders.length > 0) {
-    const listContainer = args.container.createDiv({
+    const listContainer = setting.settingEl.createDiv({
       cls: "llm-wiki-folder-list",
     });
     for (const folder of args.settings.queryFolders) {
