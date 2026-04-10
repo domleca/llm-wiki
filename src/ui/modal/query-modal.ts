@@ -250,7 +250,6 @@ export class QueryModal extends Modal {
     this.ollamaPillEl = pills.createSpan({
       cls: "llm-wiki-query-pill llm-wiki-query-pill-status",
     });
-    this.ollamaPillEl.style.display = "none";
     this.ollamaPillEl.onclick = (): void => this.handleOllamaPillClick();
     this.folderPillEl = pills.createSpan({
       cls: "llm-wiki-query-pill llm-wiki-query-pill-clickable",
@@ -373,7 +372,7 @@ export class QueryModal extends Modal {
       this.ollamaPingState,
       this.args.providerLabel,
     );
-    this.ollamaPillEl.style.display = visible ? "" : "none";
+    this.ollamaPillEl.toggleClass("is-visible", visible);
     if (visible) this.ollamaPillEl.setText(text);
   }
 
@@ -561,7 +560,7 @@ export class QueryModal extends Modal {
           this.ollamaPingState,
           this.args.providerLabel,
         );
-        this.ollamaPillEl.style.display = r.visible ? "" : "none";
+        this.ollamaPillEl.toggleClass("is-visible", r.visible);
         if (r.visible) this.ollamaPillEl.setText(r.text);
       }
       this.contentEl.setAttr("data-state", "indexing");
@@ -656,7 +655,7 @@ export class QueryModal extends Modal {
     this.contentEl.setAttr("data-mode", "chat");
     this.inputEl.placeholder = "Reply\u2026";
     // Footer is useless in chat mode — hide it
-    this.footerEl.style.display = "none";
+    this.footerEl.addClass("is-hidden");
   }
 
   private submit(): void {
@@ -833,7 +832,7 @@ export class QueryModal extends Modal {
 
   private renderFooterHints(): void {
     this.footerEl.empty();
-    this.footerEl.style.display = "";
+    this.footerEl.removeClass("is-hidden");
     this.appendInstruction(this.footerEl, "↑↓", "to navigate");
     this.appendInstruction(this.footerEl, "↩", "to use");
     this.appendInstruction(this.footerEl, "esc", "to dismiss");
@@ -843,7 +842,7 @@ export class QueryModal extends Modal {
     // Only show in picker mode — in chat mode the footer is hidden entirely.
     if (this.contentEl.getAttr("data-mode") === "chat") return;
     this.footerEl.empty();
-    this.footerEl.style.display = "";
+    this.footerEl.removeClass("is-hidden");
     const warn = this.footerEl.createDiv({ cls: "llm-wiki-query-footer-warning" });
     warn.textContent = "Indexing in progress \u2014 results may be less accurate";
   }

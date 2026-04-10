@@ -180,11 +180,16 @@
   filter: brightness(1.15);
 }
 
-/* Provider liveness pill — only rendered when the provider is unreachable. */
+/* Provider liveness pill — hidden by default, shown via .is-visible. */
 .llm-wiki-query-pill-status {
+  display: none;
   background: var(--background-modifier-error);
   color: var(--text-on-accent);
   cursor: pointer;
+}
+
+.llm-wiki-query-pill-status.is-visible {
+  display: inline-flex;
 }
 
 .llm-wiki-query-pill-status:hover {
@@ -682,6 +687,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.llm-wiki-query-footer.is-hidden {
+  display: none;
 }
 
 .llm-wiki-query-footer-warning {
