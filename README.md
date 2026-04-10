@@ -1,11 +1,14 @@
 # LLM Wiki
 
-This project was inspired by [Andrej Karpathy's post on LLM knowledge bases](https://x.com/karpathy/status/2039805659525644595) — using LLMs to compile personal notes into a structured, queryable wiki. LLM Wiki is an attempt to package that workflow into something anyone can use, privately, right inside Obsidian.
+This project was inspired by [Andrej Karpathy's post on LLM knowledge bases](https://x.com/karpathy/status/2039805659525644595) — using LLMs to compile personal notes into a structured, queryable wiki. 
+LLM Wiki is an attempt to package that workflow into something anyone can use, privately, right inside Obsidian.
 
 ---
 
-Your notes already contain a wealth of knowledge — scattered across files, half-connected, hard to query. LLM Wiki reads your Obsidian vault, extracts the people, ideas & connections, and lets you ask questions in natural language. TLDR: privately chat with your notes.
+Your notes already contain a wealth of knowledge — scattered across files, half-connected, hard to query. 
+LLM Wiki reads your Obsidian vault, extracts the people, ideas & connections, and lets you ask questions in natural language. 
 
+TLDR: privately chat with your notes.
 Everything runs locally on your machine. No cloud account required. Your notes never leave your computer. You can also use Anthropic, OpenAI or Gemini if you wish.
 
 ![LLM Wiki demo — asking questions about your notes](docs/assets/hero-demo.gif)
