@@ -651,10 +651,17 @@
 
 /* ---------- Model popover ---------- */
 
+/* Allow popovers to extend beyond the modal boundary so they aren't clipped
+   when the modal is short (e.g. picker mode with no chat history). */
+.llm-wiki-query-modal.has-popover.modal {
+  overflow: visible;
+}
+
 .llm-wiki-model-popover {
   position: absolute;
   z-index: 10;
   min-width: 180px;
+  max-width: min(360px, 80vw);
   max-height: 200px;
   overflow-y: auto;
   background: var(--background-primary);
@@ -664,13 +671,19 @@
   padding: var(--size-2-1) 0;
 }
 .llm-wiki-model-popover-item {
+  display: flex;
+  align-items: center;
   padding: var(--size-4-2) var(--size-4-3);
   cursor: pointer;
   font-size: var(--font-ui-small);
   color: var(--text-normal);
-  white-space: nowrap;
+  min-width: 0;
+}
+.llm-wiki-model-popover-label {
   overflow: hidden;
+  white-space: nowrap;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 .llm-wiki-model-popover-item:hover {
   background: var(--background-modifier-hover);
@@ -678,6 +691,12 @@
 .llm-wiki-model-popover-item.is-active {
   color: var(--text-accent);
   font-weight: 500;
+}
+.llm-wiki-model-popover-check {
+  margin-left: auto;
+  padding-left: 0.6em;
+  flex-shrink: 0;
+  font-weight: 600;
 }
 
 /* ---------- Footer ---------- */

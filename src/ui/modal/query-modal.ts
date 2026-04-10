@@ -83,6 +83,15 @@ export interface QueryModalArgs {
  * Connections contribute a flat small bonus (they carry no inherent ranking).
  * Returns a scored map so callers can accumulate across turns.
  */
+const MAX_PILL_LABEL = 28;
+
+function pillLabel(prefix: string, value: string): string {
+  if (value.length > MAX_PILL_LABEL) {
+    return `${prefix}: ${value.slice(0, MAX_PILL_LABEL)}…`;
+  }
+  return `${prefix}: ${value}`;
+}
+
 const MAX_RANKED_SOURCES = 15;
 const MAX_SOURCES_PER_ITEM = 5;
 
@@ -243,7 +252,7 @@ export class QueryModal extends Modal {
     const pills = contentEl.createDiv({ cls: "llm-wiki-query-pills" });
     this.modelPillEl = pills.createSpan({
       cls: "llm-wiki-query-pill llm-wiki-query-pill-clickable",
-      text: `model: ${this.currentModel}`,
+      text: pillLabel("model", this.currentModel),
       attr: { "aria-label": "Change model", role: "button" },
     });
     this.modelPillEl.onclick = (): void => this.handleModelPillClick();
@@ -253,7 +262,7 @@ export class QueryModal extends Modal {
     this.ollamaPillEl.onclick = (): void => this.handleOllamaPillClick();
     this.folderPillEl = pills.createSpan({
       cls: "llm-wiki-query-pill llm-wiki-query-pill-clickable",
-      text: `folder: ${this.currentFolder || this.app.vault.getName()}`,
+      text: pillLabel("folder", this.currentFolder || this.app.vault.getName()),
       attr: { "aria-label": "Change folder scope", role: "button" },
     });
     this.folderPillEl.onclick = (): void => this.handleFolderPillClick();
@@ -377,8 +386,10 @@ export class QueryModal extends Modal {
   }
 
   private handleModelPillClick(): void {
-    // Close any existing popover first
-    this.closeModelPopover();
+    if (this.activeModelPopover) {
+      this.closeModelPopover();
+      return;
+    }
     void this.openModelPopover();
   }
 
@@ -405,12 +416,22 @@ export class QueryModal extends Modal {
     for (const model of models) {
       const row = document.createElement("div");
       row.className = "llm-wiki-model-popover-item";
-      if (model === this.currentModel) row.classList.add("is-active");
-      row.textContent = model;
+      const isActive = model === this.currentModel;
+      if (isActive) row.classList.add("is-active");
+      const label = document.createElement("span");
+      label.className = "llm-wiki-model-popover-label";
+      label.textContent = model;
+      row.appendChild(label);
+      if (isActive) {
+        const check = document.createElement("span");
+        check.className = "llm-wiki-model-popover-check";
+        check.textContent = "✓";
+        row.appendChild(check);
+      }
       row.addEventListener("click", (ev) => {
         ev.stopPropagation();
         this.currentModel = model;
-        if (this.modelPillEl) this.modelPillEl.setText(`model: ${model}`);
+        if (this.modelPillEl) this.modelPillEl.setText(pillLabel("model", model));
         this.controller?.setModel(model);
         this.args.onModelChanged(model);
         this.closeModelPopover();
@@ -425,6 +446,7 @@ export class QueryModal extends Modal {
     popover.style.left = `${rect.left - modalRect.left}px`;
     this.modalEl.appendChild(popover);
     this.activeModelPopover = popover;
+    this.modalEl.addClass("has-popover");
 
     // Close on click outside
     const onClickOutside = (ev: MouseEvent): void => {
@@ -441,10 +463,14 @@ export class QueryModal extends Modal {
     this.activeModelPopover = null;
     this.modelPopoverCleanup?.();
     this.modelPopoverCleanup = null;
+    if (!this.activeFolderPopover) this.modalEl.removeClass("has-popover");
   }
 
   private handleFolderPillClick(): void {
-    this.closeFolderPopover();
+    if (this.activeFolderPopover) {
+      this.closeFolderPopover();
+      return;
+    }
     this.openFolderPopover();
   }
 
@@ -471,13 +497,23 @@ export class QueryModal extends Modal {
     for (const opt of options) {
       const row = document.createElement("div");
       row.className = "llm-wiki-model-popover-item";
-      if (opt.value === this.currentFolder) row.classList.add("is-active");
-      row.textContent = opt.label;
+      const isActive = opt.value === this.currentFolder;
+      if (isActive) row.classList.add("is-active");
+      const label = document.createElement("span");
+      label.className = "llm-wiki-model-popover-label";
+      label.textContent = opt.label;
+      row.appendChild(label);
+      if (isActive) {
+        const check = document.createElement("span");
+        check.className = "llm-wiki-model-popover-check";
+        check.textContent = "✓";
+        row.appendChild(check);
+      }
       row.addEventListener("click", (ev) => {
         ev.stopPropagation();
         this.currentFolder = opt.value;
         if (this.folderPillEl) {
-          this.folderPillEl.setText(`folder: ${opt.value || vaultName}`);
+          this.folderPillEl.setText(pillLabel("folder", opt.value || vaultName));
         }
         this.controller?.setFolder(opt.value);
         this.closeFolderPopover();
@@ -491,6 +527,7 @@ export class QueryModal extends Modal {
     popover.style.left = `${rect.left - modalRect.left}px`;
     this.modalEl.appendChild(popover);
     this.activeFolderPopover = popover;
+    this.modalEl.addClass("has-popover");
 
     const onClickOutside = (ev: MouseEvent): void => {
       if (!popover.contains(ev.target as Node) && ev.target !== pill) {
@@ -506,6 +543,7 @@ export class QueryModal extends Modal {
     this.activeFolderPopover = null;
     this.folderPopoverCleanup?.();
     this.folderPopoverCleanup = null;
+    if (!this.activeModelPopover) this.modalEl.removeClass("has-popover");
   }
 
   private handleOllamaPillClick(): void {
