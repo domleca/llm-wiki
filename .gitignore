@@ -36,3 +36,5 @@ docs/superpowers/
 # Env
 .env
 .env.local
+chats.json
+/interactions
