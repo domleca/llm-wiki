@@ -1,6 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { generateChatTitle } from "../../src/chat/title.js";
+import { describe, expect, it } from "vitest";
+
 import type { LLMProvider } from "../../src/llm/provider.js";
+import { generateChatTitle } from "../../src/chat/title.js";
 
 function mockProvider(response: string): LLMProvider {
   return {
@@ -54,9 +55,15 @@ describe("generateChatTitle", () => {
   it("falls back to 'Untitled' when complete() throws", async () => {
     const p: LLMProvider = {
       complete: () =>
-        (async function* () {
-          throw new Error("boom");
-        })(),
+        ({
+          [Symbol.asyncIterator]() {
+            return {
+              async next() {
+                throw new Error("boom");
+              },
+            };
+          },
+        }) as AsyncIterable<string>,
       embed: async () => [],
       ping: async () => true,
       showModel: async () => ({ contextLength: null }),
