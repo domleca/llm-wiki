@@ -718,11 +718,12 @@ export class QueryModal extends Modal {
       const existing = this.chats.find((c) => c.id === this.activeChatId);
       if (existing) return existing;
     }
+    const chatFolder = this.currentFolders.length === 1 ? this.currentFolders[0] : "";
     const now = Date.now();
     const fresh = createChat({
       id: generateChatId(),
       now,
-      folder: this.currentFolders[0] ?? "",
+      folder: chatFolder,
       model: this.currentModel,
     });
     this.chats = [fresh, ...this.chats];

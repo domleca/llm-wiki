@@ -25,12 +25,12 @@ export function buildQuerySection(args: BuildQuerySectionArgs): void {
 
   const wholeVaultDesc = "No folder restrictions (searching entire vault)";
 
-  // Create a setting group for the index folders
+  // Create a setting group for the query folder scope
   const settingGroup = args.container.createDiv({ cls: "setting-group" });
 
   // Heading with title and add button
   const heading = settingGroup.createDiv({ cls: "setting-item setting-item-heading" });
-  heading.createDiv({ cls: "setting-item-name", text: "Index folders" });
+  heading.createDiv({ cls: "setting-item-name", text: "Query folders" });
   const headingControl = heading.createDiv({ cls: "setting-item-control" });
 
   const addBtn = headingControl.createEl("button", {

@@ -359,12 +359,13 @@ export default class LlmWikiPlugin extends Plugin {
 
   async loadSettings(): Promise<void> {
     const data = (await this.loadData()) as Partial<LlmWikiSettings & { defaultQueryFolder?: string }> | null;
-    this.settings = { ...DEFAULT_SETTINGS, ...(data ?? {}) };
+    const { defaultQueryFolder, ...settingsData } = data ?? {};
+    this.settings = { ...DEFAULT_SETTINGS, ...settingsData };
     
     // Migrate from old defaultQueryFolder to new queryFolders format
-    if (data?.defaultQueryFolder !== undefined && this.settings.queryFolders.length === 0) {
-      if (data.defaultQueryFolder) {
-        this.settings.queryFolders = [data.defaultQueryFolder];
+    if (defaultQueryFolder !== undefined && this.settings.queryFolders.length === 0) {
+      if (defaultQueryFolder) {
+        this.settings.queryFolders = [defaultQueryFolder];
       }
     }
   }

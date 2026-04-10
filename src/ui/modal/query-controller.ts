@@ -112,12 +112,17 @@ export class QueryController {
   }
 
   async run(question: string): Promise<void> {
+    const chatFolder =
+      this.currentFolders && this.currentFolders.length === 1
+        ? this.currentFolders[0]
+        : "";
+
     const emptyChat: Chat = {
       id: "transient",
       title: "",
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      folder: this.currentFolders?.[0] ?? "",
+      folder: chatFolder,
       model: this.currentModel,
       turns: [],
     };
