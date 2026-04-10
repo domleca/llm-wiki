@@ -30,6 +30,9 @@ coverage/
 data.json
 embeddings-cache.json
 
+# Internal dev docs (plans, specs, runbooks)
+docs/superpowers/
+
 # Env
 .env
 .env.local
