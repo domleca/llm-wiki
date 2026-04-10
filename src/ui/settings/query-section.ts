@@ -28,53 +28,51 @@ export function buildQuerySection(args: BuildQuerySectionArgs): void {
       ? "No folder restrictions (searching entire vault)"
       : `Indexing ${args.settings.queryFolders.length} folder${args.settings.queryFolders.length === 1 ? "" : "s"}`;
 
-  new Setting(args.container)
-    .setName("Index folders")
-    .setDesc(desc)
-    .addButton((btn) =>
-      btn.setButtonText("Add folder…").onClick(() => {
-        openFolderPicker({
-          app: args.app,
-          current: "",
-          onPick: async (folder) => {
-            if (folder && !args.settings.queryFolders.includes(folder)) {
-              await args.onChange({
-                queryFolders: [...args.settings.queryFolders, folder],
-              });
-              args.rerender();
-            }
-          },
-        });
-      }),
-    );
+  // Create a setting group for the index folders
+  const settingGroup = args.container.createDiv({ cls: "setting-group" });
 
-  // Display list of current folders with remove buttons as separate section with divider
-  if (args.settings.queryFolders.length > 0) {
-    args.container.createEl("hr", { cls: "llm-wiki-folder-divider" });
-    
-    const listContainer = args.container.createDiv({
-      cls: "llm-wiki-folder-list",
+  // Heading with title and add button
+  const heading = settingGroup.createDiv({ cls: "setting-item setting-item-heading" });
+  const headingName = heading.createDiv({ cls: "setting-item-name", text: "Index folders" });
+  const headingControl = heading.createDiv({ cls: "setting-item-control" });
+
+  const addBtn = headingControl.createEl("button", {
+    text: "Add folder…",
+    cls: "mod-cta",
+  });
+  addBtn.addEventListener("click", () => {
+    openFolderPicker({
+      app: args.app,
+      current: "",
+      onPick: async (folder) => {
+        if (folder && !args.settings.queryFolders.includes(folder)) {
+          await args.onChange({
+            queryFolders: [...args.settings.queryFolders, folder],
+          });
+          args.rerender();
+        }
+      },
     });
+  });
+
+  // Items container for folders
+  const itemsContainer = settingGroup.createDiv({ cls: "setting-items" });
+
+  // Display list of current folders with remove buttons
+  if (args.settings.queryFolders.length > 0) {
     for (const folder of args.settings.queryFolders) {
-      const itemContainer = listContainer.createDiv({
-        cls: "llm-wiki-folder-list-item",
-      });
-      itemContainer.style.display = "flex";
-      itemContainer.style.justifyContent = "space-between";
-      itemContainer.style.alignItems = "center";
-      itemContainer.style.width = "100%";
-      itemContainer.style.padding = "8px 0";
-      
-      const folderSpan = itemContainer.createSpan({ text: folder });
-      folderSpan.style.flex = "1";
-      
-      const removeBtn = itemContainer.createEl("button", {
+      const settingItem = itemsContainer.createDiv({ cls: "setting-item" });
+
+      const settingInfo = settingItem.createDiv({ cls: "setting-item-info" });
+      const settingName = settingInfo.createDiv({ cls: "setting-item-name", text: folder });
+      const settingDesc = settingInfo.createDiv({ cls: "setting-item-description", text: desc });
+
+      const settingControl = settingItem.createDiv({ cls: "setting-item-control" });
+      const removeBtn = settingControl.createEl("button", {
         text: "Remove",
-        cls: "llm-wiki-folder-remove-btn",
+        cls: "mod-warning",
       });
-      removeBtn.style.marginLeft = "8px";
-      removeBtn.style.flexShrink = "0";
-      
+
       removeBtn.addEventListener("click", async () => {
         const filtered = args.settings.queryFolders.filter((f) => f !== folder);
         await args.onChange({ queryFolders: filtered });
