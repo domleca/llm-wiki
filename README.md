@@ -1,12 +1,10 @@
 # LLM Wiki
 
-## Acknowledgments
-
 This project was inspired by [Andrej Karpathy's post on LLM knowledge bases](https://x.com/karpathy/status/2039805659525644595) — using LLMs to compile personal notes into a structured, queryable wiki. LLM Wiki is an attempt to package that workflow into something anyone can use, privately, right inside Obsidian.
 
 ---
 
-Your notes already contain a wealth of knowledge — scattered across files, half-connected, hard to query. LLM Wiki reads your Obsidian vault, extracts the people, ideas & connections, and lets you ask questions in natural language.
+Your notes already contain a wealth of knowledge — scattered across files, half-connected, hard to query. LLM Wiki reads your Obsidian vault, extracts the people, ideas & connections, and lets you ask questions in natural language. TLDR: privately chat with your notes.
 
 Everything runs locally on your machine. No cloud account required. Your notes never leave your computer. You can also use Anthropic, OpenAI or Gemini if you wish.
 
@@ -18,7 +16,7 @@ You need two things: [Ollama](https://ollama.com) (a free, local LLM runtime) an
 
 **1. Install Ollama and pull the models**
 
-Download Ollama from [ollama.com](https://ollama.com), then open a terminal and run:
+Download Ollama from [ollama.com](https://ollama.com), or install it from the terminal with `brew install ollama` (Mac) or `curl -fsSL https://ollama.com/install.sh | sh` (Linux). Then run:
 
 ```bash
 ollama pull qwen2.5:7b
@@ -39,9 +37,19 @@ Install LLM Wiki from the Community Plugins browser in Obsidian, or manually dro
 
 Open the command palette (`Cmd+P` / `Ctrl+P`) and run **LLM Wiki: Run extraction now**. The plugin walks your vault, sends each note to the local model, and builds a structured knowledge base. Progress shows in the status bar.
 
+> **This takes a while.** The first extraction processes every note one by one. On a 600-note vault with a MacBook Air M2 (16 GB) running `qwen2.5:7b` locally, it took about **4 hours**. Larger vaults or older machines will take longer. Good time to start it before bed. If you're on a Mac laptop, keep it awake with `caffeinate` in a terminal:
+>
+> ```bash
+> caffeinate -i
+> ```
+>
+> After the first run, only changed notes are re-extracted — updates take seconds, not hours.
+
 **4. Ask your vault a question**
 
 Run the command **Ask knowledge base** (or click the ribbon icon). Type a question. Answers stream in with clickable links back to the source notes.
+
+> **Tip:** Set a hotkey for quick access. Go to Settings > Hotkeys, search for "Ask knowledge base", and assign a shortcut — `Shift+Cmd+K` works well.
 
 That's it. You're running.
 
@@ -86,9 +94,9 @@ The default setup is fully local — nothing to sign up for, nothing to pay for.
 
 Cloud providers send note content to the provider's API. If privacy matters, stick with Ollama.
 
-## What it writes to your vault
+## Keeping your vault intact
 
-All generated files live under `wiki/`. Your existing notes are never modified.
+Your existing notes are never modified. Everything the plugin generates lives in a single `wiki/` folder:
 
 ```
 wiki/
@@ -98,6 +106,8 @@ wiki/
   concepts/          one page per concept
   sources/           one page per source note
 ```
+
+By default, the `wiki/` folder is hidden from search, Quick Switcher, and graph view — it won't clutter your vault or interfere with your links. If you're curious and want to browse the generated pages, you can make them visible in Settings > LLM Wiki > Appearance. Either way, your normal vault stays exactly as it was.
 
 ## How it works
 
