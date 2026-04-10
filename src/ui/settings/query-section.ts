@@ -58,8 +58,14 @@ export function buildQuerySection(args: BuildQuerySectionArgs): void {
   // Items container for folders
   const itemsContainer = settingGroup.createDiv({ cls: "setting-items" });
 
-  // Display list of current folders with remove buttons
-  if (args.settings.queryFolders.length > 0) {
+  // Display "Whole vault" when no folders are selected, or list of selected folders
+  if (args.settings.queryFolders.length === 0) {
+    const settingItem = itemsContainer.createDiv({ cls: "setting-item" });
+
+    const settingInfo = settingItem.createDiv({ cls: "setting-item-info" });
+    const settingName = settingInfo.createDiv({ cls: "setting-item-name", text: "Whole vault" });
+    const settingDesc = settingInfo.createDiv({ cls: "setting-item-description", text: "No folder restrictions (searching entire vault)" });
+  } else {
     for (const folder of args.settings.queryFolders) {
       const settingItem = itemsContainer.createDiv({ cls: "setting-item" });
 
