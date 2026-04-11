@@ -6,11 +6,15 @@
  * triggers single-file extraction when the dust settles.
  */
 
+import { isInAnyFolder } from "../vault/path-scope.js";
+
 const DEFAULT_DEBOUNCE_MS = 5_000;
 
 export interface OnSaveWatcherOptions {
   /** Directories to ignore (same list as the walker's skipDirs). */
   skipDirs: string[];
+  /** Optional folder scope for extraction. Empty means entire vault. */
+  getIncludedFolders?: () => string[];
   /** Returns true if a bulk extraction is running — skip on-save in that case. */
   isExtractionRunning: () => boolean;
   /** Called with the file path when a save should trigger extraction. */
@@ -37,6 +41,7 @@ export class OnSaveWatcher {
   constructor(options: OnSaveWatcherOptions) {
     this.opts = {
       skipDirs: options.skipDirs,
+      getIncludedFolders: options.getIncludedFolders ?? (() => []),
       isExtractionRunning: options.isExtractionRunning,
       trigger: options.trigger,
       debounceMs: options.debounceMs ?? DEFAULT_DEBOUNCE_MS,
@@ -84,6 +89,7 @@ export class OnSaveWatcher {
   private isSkipped(path: string): boolean {
     const parts = path.split("/");
     const skipSet = new Set(this.opts.skipDirs.map((d) => d.toLowerCase()));
-    return parts.some((p) => skipSet.has(p.toLowerCase()));
+    if (parts.some((p) => skipSet.has(p.toLowerCase()))) return true;
+    return !isInAnyFolder(path, this.opts.getIncludedFolders());
   }
 }
