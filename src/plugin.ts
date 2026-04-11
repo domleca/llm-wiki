@@ -818,16 +818,39 @@ const EXTRACTION_LANGUAGE_LABELS: Record<
 };
 
 export function describeExtractionLanguage(
-  setting: ExtractionLanguageSetting,
+  setting: ExtractionLanguageSetting | string,
   appLanguage: string,
 ): string {
   if (setting !== "app") {
-    return EXTRACTION_LANGUAGE_LABELS[setting];
+    return (
+      EXTRACTION_LANGUAGE_LABELS[
+        setting as Exclude<ExtractionLanguageSetting, "app">
+      ] ?? resolveLanguageLabel(setting)
+    );
   }
-  const normalized = appLanguage.trim().toLowerCase();
+  return resolveLanguageLabel(appLanguage);
+}
+
+function resolveLanguageLabel(language: string): string {
+  const trimmed = language.trim();
+  const normalized = trimmed.toLowerCase();
   const base = normalized.split("-")[0] as Exclude<
     ExtractionLanguageSetting,
     "app"
   >;
-  return EXTRACTION_LANGUAGE_LABELS[base] ?? `the app language (${appLanguage})`;
+  const knownLanguage = EXTRACTION_LANGUAGE_LABELS[base];
+  if (knownLanguage) {
+    return knownLanguage;
+  }
+
+  try {
+    const displayNames = new Intl.DisplayNames(["en"], { type: "language" });
+    return (
+      displayNames.of(normalized) ??
+      displayNames.of(base) ??
+      (normalized || trimmed || "English")
+    );
+  } catch {
+    return normalized || trimmed || "English";
+  }
 }

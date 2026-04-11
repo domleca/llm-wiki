@@ -62,8 +62,15 @@ Respond with ONLY a JSON object, no markdown fences, no commentary:
 export function buildExtractionPrompt(
   args: BuildExtractionPromptArgs,
 ): string {
-  return TEMPLATE.replace("{vocabulary}", args.vocabulary)
-    .replace("{source_path}", args.sourcePath)
-    .replace("{output_language}", args.outputLanguage)
-    .replace("{content}", args.content);
+  const replacements: Record<string, string> = {
+    vocabulary: args.vocabulary,
+    source_path: args.sourcePath,
+    output_language: args.outputLanguage,
+    content: args.content,
+  };
+
+  return TEMPLATE.replace(
+    /\{(vocabulary|source_path|output_language|content)\}/g,
+    (_match, key: string) => replacements[key] ?? "",
+  );
 }
