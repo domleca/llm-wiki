@@ -14,6 +14,13 @@ export interface ExtractFileInput {
   path: string;
   content: string;
   mtime: number;
+  /**
+   * SHA-256 hex digest of `content`. Computed by the caller so we can
+   * skip re-extraction when the hash matches the stored record, and
+   * stored alongside the extraction so future runs can compare against
+   * it. See `sha256Hex` in `./content-hash.ts`.
+   */
+  contentHash: string;
   origin: SourceOrigin;
 }
 
@@ -133,6 +140,7 @@ export async function extractFile(
     path: args.file.path,
     summary: parsed.source_summary,
     mtime: args.file.mtime,
+    contentHash: args.file.contentHash,
     origin: args.file.origin,
   });
 

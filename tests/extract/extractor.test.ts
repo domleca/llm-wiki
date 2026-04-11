@@ -28,6 +28,7 @@ describe("extractFile", () => {
         path: "Books/watts.md",
         content: "Alan Watts wrote about Zen.",
         mtime: 1000,
+        contentHash: "watts-hash",
         origin: "user-note",
       },
       model: "qwen2.5:7b",
@@ -41,6 +42,7 @@ describe("extractFile", () => {
     expect(kb.data.concepts["zen"]?.definition).toBe("School of Mahayana.");
     expect(kb.data.connections).toHaveLength(1);
     expect(kb.data.sources["Books/watts.md"]?.mtime).toBe(1000);
+    expect(kb.data.sources["Books/watts.md"]?.contentHash).toBe("watts-hash");
     expect(kb.data.sources["Books/watts.md"]?.origin).toBe("user-note");
 
     expect(provider.calls).toHaveLength(1);
@@ -63,6 +65,7 @@ describe("extractFile", () => {
         path: "x.md",
         content: "body",
         mtime: 1,
+        contentHash: "h1",
         origin: "user-note",
       },
       model: "qwen2.5:7b",
@@ -83,6 +86,7 @@ describe("extractFile", () => {
         path: "big.md",
         content: huge,
         mtime: 1,
+        contentHash: "big-hash",
         origin: "user-note",
       },
       model: "qwen2.5:7b",
@@ -105,6 +109,7 @@ describe("extractFile", () => {
           path: "y.md",
           content: "body",
           mtime: 1,
+          contentHash: "y-hash",
           origin: "user-note",
         },
         model: "qwen2.5:7b",

@@ -54,6 +54,8 @@ export interface MarkSourceArgs {
   origin: SourceOrigin;
   summary?: string;
   date?: string;
+  /** SHA-256 hex digest of the file's content at extraction time. */
+  contentHash?: string;
 }
 
 export class KnowledgeBase {
@@ -178,19 +180,65 @@ export class KnowledgeBase {
   }
 
   markSource(args: MarkSourceArgs): void {
-    this.data.sources[args.path] = {
+    const record: SourceRecord = {
       id: args.path,
       summary: args.summary ?? "",
       date: args.date ?? todayIso(),
       mtime: args.mtime,
       origin: args.origin,
     };
+    if (args.contentHash !== undefined) {
+      record.contentHash = args.contentHash;
+    }
+    this.data.sources[args.path] = record;
   }
 
-  needsExtraction(path: string, currentMtime: number): boolean {
+  /**
+   * Decides whether a file needs (re-)extraction.
+   *
+   * The primary signal is the content hash: if the stored record has a
+   * `contentHash` and it matches the current file's hash, the file is
+   * identical to what we last extracted and we skip it. This is immune
+   * to mtime drift from iCloud re-sync, backup restores, vault moves,
+   * clock skew, and cross-tool unit mismatches (seconds vs milliseconds).
+   *
+   * The secondary signal, used only for pre-migration entries that lack
+   * a stored hash, is the mtime comparison we used before hash-based
+   * dedupe shipped. Those entries get their hash backfilled on skip
+   * (see `backfillContentHash`), so after one successful run every
+   * source has a hash and the fallback path is never taken again.
+   */
+  needsExtraction(
+    path: string,
+    currentMtime: number,
+    currentContentHash: string,
+  ): boolean {
     const stored = this.data.sources[path];
     if (!stored) return true;
+    if (stored.contentHash !== undefined) {
+      return currentContentHash !== stored.contentHash;
+    }
+    // Pre-migration entry: no stored hash, fall back to mtime.
     return currentMtime > stored.mtime;
+  }
+
+  /**
+   * Populates or updates `contentHash` on an existing source without
+   * touching `summary`, `date`, or `origin`. Called by the extraction
+   * queue when a file is skipped as up-to-date — the queue has just
+   * computed the file's hash and we want to cache it so future runs
+   * use the hash path instead of the mtime fallback.
+   *
+   * No-op if the source does not exist.
+   */
+  backfillContentHash(path: string, contentHash: string, mtime: number): void {
+    const stored = this.data.sources[path];
+    if (!stored) return;
+    stored.contentHash = contentHash;
+    // Upgrade stored mtime to match the current on-disk value, so a
+    // future mtime-based comparison (e.g. from an older tool) does not
+    // spuriously flag this file as needing re-extraction.
+    stored.mtime = mtime;
   }
 
   isProcessed(path: string): boolean {

@@ -58,7 +58,12 @@ export async function runExtraction(
     const file = files[i]!;
     const index = i + 1;
 
-    if (!kb.needsExtraction(file.path, file.mtime)) {
+    if (!kb.needsExtraction(file.path, file.mtime, file.contentHash)) {
+      // Forward-migrate pre-hash entries: if the file was skipped via
+      // mtime fallback (because the stored record has no contentHash),
+      // cache the current hash so future runs use the hash path. Also
+      // harmlessly refreshes an already-set hash to the current value.
+      kb.backfillContentHash(file.path, file.contentHash, file.mtime);
       skipped++;
       emitter.emit("file-skipped", { path: file.path, index, total });
       continue;

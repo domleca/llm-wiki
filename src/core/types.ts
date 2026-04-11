@@ -63,6 +63,14 @@ export interface SourceRecord {
   summary: string;
   date: string;
   mtime: number;
+  /**
+   * SHA-256 hex digest of the file's content at extraction time. Used as
+   * the primary dedupe key by `needsExtraction` — we re-extract iff this
+   * differs from the current file's hash. Optional because pre-migration
+   * KBs written before hash-based dedupe shipped will not have it; those
+   * entries fall back to mtime comparison until the hash is backfilled.
+   */
+  contentHash?: string;
   origin: SourceOrigin;
 }
 

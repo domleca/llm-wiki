@@ -11,16 +11,19 @@ const EMPTY_JSON =
 function fakeFile(
   i: number,
   mtime = 1,
+  contentHash = `hash-${i}`,
 ): {
   path: string;
   content: string;
   mtime: number;
+  contentHash: string;
   origin: "user-note";
 } {
   return {
     path: `notes/${i}.md`,
     content: `file ${i} body`,
     mtime,
+    contentHash,
     origin: "user-note",
   };
 }
@@ -85,16 +88,18 @@ describe("runExtraction", () => {
     expect(saveKB).toHaveBeenCalledTimes(3);
   });
 
-  it("skips files already processed at the same mtime (idempotent replay)", async () => {
+  it("skips files whose stored contentHash matches (idempotent replay)", async () => {
     const kb = new KnowledgeBase();
     kb.markSource({
       path: "notes/1.md",
       mtime: 1,
+      contentHash: "hash-1",
       origin: "user-note",
     });
     kb.markSource({
       path: "notes/2.md",
       mtime: 1,
+      contentHash: "hash-2",
       origin: "user-note",
     });
     const provider = makeCannedProvider(3);
@@ -124,6 +129,70 @@ describe("runExtraction", () => {
     expect(stats.succeeded).toBe(3);
     expect(provider.calls).toHaveLength(3);
     expect(skips).toEqual(["notes/1.md", "notes/2.md"]);
+  });
+
+  it("skips pre-migration entries via mtime fallback and backfills the contentHash", async () => {
+    const kb = new KnowledgeBase();
+    // Two entries stored without contentHash — the pre-migration shape.
+    kb.markSource({ path: "notes/1.md", mtime: 1, origin: "user-note" });
+    kb.markSource({ path: "notes/2.md", mtime: 1, origin: "user-note" });
+    expect(kb.data.sources["notes/1.md"]?.contentHash).toBeUndefined();
+    expect(kb.data.sources["notes/2.md"]?.contentHash).toBeUndefined();
+
+    const provider = makeCannedProvider(0);
+    const emitter = new ProgressEmitter();
+    const saveKB = vi.fn(async () => {});
+    const files = [fakeFile(1), fakeFile(2)];
+
+    const stats = await runExtraction({
+      provider,
+      kb,
+      files,
+      model: "qwen2.5:7b",
+      saveKB,
+      emitter,
+      checkpointEvery: 5,
+    });
+
+    expect(stats.skipped).toBe(2);
+    expect(stats.succeeded).toBe(0);
+    expect(provider.calls).toHaveLength(0);
+    // Backfill: skipped files now carry the current hash so a future
+    // mtime-only tool cannot re-trigger them.
+    expect(kb.data.sources["notes/1.md"]?.contentHash).toBe("hash-1");
+    expect(kb.data.sources["notes/2.md"]?.contentHash).toBe("hash-2");
+    // Backfill also runs the final save so the hash lands on disk.
+    expect(saveKB).toHaveBeenCalled();
+  });
+
+  it("re-extracts when the file's contentHash differs from the stored one", async () => {
+    const kb = new KnowledgeBase();
+    kb.markSource({
+      path: "notes/1.md",
+      mtime: 1,
+      contentHash: "hash-old",
+      origin: "user-note",
+    });
+    const provider = makeCannedProvider(1);
+    const emitter = new ProgressEmitter();
+    const saveKB = vi.fn(async () => {});
+    // Same mtime (1), but the hash has changed — must re-extract.
+    const files = [fakeFile(1, 1, "hash-new")];
+
+    const stats = await runExtraction({
+      provider,
+      kb,
+      files,
+      model: "qwen2.5:7b",
+      saveKB,
+      emitter,
+      checkpointEvery: 5,
+    });
+
+    expect(stats.skipped).toBe(0);
+    expect(stats.succeeded).toBe(1);
+    expect(provider.calls).toHaveLength(1);
+    expect(kb.data.sources["notes/1.md"]?.contentHash).toBe("hash-new");
   });
 
   it("stops cleanly at a file boundary when signal is aborted", async () => {

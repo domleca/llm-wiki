@@ -199,37 +199,107 @@ describe("KnowledgeBase.addConnection", () => {
 });
 
 describe("KnowledgeBase.markSource and needsExtraction", () => {
-  it("records a source with origin and mtime", () => {
+  it("records a source with origin, mtime, and contentHash", () => {
     const kb = new KnowledgeBase();
     kb.markSource({
       path: "Books/Watts.md",
       mtime: 1700000000,
+      contentHash: "hash-v1",
       origin: "user-note",
       summary: "A book about insecurity",
     });
     const src = kb.data.sources["Books/Watts.md"];
     expect(src?.id).toBe("Books/Watts.md");
     expect(src?.mtime).toBe(1700000000);
+    expect(src?.contentHash).toBe("hash-v1");
     expect(src?.origin).toBe("user-note");
     expect(src?.summary).toBe("A book about insecurity");
     expect(src?.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
+  it("leaves contentHash undefined when markSource omits it (pre-migration path)", () => {
+    const kb = new KnowledgeBase();
+    kb.markSource({ path: "a.md", mtime: 1, origin: "user-note" });
+    expect(kb.data.sources["a.md"]?.contentHash).toBeUndefined();
+  });
+
   it("needsExtraction is true for an unknown path", () => {
     const kb = new KnowledgeBase();
-    expect(kb.needsExtraction("Books/Watts.md", 1700000000)).toBe(true);
+    expect(kb.needsExtraction("Books/Watts.md", 1700000000, "h1")).toBe(true);
   });
 
-  it("needsExtraction is false when mtime is unchanged", () => {
+  it("needsExtraction is false when stored contentHash matches (mtime ignored)", () => {
     const kb = new KnowledgeBase();
-    kb.markSource({ path: "Books/Watts.md", mtime: 1700000000, origin: "user-note" });
-    expect(kb.needsExtraction("Books/Watts.md", 1700000000)).toBe(false);
+    kb.markSource({
+      path: "Books/Watts.md",
+      mtime: 1700000000,
+      contentHash: "h1",
+      origin: "user-note",
+    });
+    // Even a newer mtime does not trigger re-extraction when the hash matches.
+    expect(
+      kb.needsExtraction("Books/Watts.md", 1800000000, "h1"),
+    ).toBe(false);
   });
 
-  it("needsExtraction is true when current mtime is newer than stored", () => {
+  it("needsExtraction is true when stored contentHash differs (even at same mtime)", () => {
     const kb = new KnowledgeBase();
-    kb.markSource({ path: "Books/Watts.md", mtime: 1700000000, origin: "user-note" });
-    expect(kb.needsExtraction("Books/Watts.md", 1700000001)).toBe(true);
+    kb.markSource({
+      path: "Books/Watts.md",
+      mtime: 1700000000,
+      contentHash: "h1",
+      origin: "user-note",
+    });
+    expect(
+      kb.needsExtraction("Books/Watts.md", 1700000000, "h2"),
+    ).toBe(true);
+  });
+
+  it("needsExtraction falls back to mtime when stored entry has no contentHash", () => {
+    const kb = new KnowledgeBase();
+    // Pre-migration entry: no contentHash recorded.
+    kb.markSource({
+      path: "Books/Watts.md",
+      mtime: 1700000000,
+      origin: "user-note",
+    });
+    expect(
+      kb.needsExtraction("Books/Watts.md", 1700000000, "any"),
+    ).toBe(false);
+    expect(
+      kb.needsExtraction("Books/Watts.md", 1700000001, "any"),
+    ).toBe(true);
+  });
+});
+
+describe("KnowledgeBase.backfillContentHash", () => {
+  it("populates contentHash on a pre-migration entry and upgrades mtime", () => {
+    const kb = new KnowledgeBase();
+    kb.markSource({ path: "a.md", mtime: 1000, origin: "user-note" });
+    expect(kb.data.sources["a.md"]?.contentHash).toBeUndefined();
+
+    kb.backfillContentHash("a.md", "fresh-hash", 2000);
+    expect(kb.data.sources["a.md"]?.contentHash).toBe("fresh-hash");
+    expect(kb.data.sources["a.md"]?.mtime).toBe(2000);
+  });
+
+  it("refreshes an already-set hash to the current value", () => {
+    const kb = new KnowledgeBase();
+    kb.markSource({
+      path: "a.md",
+      mtime: 1000,
+      contentHash: "old",
+      origin: "user-note",
+    });
+    kb.backfillContentHash("a.md", "new", 2000);
+    expect(kb.data.sources["a.md"]?.contentHash).toBe("new");
+    expect(kb.data.sources["a.md"]?.mtime).toBe(2000);
+  });
+
+  it("is a no-op for an unknown path", () => {
+    const kb = new KnowledgeBase();
+    expect(() => kb.backfillContentHash("missing.md", "h", 1)).not.toThrow();
+    expect(kb.data.sources["missing.md"]).toBeUndefined();
   });
 });
 

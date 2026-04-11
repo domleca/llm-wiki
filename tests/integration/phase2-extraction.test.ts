@@ -61,6 +61,7 @@ describe("Phase 2 integration", () => {
       path: w.path,
       content: files.get(w.path)!.content,
       mtime: w.mtime,
+      contentHash: `hash:${w.path}`,
       origin: w.origin,
     }));
 
@@ -119,6 +120,7 @@ describe("Phase 2 integration", () => {
       path: w.path,
       content: files.get(w.path)!.content,
       mtime: w.mtime,
+      contentHash: `hash:${w.path}`,
       origin: w.origin,
     }));
 
@@ -177,6 +179,7 @@ describe("Phase 2 integration", () => {
       path: w.path,
       content: files.get(w.path)!.content,
       mtime: w.mtime,
+      contentHash: `hash:${w.path}`,
       origin: w.origin,
     }));
     const provider = new MockLLMProvider(

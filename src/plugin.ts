@@ -18,6 +18,7 @@ import {
 } from "./llm/catalog.js";
 import { runExtraction, type QueueFile } from "./extract/queue.js";
 import { extractFile } from "./extract/extractor.js";
+import { sha256Hex } from "./extract/content-hash.js";
 import {
   DEFAULT_MIN_FILE_SIZE,
   DEFAULT_SKIP_DIRS,
@@ -633,10 +634,12 @@ export default class LlmWikiPlugin extends Plugin {
         const tfile = this.app.vault.getAbstractFileByPath(w.path);
         if (!(tfile instanceof TFile)) continue;
         const content = await this.app.vault.cachedRead(tfile);
+        const contentHash = await sha256Hex(content);
         files.push({
           path: w.path,
           content,
           mtime: w.mtime,
+          contentHash,
           origin: w.origin,
         });
       }
@@ -776,6 +779,7 @@ export default class LlmWikiPlugin extends Plugin {
     try {
       await this.reloadKB();
       const content = await this.app.vault.cachedRead(file);
+      const contentHash = await sha256Hex(content);
       await extractFile({
         provider: this.provider,
         kb: this.kb,
@@ -783,6 +787,7 @@ export default class LlmWikiPlugin extends Plugin {
           path: file.path,
           content,
           mtime: file.stat.mtime,
+          contentHash,
           origin: "user-note",
         },
         model: this.activeModel,
