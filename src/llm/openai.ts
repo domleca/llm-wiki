@@ -12,12 +12,18 @@ import {
   type EmbedOptions,
   type LLMProvider,
 } from "./provider.js";
-import { completionModels, findModel } from "./catalog.js";
+import { findModel } from "./catalog.js";
 
 export interface OpenAIProviderOptions {
-  apiKey: string;
+  apiKey?: string;
   /** Override base URL (for proxies / Azure). Defaults to https://api.openai.com. */
   baseUrl?: string;
+  /** Models endpoint path or absolute URL. Defaults to /v1/models. */
+  modelsEndpoint?: string;
+  /** Completions endpoint path or absolute URL. Defaults to /v1/chat/completions. */
+  completionsEndpoint?: string;
+  /** Embeddings endpoint path or absolute URL. Defaults to /v1/embeddings. */
+  embeddingsEndpoint?: string;
   /** Custom fetch; defaults to globalThis.fetch. Injected in tests. */
   fetchImpl?: typeof globalThis.fetch;
 }
@@ -25,13 +31,22 @@ export interface OpenAIProviderOptions {
 export class OpenAIProvider implements LLMProvider {
   private readonly apiKey: string;
   private readonly baseUrl: string;
+  private readonly modelsUrl: string;
+  private readonly completionsUrl: string;
+  private readonly embeddingsUrl: string;
   private readonly fetchImpl: typeof globalThis.fetch;
 
   constructor(opts: OpenAIProviderOptions) {
-    this.apiKey = opts.apiKey;
-    this.baseUrl = (opts.baseUrl ?? "https://api.openai.com").replace(
-      /\/$/,
-      "",
+    this.apiKey = opts.apiKey ?? "";
+    this.baseUrl = normalizeBaseUrl(opts.baseUrl ?? "https://api.openai.com");
+    this.modelsUrl = endpointUrl(this.baseUrl, opts.modelsEndpoint ?? "/v1/models");
+    this.completionsUrl = endpointUrl(
+      this.baseUrl,
+      opts.completionsEndpoint ?? "/v1/chat/completions",
+    );
+    this.embeddingsUrl = endpointUrl(
+      this.baseUrl,
+      opts.embeddingsEndpoint ?? "/v1/embeddings",
     );
     this.fetchImpl =
       opts.fetchImpl ?? ((...args) => globalThis.fetch(...args));
@@ -44,9 +59,9 @@ export class OpenAIProvider implements LLMProvider {
     if (signal) signal.addEventListener("abort", linkedAbort, { once: true });
     const timer = setTimeout(() => internalAbort.abort(), 5000);
     try {
-      const res = await this.fetchImpl(`${this.baseUrl}/v1/models`, {
+      const res = await this.fetchImpl(this.modelsUrl, {
         method: "GET",
-        headers: { Authorization: `Bearer ${this.apiKey}` },
+        headers: authHeaders(this.apiKey),
         signal: internalAbort.signal,
       });
       return res.ok;
@@ -59,7 +74,23 @@ export class OpenAIProvider implements LLMProvider {
   }
 
   async listModels(): Promise<string[] | null> {
-    return completionModels("openai").map((m) => m.id);
+    try {
+      const response = await this.fetchImpl(this.modelsUrl, {
+        method: "GET",
+        headers: authHeaders(this.apiKey),
+      });
+      if (!response.ok) return null;
+      const json = (await response.json()) as {
+        data?: Array<{ id?: unknown }>;
+      };
+      if (!Array.isArray(json.data)) return null;
+      const ids = json.data
+        .map((entry) => entry.id)
+        .filter((id): id is string => typeof id === "string");
+      return ids.length > 0 ? ids.sort((a, b) => a.localeCompare(b)) : null;
+    } catch {
+      return null;
+    }
   }
 
   async showModel(model: string): Promise<{ contextLength: number | null }> {
@@ -72,10 +103,10 @@ export class OpenAIProvider implements LLMProvider {
 
     let response: Response;
     try {
-      response = await this.fetchImpl(`${this.baseUrl}/v1/embeddings`, {
+      response = await this.fetchImpl(this.embeddingsUrl, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${this.apiKey}`,
+          ...authHeaders(this.apiKey),
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -119,12 +150,15 @@ export class OpenAIProvider implements LLMProvider {
   }
 
   complete(opts: CompletionOptions): AsyncIterable<string> {
-    const url = `${this.baseUrl}/v1/chat/completions`;
+    const url = this.completionsUrl;
+    const legacyCompletions = isLegacyCompletionsUrl(url);
     const body = JSON.stringify({
       model: opts.model,
       stream: true,
       temperature: opts.temperature ?? 0.1,
-      messages: [{ role: "user", content: opts.prompt }],
+      ...(legacyCompletions
+        ? { prompt: opts.prompt }
+        : { messages: [{ role: "user", content: opts.prompt }] }),
     });
     const apiKey = this.apiKey;
     const fetchImpl = this.fetchImpl;
@@ -138,7 +172,7 @@ export class OpenAIProvider implements LLMProvider {
         response = await fetchImpl(url, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${apiKey}`,
+            ...authHeaders(apiKey),
             "Content-Type": "application/json",
           },
           body,
@@ -204,9 +238,35 @@ export class OpenAIProvider implements LLMProvider {
   }
 }
 
+function normalizeBaseUrl(raw: string): string {
+  const noTrailingSlash = raw.replace(/\/+$/, "");
+  // Accept both "https://host" and "https://host/v1" in settings,
+  // and recover from mistakenly persisted ".../v1/v1" values.
+  return noTrailingSlash.replace(/(?:\/v1)+$/i, "");
+}
+
+function endpointUrl(baseUrl: string, endpoint: string): string {
+  if (/^https?:\/\//i.test(endpoint)) return endpoint;
+  return `${baseUrl}/${endpoint.replace(/^\/+/, "")}`;
+}
+
+function authHeaders(apiKey: string): Record<string, string> {
+  return apiKey ? { Authorization: `Bearer ${apiKey}` } : {};
+}
+
+function isLegacyCompletionsUrl(url: string): boolean {
+  try {
+    const { pathname } = new URL(url);
+    return /\/completions$/i.test(pathname) && !/\/chat\/completions$/i.test(pathname);
+  } catch {
+    return /\/completions$/i.test(url) && !/\/chat\/completions$/i.test(url);
+  }
+}
+
 interface OpenAIStreamChunk {
   choices?: Array<{
     delta?: { content?: string };
+    text?: string;
     finish_reason?: string | null;
   }>;
 }
@@ -220,7 +280,8 @@ function parseSSEData(data: string): string | null {
       `OpenAI returned non-JSON SSE data: ${data.slice(0, 100)}`,
     );
   }
-  const content = parsed.choices?.[0]?.delta?.content;
+  const choice = parsed.choices?.[0];
+  const content = choice?.delta?.content ?? choice?.text;
   if (content === undefined || content === null) return null;
   return content;
 }

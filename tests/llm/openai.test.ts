@@ -1,7 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { LLMHttpError, LLMProtocolError } from "../../src/llm/provider.js";
+import { describe, expect, it } from "vitest";
+
 import { OpenAIProvider } from "../../src/llm/openai.js";
 import { createMockFetch } from "../helpers/mock-fetch.js";
-import { LLMHttpError, LLMProtocolError } from "../../src/llm/provider.js";
 
 function sseChunk(content: string): string {
   return `data: ${JSON.stringify({
@@ -75,6 +76,72 @@ describe("OpenAIProvider.complete", () => {
       }
     }).rejects.toThrow(LLMHttpError);
   });
+
+  it("uses a custom completions endpoint", async () => {
+    const mock = createMockFetch([{ chunks: [SSE_DONE] }]);
+    const provider = new OpenAIProvider({
+      apiKey: "sk-test",
+      baseUrl: "https://api.cerebras.ai",
+      completionsEndpoint: "/v1/completions",
+      fetchImpl: mock.fetch,
+    });
+    for await (const _ of provider.complete({ prompt: "hi", model: "x" })) {
+      // consume
+    }
+    expect(mock.calls[0]!.url).toBe("https://api.cerebras.ai/v1/completions");
+  });
+
+  it("supports legacy completions payloads and streamed text deltas", async () => {
+    const mock = createMockFetch([
+      {
+        chunks: [
+          `data: ${JSON.stringify({
+            choices: [{ text: "Hello", finish_reason: null }],
+          })}\n\n`,
+          `data: ${JSON.stringify({
+            choices: [{ text: " world", finish_reason: null }],
+          })}\n\n`,
+          SSE_DONE,
+        ],
+      },
+    ]);
+    const provider = new OpenAIProvider({
+      apiKey: "sk-test",
+      baseUrl: "https://api.cerebras.ai",
+      completionsEndpoint: "/v1/completions",
+      fetchImpl: mock.fetch,
+    });
+
+    const tokens: string[] = [];
+    for await (const chunk of provider.complete({
+      prompt: "hi",
+      model: "x",
+    })) {
+      tokens.push(chunk);
+    }
+
+    expect(tokens.join("")).toBe("Hello world");
+    const body = JSON.parse(mock.calls[0]!.body!);
+    expect(body.prompt).toBe("hi");
+    expect(body.messages).toBeUndefined();
+  });
+
+  it("omits authorization header when no api key is configured", async () => {
+    const mock = createMockFetch([{ chunks: [SSE_DONE] }]);
+    const provider = new OpenAIProvider({
+      baseUrl: "https://api.example.com",
+      fetchImpl: mock.fetch,
+    });
+
+    for await (const _ of provider.complete({
+      prompt: "hi",
+      model: "x",
+    })) {
+      // consume
+    }
+
+    expect(mock.calls[0]!.headers["Authorization"]).toBeUndefined();
+  });
 });
 
 describe("OpenAIProvider.embed", () => {
@@ -111,6 +178,22 @@ describe("OpenAIProvider.embed", () => {
       provider.embed({ text: "hi", model: "text-embedding-3-small" }),
     ).rejects.toThrow(LLMProtocolError);
   });
+
+  it("uses a custom embeddings endpoint", async () => {
+    const mock = createMockFetch([
+      {
+        body: JSON.stringify({ data: [{ embedding: [1, 2, 3] }] }),
+      },
+    ]);
+    const provider = new OpenAIProvider({
+      apiKey: "sk-test",
+      baseUrl: "https://api.cerebras.ai",
+      embeddingsEndpoint: "https://api.cerebras.ai/v1/embed",
+      fetchImpl: mock.fetch,
+    });
+    await provider.embed({ text: "hi", model: "x" });
+    expect(mock.calls[0]!.url).toBe("https://api.cerebras.ai/v1/embed");
+  });
 });
 
 describe("OpenAIProvider.ping", () => {
@@ -145,12 +228,80 @@ describe("OpenAIProvider.ping", () => {
 });
 
 describe("OpenAIProvider.listModels", () => {
-  it("returns catalog completion models", async () => {
-    const provider = new OpenAIProvider({ apiKey: "sk-test" });
+  it("returns model ids from /v1/models", async () => {
+    const mock = createMockFetch([
+      {
+        body: JSON.stringify({
+          data: [
+            { id: "gpt-4o-mini" },
+            { id: "gpt-4o" },
+            { id: "text-embedding-3-small" },
+          ],
+        }),
+      },
+    ]);
+    const provider = new OpenAIProvider({ apiKey: "sk-test", fetchImpl: mock.fetch });
     const models = await provider.listModels();
     expect(models).not.toBeNull();
     expect(models!.includes("gpt-4o")).toBe(true);
-    expect(models!.includes("text-embedding-3-small")).toBe(false);
+    expect(models!.includes("text-embedding-3-small")).toBe(true);
+    expect(mock.calls[0]!.url).toBe("https://api.openai.com/v1/models");
+  });
+
+  it("returns null when model listing fails", async () => {
+    const mock = createMockFetch([{ status: 401, body: "" }]);
+    const provider = new OpenAIProvider({ apiKey: "sk-test", fetchImpl: mock.fetch });
+    expect(await provider.listModels()).toBeNull();
+  });
+
+  it("normalizes base URL when it already ends with /v1", async () => {
+    const mock = createMockFetch([
+      {
+        body: JSON.stringify({
+          data: [{ id: "gpt-4o-mini" }],
+        }),
+      },
+    ]);
+    const provider = new OpenAIProvider({
+      apiKey: "sk-test",
+      baseUrl: "https://api.cerebras.ai/v1",
+      fetchImpl: mock.fetch,
+    });
+    await provider.listModels();
+    expect(mock.calls[0]!.url).toBe("https://api.cerebras.ai/v1/models");
+  });
+
+  it("normalizes base URL when it ends with /v1/v1", async () => {
+    const mock = createMockFetch([
+      {
+        body: JSON.stringify({
+          data: [{ id: "gpt-4o-mini" }],
+        }),
+      },
+    ]);
+    const provider = new OpenAIProvider({
+      apiKey: "sk-test",
+      baseUrl: "https://api.cerebras.ai/v1/v1",
+      fetchImpl: mock.fetch,
+    });
+    await provider.listModels();
+    expect(mock.calls[0]!.url).toBe("https://api.cerebras.ai/v1/models");
+  });
+
+  it("uses a custom models endpoint", async () => {
+    const mock = createMockFetch([
+      {
+        body: JSON.stringify({ data: [{ id: "x" }] }),
+      },
+    ]);
+    const provider = new OpenAIProvider({
+      apiKey: "sk-test",
+      baseUrl: "https://api.cerebras.ai",
+      modelsEndpoint: "/v1/my-models",
+      fetchImpl: mock.fetch,
+    });
+    await provider.listModels();
+    expect(mock.calls[0]!.url).toBe("https://api.cerebras.ai/v1/my-models");
   });
 });
 
