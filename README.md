@@ -42,7 +42,17 @@ As of April 2026, both models are the most reasonable option for an average loca
 
 **2. Install the plugin**
 
-Install LLM Wiki from the Community Plugins browser in Obsidian, or manually drop a [release](https://github.com/domleca/llm-wiki/releases) into `.obsidian/plugins/llm-wiki/`. Enable it in Settings > Community plugins.
+You have two options.
+
+*From the Community Plugins browser (once accepted).* In Obsidian, go to Settings > Community plugins, browse, search for "LLM Wiki", click Install, then Enable.
+
+*Manual install (works today, before community-store acceptance).* Download these three files from the latest [release](https://github.com/domleca/llm-wiki/releases):
+
+- `main.js`
+- `manifest.json`
+- `styles.css`
+
+Place them in `<your-vault>/.obsidian/plugins/llm-wiki/` — create the folder if it doesn't exist. Then in Obsidian, go to Settings > Community plugins, make sure Community plugins are enabled (turn off Restricted mode if prompted), and toggle **LLM Wiki** on. If you don't see it in the list right away, hit the refresh button next to "Installed plugins".
 
 <!-- Once accepted in the community directory, users can also install via: obsidian://show-plugin?id=llm-wiki -->
 
@@ -107,9 +117,17 @@ The default setup is fully local — nothing to sign up for, nothing to pay for.
 
 Cloud providers send note content to the provider's API. If privacy matters, stick with Ollama.
 
-## Keeping your vault intact
+## Your notes, the wiki, and your chats
 
-Your existing notes are never modified. Everything the plugin generates lives in a single `wiki/` folder:
+**Your existing notes are never modified. Everything the plugin generates lives in a single `wiki/` folder.**
+
+LLM Wiki keeps three things cleanly separated in your head and on disk:
+
+- **Your notes** — the raw material. Everything you've already written in your vault. LLM Wiki reads them but never touches them.
+- **The wiki** — a structured knowledge base built *from* your notes. It lives in a single `wiki/` folder inside your vault and is what queries search against.
+- **Your chats** — the answers LLM Wiki gives you. Saved so you can resume conversations, kept apart from both your notes and the wiki.
+
+The `wiki/` folder looks like this:
 
 ```
 wiki/
@@ -120,7 +138,7 @@ wiki/
   sources/           one page per source note
 ```
 
-By default, the `wiki/` folder is hidden from search, Quick Switcher, and graph view — it won't clutter your vault or interfere with your links. If you're curious and want to browse the generated pages, you can make them visible in Settings > LLM Wiki > Appearance. Either way, your normal vault stays exactly as it was.
+By default, the `wiki/` folder is hidden from search, Quick Switcher, and graph view — it won't clutter your vault or interfere with your links. If you're curious and want to browse the generated pages, you can make them visible in Settings > LLM Wiki > Appearance. Either way, your original notes stay exactly as they were.
 
 ## How it works
 
