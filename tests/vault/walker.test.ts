@@ -13,6 +13,7 @@ const filesFor = (paths: string[]): FakeFile[] =>
 describe("walkVaultFiles", () => {
   const opts: WalkOptions = {
     skipDirs: ["wiki", ".obsidian", "Template", "Assets", ".trash"],
+    includeFolders: [],
     minFileSize: 50,
     dailiesFromIso: "2026-04-05",
   };
@@ -88,5 +89,23 @@ describe("walkVaultFiles", () => {
     expect(byPath.get("Clippings/article.md")).toBe("user-note");
     expect(byPath.get("Dailies/06 April 2026.md")).toBe("daily");
     expect(byPath.get("Books/Watts.md")).toBe("user-note");
+  });
+
+  it("restricts to included folders when includeFolders is set", async () => {
+    const { app } = createMockApp(
+      filesFor([
+        "Books/Watts.md",
+        "Projects/Zen.md",
+        "Notes/Misc.md",
+      ]),
+    );
+    const result = await walkVaultFiles(app as never, {
+      ...opts,
+      includeFolders: ["Books", "Projects/"],
+    });
+    expect(result.map((r) => r.path)).toEqual([
+      "Books/Watts.md",
+      "Projects/Zen.md",
+    ]);
   });
 });

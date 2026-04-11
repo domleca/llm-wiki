@@ -1,7 +1,9 @@
 import type { SourceOrigin } from "../core/types.js";
+import { isInAnyFolder } from "./path-scope.js";
 
 export interface WalkOptions {
   skipDirs: string[];
+  includeFolders?: string[];
   minFileSize: number;
   /** ISO date YYYY-MM-DD; daily notes older than this are skipped. */
   dailiesFromIso: string;
@@ -37,11 +39,13 @@ export async function walkVaultFiles(
 ): Promise<WalkedFile[]> {
   const all = app.vault.getMarkdownFiles();
   const skipSet = new Set(opts.skipDirs.map((d) => d.toLowerCase()));
+  const includeFolders = opts.includeFolders ?? [];
   const result: WalkedFile[] = [];
 
   for (const f of all) {
     const parts = f.path.split("/");
     if (parts.some((p) => skipSet.has(p.toLowerCase()))) continue;
+    if (!isInAnyFolder(f.path, includeFolders)) continue;
 
     const size =
       f.stat?.size ??

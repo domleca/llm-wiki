@@ -265,6 +265,7 @@ export default class LlmWikiPlugin extends Plugin {
     // On-save watcher: re-extract a file shortly after it's saved.
     this.onSaveWatcher = new OnSaveWatcher({
       skipDirs: DEFAULT_SKIP_DIRS,
+      getIncludedFolders: () => this.settings.queryFolders,
       isExtractionRunning: () => this.running,
       trigger: (path) => {
         const tfile = this.app.vault.getAbstractFileByPath(path);
@@ -329,6 +330,7 @@ export default class LlmWikiPlugin extends Plugin {
 
     const walkOpts: WalkOptions = {
       skipDirs: DEFAULT_SKIP_DIRS,
+      includeFolders: this.settings.queryFolders,
       minFileSize: DEFAULT_MIN_FILE_SIZE,
       dailiesFromIso: defaultDailiesFromIso(),
     };
@@ -500,13 +502,14 @@ export default class LlmWikiPlugin extends Plugin {
       await this.reloadKB();
       const walkOpts: WalkOptions = {
         skipDirs: DEFAULT_SKIP_DIRS,
+        includeFolders: this.settings.queryFolders,
         minFileSize: DEFAULT_MIN_FILE_SIZE,
         dailiesFromIso: defaultDailiesFromIso(),
       };
       const walked = await walkVaultFiles(this.app as never, walkOpts);
       if (walked.length === 0) {
         new Notice(
-          "LLM Wiki: nothing to extract (all files filtered by skip dirs, min size, or dailies cutoff).",
+          "LLM Wiki: nothing to extract (all files filtered by folders, skip dirs, min size, or dailies cutoff).",
         );
         return;
       }

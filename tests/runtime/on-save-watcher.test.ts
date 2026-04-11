@@ -1,7 +1,9 @@
-import { describe, it, expect } from "vitest";
-import { OnSaveWatcher } from "../../src/runtime/on-save-watcher.js";
+import { describe, expect, it } from "vitest";
 
-function createWatcher(overrides: Partial<Parameters<typeof OnSaveWatcher["prototype"]["handleModify"]> extends never[] ? Record<string, never> : Record<string, never>> = {}) {
+import { OnSaveWatcher } from "../../src/runtime/on-save-watcher.js";
+import type { OnSaveWatcherOptions } from "../../src/runtime/on-save-watcher.js";
+
+function createWatcher(overrides: Partial<OnSaveWatcherOptions> = {}) {
   const triggered: string[] = [];
   const timers = new Map<number, () => void>();
   let nextId = 1;
@@ -113,5 +115,15 @@ describe("OnSaveWatcher", () => {
     expect(timers.size).toBe(2);
     watcher.destroy();
     expect(timers.size).toBe(0);
+  });
+
+  it("skips files outside included folders", () => {
+    const { watcher, triggered, flush } = createWatcher({
+      getIncludedFolders: () => ["Projects"],
+    });
+    watcher.handleModify("Projects/plan.md");
+    watcher.handleModify("Notes/journal.md");
+    flush();
+    expect(triggered).toEqual(["Projects/plan.md"]);
   });
 });

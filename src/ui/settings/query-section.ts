@@ -23,14 +23,19 @@ export interface BuildQuerySectionArgs {
 export function buildQuerySection(args: BuildQuerySectionArgs): void {
   args.container.createEl("h3", { text: "Query" });
 
-  const wholeVaultDesc = "No folder restrictions (searching entire vault)";
+  const wholeVaultDesc = "No folder restrictions (querying and indexing the entire vault)";
 
   // Create a setting group for the query folder scope
   const settingGroup = args.container.createDiv({ cls: "setting-group" });
 
   // Heading with title and add button
   const heading = settingGroup.createDiv({ cls: "setting-item setting-item-heading" });
-  heading.createDiv({ cls: "setting-item-name", text: "Query folders" });
+  const headingInfo = heading.createDiv({ cls: "setting-item-info" });
+  headingInfo.createDiv({ cls: "setting-item-name", text: "Query folders" });
+  headingInfo.createDiv({
+    cls: "setting-item-description",
+    text: "Used for both answers and extraction indexing scope.",
+  });
   const headingControl = heading.createDiv({ cls: "setting-item-control" });
 
   const addBtn = headingControl.createEl("button", {
