@@ -3,12 +3,13 @@
  * API key entry with auto-validation.
  */
 
-import { Setting } from "obsidian";
-import type LlmWikiPlugin from "../../plugin.js";
-import type { CloudProvider } from "../../llm/catalog.js";
-import type { ProviderType } from "../../plugin.js";
+import { completionModels, defaultCompletionModel } from "../../llm/catalog.js";
 import { detectProvider, validateKey } from "../../llm/detect-key.js";
-import { defaultCompletionModel } from "../../llm/catalog.js";
+
+import type { CloudProvider } from "../../llm/catalog.js";
+import type LlmWikiPlugin from "../../plugin.js";
+import type { ProviderType } from "../../plugin.js";
+import { Setting } from "obsidian";
 
 export interface CloudSectionHandlers {
   rerender: () => void;
@@ -16,6 +17,7 @@ export interface CloudSectionHandlers {
 
 const PROVIDER_LABELS: Record<ProviderType, string> = {
   ollama: "Ollama (local)",
+  "openai-compatible": "OpenAI-compatible (custom)",
   openai: "OpenAI",
   anthropic: "Anthropic",
   google: "Google Gemini",
@@ -24,6 +26,7 @@ const PROVIDER_LABELS: Record<ProviderType, string> = {
 
 const PROVIDER_OPTIONS: ProviderType[] = [
   "ollama",
+  "openai-compatible",
   "openai",
   "anthropic",
   "google",
@@ -48,10 +51,22 @@ export function renderCloudSection(
       dropdown.setValue(plugin.settings.providerType);
       dropdown.onChange(async (value) => {
         plugin.settings.providerType = value as ProviderType;
-        if (value !== "ollama" && !plugin.settings.cloudModel) {
+        if (value === "openai-compatible") {
+          if (!plugin.settings.customOpenAIModel) {
+            plugin.settings.customOpenAIModel = "gpt-4o-mini";
+          }
+        } else if (value !== "ollama" && !plugin.settings.cloudModel) {
           plugin.settings.cloudModel = defaultCompletionModel(
             value as CloudProvider,
           );
+        } else if (value !== "ollama") {
+          const provider = value as CloudProvider;
+          const valid = completionModels(provider).some(
+            (m) => m.id === plugin.settings.cloudModel,
+          );
+          if (!valid) {
+            plugin.settings.cloudModel = defaultCompletionModel(provider);
+          }
         }
         await plugin.saveSettings();
         plugin.rebuildProvider();
@@ -62,6 +77,116 @@ export function renderCloudSection(
   // ── API key entry (only for cloud providers) ──────────────────────
   const pt = plugin.settings.providerType;
   if (pt === "ollama") return;
+
+  if (pt === "openai-compatible") {
+    new Setting(containerEl)
+      .setName("Base URL")
+      .setDesc("Endpoint root for your OpenAI-compatible API (for example: https://api.groq.com).")
+      .addText((text) =>
+        text
+          .setPlaceholder("https://...")
+          .setValue(plugin.settings.customOpenAIBaseUrl)
+          .onChange(async (value) => {
+            plugin.settings.customOpenAIBaseUrl = value.trim();
+            await plugin.saveSettings();
+            plugin.rebuildProvider();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName("API key")
+      .setDesc("Optional for self-hosted providers. Stored locally in this vault's data.json.")
+      .addText((text) =>
+        text
+          .setPlaceholder("Paste your API key…")
+          .setValue(
+            plugin.settings.customOpenAIApiKey
+              ? maskKey(plugin.settings.customOpenAIApiKey)
+              : "",
+          )
+          .onChange(async (value) => {
+            const trimmed = value.trim();
+            const masked = maskKey(plugin.settings.customOpenAIApiKey);
+            if (trimmed === masked) return;
+            plugin.settings.customOpenAIApiKey = trimmed;
+            await plugin.saveSettings();
+            plugin.rebuildProvider();
+            handlers.rerender();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName("Model")
+      .setDesc("Completion model used for extraction and chat.")
+      .addText((text) =>
+        text
+          .setPlaceholder("e.g. gpt-4o-mini")
+          .setValue(plugin.settings.customOpenAIModel)
+          .onChange(async (value) => {
+            plugin.settings.customOpenAIModel = value.trim();
+            await plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName("Embedding model")
+      .setDesc("Optional. Defaults to the completion model if left blank.")
+      .addText((text) =>
+        text
+          .setPlaceholder("e.g. text-embedding-3-small")
+          .setValue(plugin.settings.customOpenAIEmbeddingModel)
+          .onChange(async (value) => {
+            plugin.settings.customOpenAIEmbeddingModel = value.trim();
+            await plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName("Models endpoint")
+      .setDesc("Path or absolute URL for model listing. Default: /v1/models")
+      .addText((text) =>
+        text
+          .setPlaceholder("/v1/models")
+          .setValue(plugin.settings.customOpenAIModelsEndpoint)
+          .onChange(async (value) => {
+            plugin.settings.customOpenAIModelsEndpoint = value.trim() || "/v1/models";
+            await plugin.saveSettings();
+            plugin.rebuildProvider();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName("Completions endpoint")
+      .setDesc("Path or absolute URL for text generation. Chat completions and legacy completions are both supported.")
+      .addText((text) =>
+        text
+          .setPlaceholder("/v1/chat/completions")
+          .setValue(plugin.settings.customOpenAICompletionsEndpoint)
+          .onChange(async (value) => {
+            plugin.settings.customOpenAICompletionsEndpoint =
+              value.trim() || "/v1/chat/completions";
+            await plugin.saveSettings();
+            plugin.rebuildProvider();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName("Embeddings endpoint")
+      .setDesc("Path or absolute URL for embeddings. Default: /v1/embeddings")
+      .addText((text) =>
+        text
+          .setPlaceholder("/v1/embeddings")
+          .setValue(plugin.settings.customOpenAIEmbeddingsEndpoint)
+          .onChange(async (value) => {
+            plugin.settings.customOpenAIEmbeddingsEndpoint =
+              value.trim() || "/v1/embeddings";
+            await plugin.saveSettings();
+            plugin.rebuildProvider();
+          }),
+      );
+
+    return;
+  }
 
   const providerKey = pt as CloudProvider;
   const currentKey = plugin.settings.apiKeys[providerKey] ?? "";
@@ -117,7 +242,7 @@ export function renderCloudSection(
       .setValue(masked)
       .onChange(async (value) => {
         const trimmed = value.trim();
-        if (!trimmed || trimmed === masked) return;
+        if (trimmed === masked) return;
         plugin.settings.apiKeys[providerKey] = trimmed;
         delete plugin.keyValidationCache[providerKey];
         await plugin.saveSettings();

@@ -10,7 +10,12 @@ import { AnthropicProvider } from "./llm/anthropic.js";
 import { GoogleProvider } from "./llm/google.js";
 import { MistralProvider } from "./llm/mistral.js";
 import type { LLMProvider } from "./llm/provider.js";
-import type { CloudProvider } from "./llm/catalog.js";
+import {
+  completionModels,
+  defaultCompletionModel,
+  defaultEmbeddingModel,
+  type CloudProvider,
+} from "./llm/catalog.js";
 import { runExtraction, type QueueFile } from "./extract/queue.js";
 import { extractFile } from "./extract/extractor.js";
 import {
@@ -40,7 +45,7 @@ import { safeDeletePage } from "./vault/safe-write.js";
 /** Per-provider API keys, keyed by CloudProvider. */
 export type ApiKeys = Partial<Record<CloudProvider, string>>;
 
-export type ProviderType = "ollama" | CloudProvider;
+export type ProviderType = "ollama" | CloudProvider | "openai-compatible";
 
 interface LlmWikiSettings {
   version: number;
@@ -48,9 +53,23 @@ interface LlmWikiSettings {
   providerType: ProviderType;
   /** API keys for cloud providers. */
   apiKeys: ApiKeys;
+  /** API key for custom OpenAI-compatible providers. */
+  customOpenAIApiKey: string;
+  /** Base URL for custom OpenAI-compatible providers. */
+  customOpenAIBaseUrl: string;
+  /** Models endpoint path or absolute URL for custom OpenAI-compatible providers. */
+  customOpenAIModelsEndpoint: string;
+  /** Completions endpoint path or absolute URL for custom OpenAI-compatible providers. */
+  customOpenAICompletionsEndpoint: string;
+  /** Embeddings endpoint path or absolute URL for custom OpenAI-compatible providers. */
+  customOpenAIEmbeddingsEndpoint: string;
+  /** Model name for custom OpenAI-compatible providers. */
+  customOpenAIModel: string;
+  /** Embedding model name for custom OpenAI-compatible providers. */
+  customOpenAIEmbeddingModel: string;
   ollamaUrl: string;
   ollamaModel: string;
-  /** Model used when providerType is a cloud provider. */
+  /** Model used when providerType is a preset cloud provider. */
   cloudModel: string;
   extractionCharLimit: number;
   lastExtractionRunIso: string | null;
@@ -65,6 +84,13 @@ const DEFAULT_SETTINGS: LlmWikiSettings = {
   version: 1,
   providerType: "ollama",
   apiKeys: {},
+  customOpenAIApiKey: "",
+  customOpenAIBaseUrl: "",
+  customOpenAIModelsEndpoint: "/v1/models",
+  customOpenAICompletionsEndpoint: "/v1/chat/completions",
+  customOpenAIEmbeddingsEndpoint: "/v1/embeddings",
+  customOpenAIModel: "gpt-4o-mini",
+  customOpenAIEmbeddingModel: "",
   ollamaUrl: "http://localhost:11434",
   ollamaModel: "qwen2.5:7b",
   cloudModel: "",
@@ -370,6 +396,17 @@ export default class LlmWikiPlugin extends Plugin {
         this.settings.queryFolders = [defaultQueryFolder];
       }
     }
+
+    // Migration: older custom-provider builds stored the custom model in
+    // cloudModel. Preserve that value when customOpenAIModel is empty.
+    if (
+      this.settings.providerType === "openai-compatible" &&
+      !this.settings.customOpenAIModel &&
+      this.settings.cloudModel
+    ) {
+      this.settings.customOpenAIModel = this.settings.cloudModel;
+    }
+
   }
 
   async saveSettings(): Promise<void> {
@@ -398,6 +435,25 @@ export default class LlmWikiPlugin extends Plugin {
     const ollama = new OllamaProvider({ url: s.ollamaUrl });
 
     switch (s.providerType) {
+      case "openai-compatible": {
+        const key = s.customOpenAIApiKey.trim();
+        const baseUrl = s.customOpenAIBaseUrl.trim();
+        const modelsEndpoint = s.customOpenAIModelsEndpoint.trim() || "/v1/models";
+        const completionsEndpoint =
+          s.customOpenAICompletionsEndpoint.trim() || "/v1/chat/completions";
+        const embeddingsEndpoint =
+          s.customOpenAIEmbeddingsEndpoint.trim() || "/v1/embeddings";
+        this.provider = baseUrl
+          ? new OpenAIProvider({
+              apiKey: key,
+              baseUrl,
+              modelsEndpoint,
+              completionsEndpoint,
+              embeddingsEndpoint,
+            })
+          : ollama;
+        break;
+      }
       case "openai": {
         const key = s.apiKeys.openai ?? "";
         this.provider = key
@@ -433,10 +489,50 @@ export default class LlmWikiPlugin extends Plugin {
 
   /** The model to use for completion — cloud model if a cloud provider is active, otherwise Ollama. */
   get activeModel(): string {
-    if (this.settings.providerType !== "ollama" && this.settings.cloudModel) {
-      return this.settings.cloudModel;
+    if (
+      this.settings.providerType === "openai-compatible" &&
+      !this.hasCustomOpenAIBaseUrl()
+    ) {
+      return this.settings.ollamaModel;
+    }
+    if (
+      this.settings.providerType === "openai-compatible" &&
+      this.settings.customOpenAIModel
+    ) {
+      return this.settings.customOpenAIModel;
+    }
+    if (this.settings.providerType !== "ollama") {
+      const provider = this.settings.providerType as CloudProvider;
+      const configured = this.settings.cloudModel;
+      const valid = completionModels(provider).some((m) => m.id === configured);
+      if (configured && valid) {
+        return configured;
+      }
+      return defaultCompletionModel(provider);
     }
     return this.settings.ollamaModel;
+  }
+
+  get activeEmbeddingModel(): string {
+    if (this.settings.providerType === "openai-compatible") {
+      if (!this.hasCustomOpenAIBaseUrl()) {
+        return EMBEDDING_MODEL;
+      }
+      return (
+        this.settings.customOpenAIEmbeddingModel ||
+        this.settings.customOpenAIModel ||
+        EMBEDDING_MODEL
+      );
+    }
+    if (this.settings.providerType !== "ollama") {
+      const provider = this.settings.providerType as CloudProvider;
+      return defaultEmbeddingModel(provider) ?? EMBEDDING_MODEL;
+    }
+    return EMBEDDING_MODEL;
+  }
+
+  private hasCustomOpenAIBaseUrl(): boolean {
+    return (this.settings.customOpenAIBaseUrl ?? "").trim().length > 0;
   }
 
   isExtractionRunning(): boolean {
@@ -456,7 +552,7 @@ export default class LlmWikiPlugin extends Plugin {
         const index = await buildEmbeddingIndex({
           kb: this.kb,
           provider: this.provider,
-          model: EMBEDDING_MODEL,
+          model: this.activeEmbeddingModel,
           cache: this.embeddingsCache,
           onProgress,
         });
@@ -591,6 +687,8 @@ export default class LlmWikiPlugin extends Plugin {
       onModelChanged: (model): void => {
         if (this.settings.providerType === "ollama") {
           this.settings.ollamaModel = model;
+        } else if (this.settings.providerType === "openai-compatible") {
+          this.settings.customOpenAIModel = model;
         } else {
           this.settings.cloudModel = model;
         }
