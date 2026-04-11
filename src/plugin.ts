@@ -438,9 +438,11 @@ export default class LlmWikiPlugin extends Plugin {
       case "openai-compatible": {
         const key = s.customOpenAIApiKey.trim();
         const baseUrl = s.customOpenAIBaseUrl.trim();
-        const modelsEndpoint = s.customOpenAIModelsEndpoint.trim();
-        const completionsEndpoint = s.customOpenAICompletionsEndpoint.trim();
-        const embeddingsEndpoint = s.customOpenAIEmbeddingsEndpoint.trim();
+        const modelsEndpoint = s.customOpenAIModelsEndpoint.trim() || "/v1/models";
+        const completionsEndpoint =
+          s.customOpenAICompletionsEndpoint.trim() || "/v1/chat/completions";
+        const embeddingsEndpoint =
+          s.customOpenAIEmbeddingsEndpoint.trim() || "/v1/embeddings";
         this.provider = baseUrl
           ? new OpenAIProvider({
               apiKey: key,
@@ -489,6 +491,12 @@ export default class LlmWikiPlugin extends Plugin {
   get activeModel(): string {
     if (
       this.settings.providerType === "openai-compatible" &&
+      !this.hasCustomOpenAIBaseUrl()
+    ) {
+      return this.settings.ollamaModel;
+    }
+    if (
+      this.settings.providerType === "openai-compatible" &&
       this.settings.customOpenAIModel
     ) {
       return this.settings.customOpenAIModel;
@@ -507,6 +515,9 @@ export default class LlmWikiPlugin extends Plugin {
 
   get activeEmbeddingModel(): string {
     if (this.settings.providerType === "openai-compatible") {
+      if (!this.hasCustomOpenAIBaseUrl()) {
+        return EMBEDDING_MODEL;
+      }
       return (
         this.settings.customOpenAIEmbeddingModel ||
         this.settings.customOpenAIModel ||
@@ -518,6 +529,10 @@ export default class LlmWikiPlugin extends Plugin {
       return defaultEmbeddingModel(provider) ?? EMBEDDING_MODEL;
     }
     return EMBEDDING_MODEL;
+  }
+
+  private hasCustomOpenAIBaseUrl(): boolean {
+    return (this.settings.customOpenAIBaseUrl ?? "").trim().length > 0;
   }
 
   isExtractionRunning(): boolean {

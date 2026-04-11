@@ -39,14 +39,20 @@ export class OpenAIProvider implements LLMProvider {
   constructor(opts: OpenAIProviderOptions) {
     this.apiKey = opts.apiKey ?? "";
     this.baseUrl = normalizeBaseUrl(opts.baseUrl ?? "https://api.openai.com");
-    this.modelsUrl = endpointUrl(this.baseUrl, opts.modelsEndpoint ?? "/v1/models");
+    this.modelsUrl = endpointUrl(
+      this.baseUrl,
+      normalizeEndpointOverride(opts.modelsEndpoint, "/v1/models"),
+    );
     this.completionsUrl = endpointUrl(
       this.baseUrl,
-      opts.completionsEndpoint ?? "/v1/chat/completions",
+      normalizeEndpointOverride(
+        opts.completionsEndpoint,
+        "/v1/chat/completions",
+      ),
     );
     this.embeddingsUrl = endpointUrl(
       this.baseUrl,
-      opts.embeddingsEndpoint ?? "/v1/embeddings",
+      normalizeEndpointOverride(opts.embeddingsEndpoint, "/v1/embeddings"),
     );
     this.fetchImpl =
       opts.fetchImpl ?? ((...args) => globalThis.fetch(...args));
@@ -74,10 +80,13 @@ export class OpenAIProvider implements LLMProvider {
   }
 
   async listModels(): Promise<string[] | null> {
+    const internalAbort = new AbortController();
+    const timer = setTimeout(() => internalAbort.abort(), 5000);
     try {
       const response = await this.fetchImpl(this.modelsUrl, {
         method: "GET",
         headers: authHeaders(this.apiKey),
+        signal: internalAbort.signal,
       });
       if (!response.ok) return null;
       const json = (await response.json()) as {
@@ -90,6 +99,8 @@ export class OpenAIProvider implements LLMProvider {
       return ids.length > 0 ? ids.sort((a, b) => a.localeCompare(b)) : null;
     } catch {
       return null;
+    } finally {
+      clearTimeout(timer);
     }
   }
 
@@ -250,6 +261,14 @@ function endpointUrl(baseUrl: string, endpoint: string): string {
   return `${baseUrl}/${endpoint.replace(/^\/+/, "")}`;
 }
 
+function normalizeEndpointOverride(
+  endpoint: string | undefined,
+  fallback: string,
+): string {
+  const trimmed = endpoint?.trim();
+  return trimmed ? trimmed : fallback;
+}
+
 function authHeaders(apiKey: string): Record<string, string> {
   return apiKey ? { Authorization: `Bearer ${apiKey}` } : {};
 }
@@ -257,9 +276,15 @@ function authHeaders(apiKey: string): Record<string, string> {
 function isLegacyCompletionsUrl(url: string): boolean {
   try {
     const { pathname } = new URL(url);
-    return /\/completions$/i.test(pathname) && !/\/chat\/completions$/i.test(pathname);
+    return (
+      /\/completions\/?$/i.test(pathname) &&
+      !/\/chat\/completions\/?$/i.test(pathname)
+    );
   } catch {
-    return /\/completions$/i.test(url) && !/\/chat\/completions$/i.test(url);
+    return (
+      /\/completions\/?$/i.test(url) &&
+      !/\/chat\/completions\/?$/i.test(url)
+    );
   }
 }
 

@@ -1,5 +1,5 @@
 import { LLMHttpError, LLMProtocolError } from "../../src/llm/provider.js";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { OpenAIProvider } from "../../src/llm/openai.js";
 import { createMockFetch } from "../helpers/mock-fetch.js";
@@ -121,6 +121,24 @@ describe("OpenAIProvider.complete", () => {
     }
 
     expect(tokens.join("")).toBe("Hello world");
+    const body = JSON.parse(mock.calls[0]!.body!);
+    expect(body.prompt).toBe("hi");
+    expect(body.messages).toBeUndefined();
+  });
+
+  it("detects legacy completions endpoints with a trailing slash", async () => {
+    const mock = createMockFetch([{ chunks: [SSE_DONE] }]);
+    const provider = new OpenAIProvider({
+      apiKey: "sk-test",
+      baseUrl: "https://api.cerebras.ai",
+      completionsEndpoint: "/v1/completions/",
+      fetchImpl: mock.fetch,
+    });
+
+    for await (const _ of provider.complete({ prompt: "hi", model: "x" })) {
+      // consume
+    }
+
     const body = JSON.parse(mock.calls[0]!.body!);
     expect(body.prompt).toBe("hi");
     expect(body.messages).toBeUndefined();
@@ -302,6 +320,48 @@ describe("OpenAIProvider.listModels", () => {
     });
     await provider.listModels();
     expect(mock.calls[0]!.url).toBe("https://api.cerebras.ai/v1/my-models");
+  });
+
+  it("falls back to default endpoints when empty strings are provided", async () => {
+    const mock = createMockFetch([
+      {
+        body: JSON.stringify({ data: [{ id: "x" }] }),
+      },
+    ]);
+    const provider = new OpenAIProvider({
+      apiKey: "sk-test",
+      baseUrl: "https://api.cerebras.ai",
+      modelsEndpoint: "",
+      fetchImpl: mock.fetch,
+    });
+
+    await provider.listModels();
+    expect(mock.calls[0]!.url).toBe("https://api.cerebras.ai/v1/models");
+  });
+
+  it("times out hanging model list requests", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchImpl: typeof globalThis.fetch = (_input, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            "abort",
+            () => reject(new DOMException("Aborted", "AbortError")),
+            { once: true },
+          );
+        });
+      const provider = new OpenAIProvider({
+        apiKey: "sk-test",
+        fetchImpl,
+      });
+
+      const pending = provider.listModels();
+      await vi.advanceTimersByTimeAsync(5000);
+
+      await expect(pending).resolves.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
