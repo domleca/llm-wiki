@@ -132,5 +132,6 @@ const EXTRACTION_LANGUAGE_OPTIONS: ReadonlyArray<
   ["es", "Spanish"],
   ["de", "German"],
   ["it", "Italian"],
+  ["nl", "Dutch"],
   ["pt", "Portuguese"],
 ];

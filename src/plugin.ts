@@ -53,6 +53,7 @@ export type ExtractionLanguageSetting =
   | "es"
   | "de"
   | "it"
+  | "nl"
   | "pt";
 
 interface LlmWikiSettings {
@@ -812,6 +813,7 @@ const EXTRACTION_LANGUAGE_LABELS: Record<
   es: "Spanish",
   de: "German",
   it: "Italian",
+  nl: "Dutch",
   pt: "Portuguese",
 };
 

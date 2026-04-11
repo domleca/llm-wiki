@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import LlmWikiPlugin, {
   describeExtractionLanguage,
 } from "../src/plugin.js";
+import { buildExtractionPrompt } from "../src/extract/prompts.js";
 
 describe("LlmWikiPlugin embedding model selection", () => {
   it("uses the custom embedding model for OpenAI-compatible providers", () => {
@@ -63,8 +64,8 @@ describe("extraction language selection", () => {
   });
 
   it("falls back to a descriptive label for unknown app languages", () => {
-    expect(describeExtractionLanguage("app", "nl")).toBe(
-      "the app language (nl)",
+    expect(describeExtractionLanguage("app", "pl")).toBe(
+      "the app language (pl)",
     );
   });
 
@@ -76,6 +77,26 @@ describe("extraction language selection", () => {
     } as never;
 
     expect(plugin.extractionOutputLanguage).toBe("German");
+    __setLanguage("en");
+  });
+
+  it("produces the resolved app language in the extraction prompt", () => {
+    __setLanguage("nl");
+    const plugin = Object.create(LlmWikiPlugin.prototype) as LlmWikiPlugin;
+    plugin.settings = {
+      extractionOutputLanguage: "app",
+    } as never;
+
+    const prompt = buildExtractionPrompt({
+      vocabulary: "(empty)",
+      sourcePath: "note.md",
+      content: "bonjour",
+      outputLanguage: plugin.extractionOutputLanguage,
+    });
+
+    expect(prompt).toContain(
+      "All output must be in Dutch regardless of the source language.",
+    );
     __setLanguage("en");
   });
 });
