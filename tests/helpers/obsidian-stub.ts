@@ -76,6 +76,16 @@ class App {
   };
 }
 
+let currentLanguage = "en";
+
+function getLanguage(): string {
+  return currentLanguage;
+}
+
+function __setLanguage(language: string): void {
+  currentLanguage = language;
+}
+
 class MarkdownRenderer {
   static async render(
     _app: unknown,
@@ -101,4 +111,6 @@ export {
   SuggestModal,
   MarkdownRenderer,
   setIcon,
+  getLanguage,
+  __setLanguage,
 };

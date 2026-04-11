@@ -9,6 +9,7 @@ export interface BuildExtractionPromptArgs {
   vocabulary: string;
   sourcePath: string;
   content: string;
+  outputLanguage: string;
 }
 
 const TEMPLATE = `You are a knowledge extraction system. Given a document and a vocabulary of already-known entities and concepts, extract structured knowledge.
@@ -17,7 +18,7 @@ RULES:
 1. If an entity or concept already exists in the vocabulary, USE ITS EXACT NAME. Do not create duplicates or variants.
 2. Only create a NEW entity/concept if it is clearly absent from the vocabulary.
 3. Be conservative — extract only what the document actually says, not inferences.
-4. All output must be in English regardless of the source language.
+4. All output must be in {output_language} regardless of the source language.
 5. Every entity needs a type: person, org, tool, project, book, article, place, event, other.
 6. Connections have a type: influences, uses, critiques, extends, part-of, created-by, related-to, applies-to, contrasts-with.
 
@@ -63,5 +64,6 @@ export function buildExtractionPrompt(
 ): string {
   return TEMPLATE.replace("{vocabulary}", args.vocabulary)
     .replace("{source_path}", args.sourcePath)
+    .replace("{output_language}", args.outputLanguage)
     .replace("{content}", args.content);
 }

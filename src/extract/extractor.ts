@@ -22,6 +22,7 @@ export interface ExtractFileArgs {
   kb: KnowledgeBase;
   file: ExtractFileInput;
   model: string;
+  outputLanguage?: string;
   signal?: AbortSignal;
   charLimit?: number;
 }
@@ -69,6 +70,7 @@ export async function extractFile(
     vocabulary: exportVocabulary(args.kb),
     sourcePath: args.file.path,
     content,
+    outputLanguage: args.outputLanguage ?? "English",
   });
 
   let raw = "";

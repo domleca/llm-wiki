@@ -1,5 +1,8 @@
+import { __setLanguage } from "obsidian";
 import { describe, expect, it } from "vitest";
-import LlmWikiPlugin from "../src/plugin.js";
+import LlmWikiPlugin, {
+  describeExtractionLanguage,
+} from "../src/plugin.js";
 
 describe("LlmWikiPlugin embedding model selection", () => {
   it("uses the custom embedding model for OpenAI-compatible providers", () => {
@@ -47,5 +50,32 @@ describe("LlmWikiPlugin embedding model selection", () => {
     } as never;
 
     expect(plugin.activeEmbeddingModel).toBe("text-embedding-3-small");
+  });
+});
+
+describe("extraction language selection", () => {
+  it("uses the configured explicit language", () => {
+    expect(describeExtractionLanguage("fr", "en")).toBe("French");
+  });
+
+  it("uses the Obsidian app language when set to auto", () => {
+    expect(describeExtractionLanguage("app", "fr")).toBe("French");
+  });
+
+  it("falls back to a descriptive label for unknown app languages", () => {
+    expect(describeExtractionLanguage("app", "nl")).toBe(
+      "the app language (nl)",
+    );
+  });
+
+  it("resolves the plugin getter via the current Obsidian language", () => {
+    __setLanguage("de");
+    const plugin = Object.create(LlmWikiPlugin.prototype) as LlmWikiPlugin;
+    plugin.settings = {
+      extractionOutputLanguage: "app",
+    } as never;
+
+    expect(plugin.extractionOutputLanguage).toBe("German");
+    __setLanguage("en");
   });
 });

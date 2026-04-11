@@ -31,6 +31,7 @@ describe("extractFile", () => {
         origin: "user-note",
       },
       model: "qwen2.5:7b",
+      outputLanguage: "French",
     });
 
     expect(result).not.toBeNull();
@@ -47,6 +48,9 @@ describe("extractFile", () => {
     expect(call.model).toBe("qwen2.5:7b");
     expect(call.prompt).toContain("DOCUMENT (Books/watts.md):");
     expect(call.prompt).toContain("Alan Watts wrote about Zen.");
+    expect(call.prompt).toContain(
+      "All output must be in French regardless of the source language.",
+    );
   });
 
   it("returns null when the provider yields no JSON", async () => {
