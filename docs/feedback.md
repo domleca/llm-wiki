@@ -279,7 +279,7 @@ counts.
 
 | # | Title | Author | State | Theme | Resolution |
 |---|-------|--------|-------|-------|------------|
-| #2 | Failed to load | @AJThurston | Closed | → README | Clarified by @StefKors in the issue. README will be updated with explicit manual-install instructions. Moot after community store acceptance. |
+| #2 | Failed to load | @AJThurston | Closed | → README | Clarified by @StefKors in the issue. Explicit manual-install instructions added to the README in commit `d98ba83`. Moot after community store acceptance. |
 | #3 | configurable multi folder index / ignore folders | @neo451 | Closed by PR #5 | #2 | 🟢 Shipped — query and extraction scope now both respect selected folders |
 
 ### Reddit — r/ObsidianMD launch thread
@@ -304,7 +304,7 @@ _46 comments total, fetched 2026-04-11. Shown here: substantive feedback only._
 | conductordudedallas (q2) | +0 | #5, #6 | "I did a query for information about creating a second brain [...]. How do I then add that to the wiki as a source? [...] Currently, I just copied and pasted the result into a new note. [...] I'm already using the Karpathy method on other topics through Claude - which created a folder also called Wiki. Can I change the name of this Wiki or will that mess things up?" |
 | Deep_Ad1959 | +1 | #8 | "the entity extraction approach is solid but the real gap [...] your notes are only a fraction of what you actually know. your browser autofill has contacts and addresses, your history has interests and patterns, your bookmarks are a curated knowledge graph you forgot about. if you could pull all of that into the same sqlite index alongside your vault, the retrieval quality jumps significantly." |
 | Stroxtile | +36 | #9 | "Compared to all the other AI stuff. This is actually helpful. [...] Unfortunately idk if my phone can run something like this but on desktops this is really good!" |
-| dollythemushroom | +3 | → README | 3-bucket Karpathy framing (Raw / Wiki / Output). Will be incorporated into README as a clarification of how LLM Wiki stores generated content separately from user notes. |
+| dollythemushroom | +3 | → README | 3-bucket Karpathy framing (Raw / Wiki / Output). Incorporated into the README in commit `d98ba83` under "Your notes, the wiki, and your chats". |
 | knlgeth | +2 | (related project) | "We've actually made a similar format in terminal based of Karpathy's idea of LLM Knowledge Bases. Give it a spin and let me know what you think: https://github.com/atomicmemory/llm-wiki-compiler" |
 | Jahbino | +1 | (context) | "Been wanting to do this myself, ran into some hardware issues when tinkering with ollama install on my Mac and abandoned the idea for the time being. Just been using Khoj and other LLM plugin for now." |
 
