@@ -21,6 +21,8 @@ export interface RunExtractionArgs {
   checkpointEvery?: number;
   /** Truncate file content at this many characters before prompting. */
   charLimit?: number;
+  /** Language to request for extracted summaries/facts/definitions. */
+  outputLanguage?: string;
   /** Cancellation signal. If it fires, the queue exits cleanly at the next
    *  file boundary. */
   signal?: AbortSignal;
@@ -73,6 +75,7 @@ export async function runExtraction(
         kb,
         file,
         model,
+        outputLanguage: args.outputLanguage,
         signal: args.signal,
         charLimit,
       });

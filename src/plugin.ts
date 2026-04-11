@@ -1,4 +1,4 @@
-import { Notice, Plugin, TFile } from "obsidian";
+import { getLanguage, Notice, Plugin, TFile } from "obsidian";
 import { KnowledgeBase } from "./core/kb.js";
 import { loadKB, saveKB } from "./vault/kb-store.js";
 import { walkVaultFiles, type WalkOptions } from "./vault/walker.js";
@@ -46,6 +46,15 @@ import { safeDeletePage } from "./vault/safe-write.js";
 export type ApiKeys = Partial<Record<CloudProvider, string>>;
 
 export type ProviderType = "ollama" | CloudProvider | "openai-compatible";
+export type ExtractionLanguageSetting =
+  | "app"
+  | "en"
+  | "fr"
+  | "es"
+  | "de"
+  | "it"
+  | "nl"
+  | "pt";
 
 interface LlmWikiSettings {
   version: number;
@@ -71,6 +80,8 @@ interface LlmWikiSettings {
   ollamaModel: string;
   /** Model used when providerType is a preset cloud provider. */
   cloudModel: string;
+  /** Output language used when extracting summaries, facts, and definitions. */
+  extractionOutputLanguage: ExtractionLanguageSetting;
   extractionCharLimit: number;
   lastExtractionRunIso: string | null;
   queryFolders: string[];
@@ -94,6 +105,7 @@ const DEFAULT_SETTINGS: LlmWikiSettings = {
   ollamaUrl: "http://localhost:11434",
   ollamaModel: "qwen2.5:7b",
   cloudModel: "",
+  extractionOutputLanguage: "app",
   extractionCharLimit: 12_000,
   lastExtractionRunIso: null,
   queryFolders: [],
@@ -531,6 +543,13 @@ export default class LlmWikiPlugin extends Plugin {
     return EMBEDDING_MODEL;
   }
 
+  get extractionOutputLanguage(): string {
+    return describeExtractionLanguage(
+      this.settings.extractionOutputLanguage,
+      getLanguage(),
+    );
+  }
+
   private hasCustomOpenAIBaseUrl(): boolean {
     return (this.settings.customOpenAIBaseUrl ?? "").trim().length > 0;
   }
@@ -633,6 +652,7 @@ export default class LlmWikiPlugin extends Plugin {
         kb: this.kb,
         files,
         model: this.activeModel,
+        outputLanguage: this.extractionOutputLanguage,
         saveKB: saveCallback,
         emitter: this.progress,
         checkpointEvery: 5,
@@ -766,6 +786,7 @@ export default class LlmWikiPlugin extends Plugin {
           origin: "user-note",
         },
         model: this.activeModel,
+        outputLanguage: this.extractionOutputLanguage,
         signal: this.abortController.signal,
         charLimit: this.settings.extractionCharLimit,
       });
@@ -780,5 +801,56 @@ export default class LlmWikiPlugin extends Plugin {
       this.setRunning(false);
       this.abortController = null;
     }
+  }
+}
+
+const EXTRACTION_LANGUAGE_LABELS: Record<
+  Exclude<ExtractionLanguageSetting, "app">,
+  string
+> = {
+  en: "English",
+  fr: "French",
+  es: "Spanish",
+  de: "German",
+  it: "Italian",
+  nl: "Dutch",
+  pt: "Portuguese",
+};
+
+export function describeExtractionLanguage(
+  setting: ExtractionLanguageSetting | string,
+  appLanguage: string,
+): string {
+  if (setting !== "app") {
+    return (
+      EXTRACTION_LANGUAGE_LABELS[
+        setting as Exclude<ExtractionLanguageSetting, "app">
+      ] ?? resolveLanguageLabel(setting)
+    );
+  }
+  return resolveLanguageLabel(appLanguage);
+}
+
+function resolveLanguageLabel(language: string): string {
+  const trimmed = language.trim();
+  const normalized = trimmed.toLowerCase();
+  const base = normalized.split("-")[0] as Exclude<
+    ExtractionLanguageSetting,
+    "app"
+  >;
+  const knownLanguage = EXTRACTION_LANGUAGE_LABELS[base];
+  if (knownLanguage) {
+    return knownLanguage;
+  }
+
+  try {
+    const displayNames = new Intl.DisplayNames(["en"], { type: "language" });
+    return (
+      displayNames.of(normalized) ??
+      displayNames.of(base) ??
+      (normalized || trimmed || "English")
+    );
+  } catch {
+    return normalized || trimmed || "English";
   }
 }

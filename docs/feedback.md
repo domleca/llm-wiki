@@ -121,7 +121,7 @@ it handles PDFs, DOCX, PPTX and more, and is actively maintained.
 ### 4. Configurable output language
 
 **1 user** — ContextFull8268
-**Status:** ⚪ Considering
+**Status:** 🟢 Shipped
 **Severity:** Low effort, high satisfaction.
 
 **What they said.**
@@ -134,9 +134,13 @@ notes are in French" — and are willing to hand-patch the compiled plugin to
 fix it. A settings toggle would turn that from a wart into a one-minute
 configuration.
 
-**Proposed action**
-- Add `outputLanguage` setting with a small list of locales (en, fr, es, de,
-  it, pt, plus "auto-detect from vault").
+**What shipped.** PR #7 added an `Extraction language` setting. By default it
+uses the user's configured Obsidian app language automatically, and users can
+also override it explicitly with a small set of common languages (English,
+French, Spanish, German, Italian, Dutch, Portuguese).
+
+**Resolution.** Users no longer need to patch `main.js` just to stop extracted
+summaries, facts, and definitions from being forced into English.
 
 ---
 

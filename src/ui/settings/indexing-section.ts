@@ -1,5 +1,6 @@
 import { Setting } from "obsidian";
 import type LlmWikiPlugin from "../../plugin.js";
+import type { ExtractionLanguageSetting } from "../../plugin.js";
 
 export interface IndexingSectionHandlers {
   onIndexAll: () => void;
@@ -68,6 +69,24 @@ export function renderIndexingSection(
     );
   }
 
+  new Setting(containerEl)
+    .setName("Extraction language")
+    .setDesc(
+      `Language used for extracted summaries, facts, and definitions. Current output: ${plugin.extractionOutputLanguage}.`,
+    )
+    .addDropdown((dropdown) => {
+      for (const [value, label] of EXTRACTION_LANGUAGE_OPTIONS) {
+        dropdown.addOption(value, label);
+      }
+      dropdown.setValue(plugin.settings.extractionOutputLanguage);
+      dropdown.onChange(async (value) => {
+        plugin.settings.extractionOutputLanguage =
+          value as ExtractionLanguageSetting;
+        await plugin.saveSettings();
+        handlers.rerender();
+      });
+    });
+
   // ── Daily refresh ─────────────────────────────────────────────────
   new Setting(containerEl)
     .setName("Daily refresh")
@@ -103,3 +122,16 @@ export function renderIndexingSection(
       );
   }
 }
+
+const EXTRACTION_LANGUAGE_OPTIONS: ReadonlyArray<
+  [ExtractionLanguageSetting, string]
+> = [
+  ["app", "Auto (use Obsidian language)"],
+  ["en", "English"],
+  ["fr", "French"],
+  ["es", "Spanish"],
+  ["de", "German"],
+  ["it", "Italian"],
+  ["nl", "Dutch"],
+  ["pt", "Portuguese"],
+];
