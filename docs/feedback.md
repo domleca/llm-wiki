@@ -36,7 +36,7 @@ users** asked for it — that's the primary signal.
 ### 1. Support OpenAI-compatible endpoints (LM Studio, KoboldCpp, OpenRouter, …)
 
 **6 users** — cprz, x31n10n, sergykal, Bulleta, EmberGlitch, hudsondir
-**Status:** 🔵 Planned
+**Status:** 🟢 Shipped
 **Severity:** High — hard blocker for anyone not already on Ollama.
 
 **What they want.** Point the plugin at any OpenAI-compatible inference server,
@@ -65,17 +65,17 @@ the model label in the Ask console lets you pick any installed Ollama model.
 The setting exists; it isn't findable. Obsidian's UI surface is tight, but a
 more obvious model picker in preferences would prevent this misread.
 
-**Proposed action**
-- Add an "OpenAI-compatible endpoint URL" setting (covers LM Studio, Osaurus,
-  KoboldCpp, OpenRouter, Mistral, Deepseek in one stroke).
-- Improve model-picker discoverability in preferences.
+**What shipped.** PR #6 added a custom `openai-compatible` provider with a base
+URL, API key, model, and per-endpoint overrides for models, completions, and
+embeddings. That covers LM Studio, KoboldCpp, OpenRouter, self-hosted proxies,
+and other OpenAI-shaped backends without needing provider-by-provider presets.
 
 ---
 
 ### 2. Let users skip folders from extraction, not just from queries
 
 **1 user** — neo451 ([GitHub #3](https://github.com/domleca/llm-wiki/issues/3))
-**Status:** 🟡 Partial
+**Status:** 🟢 Shipped
 **Severity:** Medium — wasted compute on junk folders, hits vaults with lots of
 dailies/templates/media the hardest.
 
@@ -84,21 +84,12 @@ dailies/templates/media the hardest.
 Three possible shapes suggested: (1) folder allowlist, (2) gitignore-style
 ignore list, (3) tag-based filter.
 
-**What shipped.** PR #4 (Stef Kors) added a multi-folder **query scope** —
-users can now pick which folders their queries read from. Merged same day.
+**What shipped.** PR #4 added multi-folder query scope, and PR #5 extended that
+same `queryFolders` setting into extraction and the on-save watcher. Extraction
+now respects the chosen folder scope instead of always walking the whole vault.
 
-**What's still missing.** Extraction (`src/vault/walker.ts`) still enumerates
-every markdown file in the vault and filters only by a hardcoded skip list and
-a dailies date-cutoff. There is no user-facing setting that keeps extraction
-from crawling junk folders. So neo451's underlying complaint — *"indexing from
-vault root would just be a waste of time and produce useless wiki"* — isn't
-actually resolved. The user now sees cleaner answers, but still pays the full
-extraction cost on notes they'll never query.
-
-**Proposed action**
-- Extend the existing `queryFolders` setting (or add a separate `extractFolders`
-  setting) to gate `walkVaultFiles` as well. One setting with one user-facing
-  control is likely simpler.
+**Resolution.** neo451's underlying complaint is now addressed: users can limit
+both extraction and querying to the folders they actually care about.
 
 ---
 
@@ -285,7 +276,7 @@ counts.
 | # | Title | Author | State | Theme | Resolution |
 |---|-------|--------|-------|-------|------------|
 | #2 | Failed to load | @AJThurston | Closed | → README | Clarified by @StefKors in the issue. README will be updated with explicit manual-install instructions. Moot after community store acceptance. |
-| #3 | configurable multi folder index / ignore folders | @neo451 | Closed by PR #4 | #2 | 🟡 Partial — query scope shipped; extraction scope still missing |
+| #3 | configurable multi folder index / ignore folders | @neo451 | Closed by PR #5 | #2 | 🟢 Shipped — query and extraction scope now both respect selected folders |
 
 ### Reddit — r/ObsidianMD launch thread
 
