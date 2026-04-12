@@ -39,6 +39,14 @@ describe("safeWritePage", () => {
     await safeWritePage(app as never, "wiki/entities/foo.md", "v2");
     expect(files.get("wiki/entities/foo.md")?.content).toBe("v2");
   });
+
+  it("skips write when content is unchanged", async () => {
+    const { app, writeLog } = createMockApp();
+    await safeWritePage(app as never, "wiki/entities/foo.md", "same");
+    expect(writeLog).toHaveLength(1);
+    await safeWritePage(app as never, "wiki/entities/foo.md", "same");
+    expect(writeLog).toHaveLength(1); // no second write
+  });
 });
 
 describe("safeDeletePage", () => {

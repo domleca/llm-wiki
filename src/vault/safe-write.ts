@@ -154,6 +154,10 @@ export async function safeWritePage(
 ): Promise<void> {
   assertAllowed(relPath);
   await ensureDir(app, dirname(relPath));
+  if (await app.vault.adapter.exists(relPath)) {
+    const existing = await app.vault.adapter.read(relPath);
+    if (existing === content) return;
+  }
   await app.vault.adapter.write(relPath, content);
 }
 
