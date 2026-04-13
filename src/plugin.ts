@@ -798,7 +798,6 @@ export default class LlmWikiPlugin extends Plugin {
       await saveKB(this.app as never, this.kb, this.kbMtime);
       const reloaded = await loadKB(this.app as never);
       this.kbMtime = reloaded.mtime;
-      new Notice(`LLM Wiki: extracted ${file.path}.`);
       await generatePages(this.app as never, this.kb);
     } catch (e) {
       new Notice(`LLM Wiki: extract failed — ${(e as Error).message}`);
