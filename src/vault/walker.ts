@@ -33,7 +33,7 @@ interface WalkerApp {
   };
 }
 
-export async function walkVaultFiles(
+export function walkVaultFiles(
   app: WalkerApp,
   opts: WalkOptions,
 ): Promise<WalkedFile[]> {
@@ -68,7 +68,7 @@ export async function walkVaultFiles(
     });
   }
 
-  return result;
+  return Promise.resolve(result);
 }
 
 const MONTHS: Record<string, string> = {

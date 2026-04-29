@@ -55,13 +55,13 @@ export class MistralProvider implements LLMProvider {
     }
   }
 
-  async listModels(): Promise<string[] | null> {
-    return completionModels("mistral").map((m) => m.id);
+  listModels(): Promise<string[] | null> {
+    return Promise.resolve(completionModels("mistral").map((m) => m.id));
   }
 
-  async showModel(model: string): Promise<{ contextLength: number | null }> {
+  showModel(model: string): Promise<{ contextLength: number | null }> {
     const entry = findModel(model);
-    return { contextLength: entry?.contextLength ?? null };
+    return Promise.resolve({ contextLength: entry?.contextLength ?? null });
   }
 
   async embed(opts: EmbedOptions): Promise<number[]> {

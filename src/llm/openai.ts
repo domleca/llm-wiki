@@ -104,9 +104,9 @@ export class OpenAIProvider implements LLMProvider {
     }
   }
 
-  async showModel(model: string): Promise<{ contextLength: number | null }> {
+  showModel(model: string): Promise<{ contextLength: number | null }> {
     const entry = findModel(model);
-    return { contextLength: entry?.contextLength ?? null };
+    return Promise.resolve({ contextLength: entry?.contextLength ?? null });
   }
 
   async embed(opts: EmbedOptions): Promise<number[]> {

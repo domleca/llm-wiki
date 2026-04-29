@@ -14,7 +14,7 @@ export function renderIndexingSection(
   plugin: LlmWikiPlugin,
   handlers: IndexingSectionHandlers,
 ): void {
-  containerEl.createEl("h2", { text: "Indexing" });
+  new Setting(containerEl).setName("Indexing").setHeading();
 
   // ── Ollama URL (only visible when Ollama is the active provider) ──
   if (plugin.settings.providerType === "ollama") {

@@ -31,8 +31,6 @@ export class LlmWikiSettingsTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl("h2", { text: "Settings" });
-
     renderCloudSection(containerEl, this.plugin, {
       rerender: () => this.display(),
     });
@@ -57,7 +55,7 @@ export class LlmWikiSettingsTab extends PluginSettingTab {
       rerender: () => this.display(),
     });
 
-    containerEl.createEl("h3", { text: "Appearance" });
+    new Setting(containerEl).setName("Appearance").setHeading();
 
     new Setting(containerEl)
       .setName("Show status bar")

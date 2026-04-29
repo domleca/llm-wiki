@@ -1,4 +1,4 @@
-import { App } from "obsidian";
+import { App, Setting } from "obsidian";
 import { openFolderPicker } from "../modal/folder-picker.js";
 
 export interface QuerySettings {
@@ -21,7 +21,7 @@ export interface BuildQuerySectionArgs {
 }
 
 export function buildQuerySection(args: BuildQuerySectionArgs): void {
-  args.container.createEl("h3", { text: "Query" });
+  new Setting(args.container).setName("Query").setHeading();
 
   const wholeVaultDesc = "No folder restrictions (querying and indexing the entire vault)";
 

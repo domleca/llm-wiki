@@ -38,7 +38,7 @@ export function renderCloudSection(
   plugin: LlmWikiPlugin,
   handlers: CloudSectionHandlers,
 ): void {
-  containerEl.createEl("h2", { text: "Model" });
+  new Setting(containerEl).setName("Model").setHeading();
 
   // ── Provider picker ───────────────────────────────────────────────
   new Setting(containerEl)

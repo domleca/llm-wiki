@@ -18,7 +18,7 @@ export function renderModelsSection(
   plugin: LlmWikiPlugin,
   handlers: ModelsSectionHandlers,
 ): void {
-  containerEl.createEl("h2", { text: "Model" });
+  new Setting(containerEl).setName("Model").setHeading();
 
   const pt = plugin.settings.providerType;
 

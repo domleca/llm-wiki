@@ -204,13 +204,13 @@ export default class LlmWikiPlugin extends Plugin {
 
     this.addCommand({
       id: "show-vocabulary",
-      name: "LLM Wiki: Show vocabulary",
+      name: "Show vocabulary",
       callback: () => openVocabularyModal(this.app, this.kb),
     });
 
     this.addCommand({
       id: "reload-kb",
-      name: "LLM Wiki: Reload knowledge base from disk",
+      name: "Reload knowledge base from disk",
       callback: () => {
         void this.reloadKB();
       },
@@ -218,7 +218,7 @@ export default class LlmWikiPlugin extends Plugin {
 
     this.addCommand({
       id: "extract-all",
-      name: "LLM Wiki: Run extraction now",
+      name: "Run extraction now",
       callback: () => {
         void this.runExtractAll();
       },
@@ -226,7 +226,7 @@ export default class LlmWikiPlugin extends Plugin {
 
     this.addCommand({
       id: "extract-current",
-      name: "LLM Wiki: Extract current file",
+      name: "Extract current file",
       checkCallback: (checking) => {
         const file = this.app.workspace.getActiveFile();
         if (!file || file.extension !== "md") return false;
@@ -238,7 +238,7 @@ export default class LlmWikiPlugin extends Plugin {
 
     this.addCommand({
       id: "extract-cancel",
-      name: "LLM Wiki: Cancel running extraction",
+      name: "Cancel running extraction",
       checkCallback: (checking) => {
         if (checking) return this.running;
         this.cancelExtraction();
@@ -248,7 +248,7 @@ export default class LlmWikiPlugin extends Plugin {
 
     this.addCommand({
       id: "regenerate-pages",
-      name: "LLM Wiki: Regenerate pages from KB",
+      name: "Regenerate pages from KB",
       callback: () => {
         void this.runRegeneratePages();
       },
@@ -262,10 +262,10 @@ export default class LlmWikiPlugin extends Plugin {
         this.kb.removeSource(abstractFile.path);
         void (async () => {
           try {
-            await saveKB(this.app as never, this.kb, this.kbMtime);
-            const r = await loadKB(this.app as never);
+            await saveKB(this.app, this.kb, this.kbMtime);
+            const r = await loadKB(this.app);
             this.kbMtime = r.mtime;
-            await generatePages(this.app as never, this.kb);
+            await generatePages(this.app, this.kb);
           } catch {
             // best-effort
           }
@@ -282,11 +282,11 @@ export default class LlmWikiPlugin extends Plugin {
         this.kb.renameSource(oldPath, abstractFile.path);
         void (async () => {
           try {
-            await saveKB(this.app as never, this.kb, this.kbMtime);
-            const r = await loadKB(this.app as never);
+            await saveKB(this.app, this.kb, this.kbMtime);
+            const r = await loadKB(this.app);
             this.kbMtime = r.mtime;
-            await safeDeletePage(this.app as never, oldSourcePage);
-            await generatePages(this.app as never, this.kb);
+            await safeDeletePage(this.app, oldSourcePage);
+            await generatePages(this.app, this.kb);
           } catch {
             // best-effort
           }
@@ -373,7 +373,7 @@ export default class LlmWikiPlugin extends Plugin {
       minFileSize: DEFAULT_MIN_FILE_SIZE,
       dailiesFromIso: defaultDailiesFromIso(),
     };
-    const walked = await walkVaultFiles(this.app as never, walkOpts);
+    const walked = await walkVaultFiles(this.app, walkOpts);
     if (walked.length === 0) return; // empty vault, nothing to show
 
     new WelcomeModal(
@@ -433,7 +433,7 @@ export default class LlmWikiPlugin extends Plugin {
   }
 
   async reloadKB(): Promise<void> {
-    const { kb, mtime } = await loadKB(this.app as never);
+    const { kb, mtime } = await loadKB(this.app);
     this.kb = kb;
     this.kbMtime = mtime;
   }
@@ -622,7 +622,7 @@ export default class LlmWikiPlugin extends Plugin {
         minFileSize: DEFAULT_MIN_FILE_SIZE,
         dailiesFromIso: defaultDailiesFromIso(),
       };
-      const walked = await walkVaultFiles(this.app as never, walkOpts);
+      const walked = await walkVaultFiles(this.app, walkOpts);
       if (walked.length === 0) {
         new Notice(
           "LLM Wiki: nothing to extract (all files filtered by folders, skip dirs, min size, or dailies cutoff).",
@@ -645,8 +645,8 @@ export default class LlmWikiPlugin extends Plugin {
       }
 
       const saveCallback = async (): Promise<void> => {
-        await saveKB(this.app as never, this.kb, this.kbMtime);
-        const reloaded = await loadKB(this.app as never);
+        await saveKB(this.app, this.kb, this.kbMtime);
+        const reloaded = await loadKB(this.app);
         this.kbMtime = reloaded.mtime;
       };
 
@@ -668,7 +668,7 @@ export default class LlmWikiPlugin extends Plugin {
       new Notice(
         `LLM Wiki: ${stats.succeeded} extracted, ${stats.failed} failed, ${stats.skipped} skipped (${Math.round(stats.elapsedMs / 1000)}s).`,
       );
-      await generatePages(this.app as never, this.kb);
+      await generatePages(this.app, this.kb);
     } catch (e) {
       this.progress.emit("batch-errored", {
         message: (e as Error).message ?? "Unknown error",
@@ -734,7 +734,7 @@ export default class LlmWikiPlugin extends Plugin {
 
   async runRegeneratePages(): Promise<void> {
     try {
-      const result = await generatePages(this.app as never, this.kb);
+      const result = await generatePages(this.app, this.kb);
       new Notice(
         `LLM Wiki: ${result.written} pages written, ${result.deleted} deleted.`,
       );
@@ -795,10 +795,10 @@ export default class LlmWikiPlugin extends Plugin {
         signal: this.abortController.signal,
         charLimit: this.settings.extractionCharLimit,
       });
-      await saveKB(this.app as never, this.kb, this.kbMtime);
-      const reloaded = await loadKB(this.app as never);
+      await saveKB(this.app, this.kb, this.kbMtime);
+      const reloaded = await loadKB(this.app);
       this.kbMtime = reloaded.mtime;
-      await generatePages(this.app as never, this.kb);
+      await generatePages(this.app, this.kb);
     } catch (e) {
       new Notice(`LLM Wiki: extract failed — ${(e as Error).message}`);
     } finally {
@@ -822,7 +822,7 @@ const EXTRACTION_LANGUAGE_LABELS: Record<
 };
 
 export function describeExtractionLanguage(
-  setting: ExtractionLanguageSetting | string,
+  setting: string,
   appLanguage: string,
 ): string {
   if (setting !== "app") {

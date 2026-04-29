@@ -302,11 +302,14 @@ export class QueryModal extends Modal {
         // Lock the chat list height while filtering so the modal doesn't
         // shrink and the input stays put. Release when the input is cleared.
         if (filter) {
-          if (!chatListEl.style.minHeight) {
-            chatListEl.style.minHeight = `${chatListEl.offsetHeight}px`;
+          if (!chatListEl.hasClass("is-height-locked")) {
+            chatListEl.setCssProps({
+              "--llm-wiki-chat-list-min-height": `${chatListEl.offsetHeight}px`,
+            });
+            chatListEl.addClass("is-height-locked");
           }
         } else {
-          chatListEl.style.minHeight = "";
+          chatListEl.removeClass("is-height-locked");
         }
         this.chatList.render(this.chats, this.activeChatId, filter);
       }
@@ -686,7 +689,7 @@ export class QueryModal extends Modal {
       onState: (s): void => {
         this.applyState(s);
         if (s === "done") {
-          void this.finalizeTurn();
+          this.finalizeTurn();
         }
       },
       onContext: (bundle, confidence): void => {
@@ -770,7 +773,7 @@ export class QueryModal extends Modal {
     this.updateClearVisibility();
   }
 
-  private async finalizeTurn(): Promise<void> {
+  private finalizeTurn(): void {
     const chat = this.activeChatId
       ? this.chats.find((c) => c.id === this.activeChatId)
       : null;
