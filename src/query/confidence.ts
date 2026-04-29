@@ -25,5 +25,5 @@ const EMPTY_MESSAGES = [
 ];
 
 export function randomEmptyMessage(): string {
-  return EMPTY_MESSAGES[Math.floor(Math.random() * EMPTY_MESSAGES.length)]!;
+  return EMPTY_MESSAGES[Math.floor(Math.random() * EMPTY_MESSAGES.length)];
 }

@@ -142,7 +142,7 @@ describe("QueryController.runChatTurn", () => {
     // Only one complete() call (the ask, no rewrite)
     expect(provider.calls).toHaveLength(1);
     // The single call's prompt must NOT contain the rewrite prompt marker
-    expect(provider.calls[0]!.prompt).not.toContain("Standalone question:");
+    expect(provider.calls[0].prompt).not.toContain("Standalone question:");
     // onRetrievalQuery called with the raw question
     expect(retrievalQueries).toEqual(["who is Alan Watts"]);
   });
@@ -169,7 +169,7 @@ describe("QueryController.runChatTurn", () => {
     // Two complete() calls: rewrite + ask
     expect(provider.calls).toHaveLength(2);
     // Second call is the ask: prompt includes "Question: and why?" and history markers
-    const askPrompt = provider.calls[1]!.prompt;
+    const askPrompt = provider.calls[1].prompt;
     expect(askPrompt).toContain("Question: and why?");
     expect(askPrompt).toContain("Conversation so far:");
     expect(askPrompt).toContain("[user]");

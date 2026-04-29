@@ -29,9 +29,9 @@ describe("GoogleProvider.complete", () => {
 
     expect(tokens.join("")).toBe("Hello world");
     expect(mock.calls).toHaveLength(1);
-    expect(mock.calls[0]!.url).toContain("gemini-2.0-flash");
-    expect(mock.calls[0]!.url).toContain("streamGenerateContent");
-    expect(mock.calls[0]!.url).toContain("key=AIzaTest");
+    expect(mock.calls[0].url).toContain("gemini-2.0-flash");
+    expect(mock.calls[0].url).toContain("streamGenerateContent");
+    expect(mock.calls[0].url).toContain("key=AIzaTest");
   });
 
   it("sends prompt in Gemini format", async () => {
@@ -46,7 +46,7 @@ describe("GoogleProvider.complete", () => {
     })) {
       // consume
     }
-    const body = JSON.parse(mock.calls[0]!.body!);
+    const body = JSON.parse(mock.calls[0].body!);
     expect(body.contents[0].parts[0].text).toBe("my prompt");
   });
 
@@ -86,7 +86,7 @@ describe("GoogleProvider.embed", () => {
       model: "text-embedding-004",
     });
     expect(vec).toEqual([0.1, 0.2, 0.3]);
-    expect(mock.calls[0]!.url).toContain("text-embedding-004:embedContent");
+    expect(mock.calls[0].url).toContain("text-embedding-004:embedContent");
   });
 
   it("throws on missing embedding in response", async () => {

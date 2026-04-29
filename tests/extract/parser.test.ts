@@ -14,10 +14,10 @@ describe("parseExtraction — happy path", () => {
     expect(parsed).not.toBeNull();
     expect(parsed!.source_summary).toMatch(/Alan Watts/);
     expect(parsed!.entities).toHaveLength(1);
-    expect(parsed!.entities[0]!.name).toBe("Alan Watts");
-    expect(parsed!.entities[0]!.type).toBe("person");
+    expect(parsed!.entities[0].name).toBe("Alan Watts");
+    expect(parsed!.entities[0].type).toBe("person");
     expect(parsed!.concepts).toHaveLength(1);
-    expect(parsed!.concepts[0]!.name).toBe("Zen");
+    expect(parsed!.concepts[0].name).toBe("Zen");
     expect(parsed!.connections).toHaveLength(1);
   });
 
@@ -34,20 +34,20 @@ describe("parseExtraction — 7B model quirks", () => {
   it("strips markdown ```json fences", () => {
     const parsed = parseExtraction(fx("markdown-fenced.txt"));
     expect(parsed).not.toBeNull();
-    expect(parsed!.entities[0]!.name).toBe("X");
+    expect(parsed!.entities[0].name).toBe("X");
   });
 
   it("forgives trailing commas inside arrays and objects", () => {
     const parsed = parseExtraction(fx("trailing-commas.txt"));
     expect(parsed).not.toBeNull();
     expect(parsed!.entities).toHaveLength(1);
-    expect(parsed!.entities[0]!.name).toBe("Foo");
+    expect(parsed!.entities[0].name).toBe("Foo");
   });
 
   it("extracts the outermost object from preamble/postamble noise", () => {
     const parsed = parseExtraction(fx("preamble-postamble.txt"));
     expect(parsed).not.toBeNull();
-    expect(parsed!.entities[0]!.name).toBe("Bar");
+    expect(parsed!.entities[0].name).toBe("Bar");
   });
 });
 

@@ -157,7 +157,7 @@ export class OpenAIProvider implements LLMProvider {
         "OpenAI embeddings response missing numeric embedding array",
       );
     }
-    return vec as number[];
+    return vec;
   }
 
   complete(opts: CompletionOptions): AsyncIterable<string> {

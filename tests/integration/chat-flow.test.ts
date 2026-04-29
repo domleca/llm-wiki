@@ -56,6 +56,6 @@ describe("chat flow integration (unit-level composition)", () => {
       availableTokens: ctx - 2048,
     });
     expect(budgeted).toHaveLength(1);
-    expect(budgeted[0]!.question).toBe("what is X?");
+    expect(budgeted[0].question).toBe("what is X?");
   });
 });

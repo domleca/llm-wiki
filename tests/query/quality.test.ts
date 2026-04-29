@@ -30,7 +30,7 @@ describe("qualityMultiplier", () => {
         type: "person",
         aliases: [],
         facts: [],
-        source: sources[i]!,
+        source: sources[i],
       });
     }
     return kb;

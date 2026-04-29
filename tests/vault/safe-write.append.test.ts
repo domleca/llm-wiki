@@ -6,7 +6,7 @@ describe("safeAppendPluginData", () => {
   it("creates the file and writes the first line", async () => {
     const { app, files } = createMockApp();
     await safeAppendPluginData(
-      app as never,
+      app,
       "interactions/2026-04-09.jsonl",
       '{"a":1}',
     );
@@ -19,14 +19,14 @@ describe("safeAppendPluginData", () => {
     const path = ".obsidian/plugins/llm-wiki/interactions/x.jsonl";
     // Seed an existing file through the adapter so the mock records it properly.
     await app.vault.adapter.write(path, "first\n");
-    await safeAppendPluginData(app as never, "interactions/x.jsonl", "second");
+    await safeAppendPluginData(app, "interactions/x.jsonl", "second");
     expect(files.get(path)?.content).toBe("first\nsecond\n");
   });
 
   it("does not double newline when line already ends with \\n", async () => {
     const { app, files } = createMockApp();
     await safeAppendPluginData(
-      app as never,
+      app,
       "interactions/y.jsonl",
       "already\n",
     );

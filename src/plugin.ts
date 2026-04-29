@@ -538,7 +538,7 @@ export default class LlmWikiPlugin extends Plugin {
       );
     }
     if (this.settings.providerType !== "ollama") {
-      const provider = this.settings.providerType as CloudProvider;
+      const provider = this.settings.providerType;
       return defaultEmbeddingModel(provider) ?? EMBEDDING_MODEL;
     }
     return EMBEDDING_MODEL;

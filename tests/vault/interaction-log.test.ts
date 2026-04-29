@@ -7,7 +7,7 @@ describe("appendInteractionLog", () => {
     const { app, files } = createMockApp();
     const now = () => new Date("2026-04-09T12:00:00Z");
     await appendInteractionLog(
-      app as never,
+      app,
       {
         question: "q",
         answer: "a",
@@ -38,7 +38,7 @@ describe("appendInteractionLog", () => {
     const { app, files } = createMockApp();
     const now = () => new Date("2026-04-09T12:00:00Z");
     await appendInteractionLog(
-      app as never,
+      app,
       {
         question: "q1",
         answer: "a1",
@@ -51,7 +51,7 @@ describe("appendInteractionLog", () => {
       now,
     );
     await appendInteractionLog(
-      app as never,
+      app,
       {
         question: "q2",
         answer: "a2",
@@ -67,13 +67,13 @@ describe("appendInteractionLog", () => {
     const content = files.get(path)?.content ?? "";
     const lines = content.trim().split("\n");
     expect(lines.length).toBe(2);
-    expect(JSON.parse(lines[0]!).question).toBe("q1");
-    expect(JSON.parse(lines[1]!).question).toBe("q2");
+    expect(JSON.parse(lines[0]).question).toBe("q1");
+    expect(JSON.parse(lines[1]).question).toBe("q2");
   });
 
   it("defaults to real Date when no clock injected", async () => {
     const { app, files } = createMockApp();
-    await appendInteractionLog(app as never, {
+    await appendInteractionLog(app, {
       question: "q",
       answer: "a",
       model: "m",

@@ -109,7 +109,7 @@ function rankSourcesByRelevance(bundle: RetrievedBundle): ScoredSource[] {
   ): void => {
     const limited = paths.slice(0, cap);
     for (let j = 0; j < limited.length; j++) {
-      const p = limited[j]!;
+      const p = limited[j];
       // Decay within the source list: first source gets full weight,
       // subsequent ones get progressively less (1.0, 0.67, 0.5, 0.4, …)
       const intraWeight = weight / (j * 0.5 + 1);
@@ -127,11 +127,11 @@ function rankSourcesByRelevance(bundle: RetrievedBundle): ScoredSource[] {
 
   // Entities are sorted best-first; weight decays with rank.
   for (let i = 0; i < bundle.entities.length; i++) {
-    add(bundle.entities[i]!.sources, 1 / (i + 1), MAX_SOURCES_PER_ITEM);
+    add(bundle.entities[i].sources, 1 / (i + 1), MAX_SOURCES_PER_ITEM);
   }
   // Same for concepts.
   for (let i = 0; i < bundle.concepts.length; i++) {
-    add(bundle.concepts[i]!.sources, 1 / (i + 1), MAX_SOURCES_PER_ITEM);
+    add(bundle.concepts[i].sources, 1 / (i + 1), MAX_SOURCES_PER_ITEM);
   }
   // Connections get a small flat bonus.
   for (const conn of bundle.connections) {

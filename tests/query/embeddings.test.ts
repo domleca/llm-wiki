@@ -56,7 +56,7 @@ describe("buildEmbeddingIndex", () => {
     const { contextualTextForEntity } = await import(
       "../../src/query/embedding-text.js"
     );
-    const text = contextualTextForEntity(kb.allEntities()[0]!);
+    const text = contextualTextForEntity(kb.allEntities()[0]);
     const cache: EmbeddingsCache = {
       entries: {
         "alan-watts": { sourceText: text, vector: [9, 9, 9] },
@@ -154,7 +154,7 @@ describe("buildEmbeddingIndex", () => {
     const { contextualTextForEntity } = await import(
       "../../src/query/embedding-text.js"
     );
-    const text = contextualTextForEntity(kb.allEntities()[0]!);
+    const text = contextualTextForEntity(kb.allEntities()[0]);
     const cache: EmbeddingsCache = {
       entries: {
         "alan-watts": { sourceText: text, vector: [9, 9, 9] },

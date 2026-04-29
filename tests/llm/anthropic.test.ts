@@ -40,9 +40,9 @@ describe("AnthropicProvider.complete", () => {
 
     expect(tokens.join("")).toBe("Hello world");
     expect(mock.calls).toHaveLength(1);
-    expect(mock.calls[0]!.headers["x-api-key"]).toBe("sk-ant-test");
-    expect(mock.calls[0]!.headers["anthropic-version"]).toBe("2023-06-01");
-    const body = JSON.parse(mock.calls[0]!.body!);
+    expect(mock.calls[0].headers["x-api-key"]).toBe("sk-ant-test");
+    expect(mock.calls[0].headers["anthropic-version"]).toBe("2023-06-01");
+    const body = JSON.parse(mock.calls[0].body!);
     expect(body.model).toBe("claude-3-5-haiku-20241022");
     expect(body.stream).toBe(true);
   });
@@ -83,7 +83,7 @@ describe("AnthropicProvider.embed", () => {
     });
     expect(vec).toEqual([0.1, 0.2, 0.3]);
     expect(embedProvider.embedCalls).toHaveLength(1);
-    expect(embedProvider.embedCalls[0]!.text).toBe("hello");
+    expect(embedProvider.embedCalls[0].text).toBe("hello");
   });
 });
 

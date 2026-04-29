@@ -77,24 +77,24 @@ describe("isQualityConcept", () => {
 
 describe("filters against sample-kb fixture", () => {
   it("accepts the high-quality entities", () => {
-    expect(isQualityEntity(fixture.entities["alan-watts"]!)).toBe(true);
-    expect(isQualityEntity(fixture.entities["andrej-karpathy"]!)).toBe(true);
+    expect(isQualityEntity(fixture.entities["alan-watts"])).toBe(true);
+    expect(isQualityEntity(fixture.entities["andrej-karpathy"])).toBe(true);
   });
 
   it("rejects the noise entities", () => {
-    expect(isQualityEntity(fixture.entities["exact-name"]!)).toBe(false);
-    expect(isQualityEntity(fixture.entities["lonely-entity"]!)).toBe(false);
+    expect(isQualityEntity(fixture.entities["exact-name"])).toBe(false);
+    expect(isQualityEntity(fixture.entities["lonely-entity"])).toBe(false);
   });
 
   it("accepts the high-quality concepts", () => {
-    expect(isQualityConcept(fixture.concepts["zen-buddhism"]!)).toBe(true);
-    expect(isQualityConcept(fixture.concepts["law-of-reversed-effort"]!)).toBe(
+    expect(isQualityConcept(fixture.concepts["zen-buddhism"])).toBe(true);
+    expect(isQualityConcept(fixture.concepts["law-of-reversed-effort"])).toBe(
       true,
     );
   });
 
   it("rejects the noise concept", () => {
-    expect(isQualityConcept(fixture.concepts["address-book"]!)).toBe(false);
+    expect(isQualityConcept(fixture.concepts["address-book"])).toBe(false);
   });
 
   it("after filtering, sample-kb yields exactly 2 entities and 2 concepts", () => {

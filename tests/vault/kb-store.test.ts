@@ -8,7 +8,7 @@ const KB_PATH = "wiki/knowledge.json";
 describe("loadKB", () => {
   it("returns an empty KB when no file exists", async () => {
     const { app } = createMockApp();
-    const { kb, mtime } = await loadKB(app as never);
+    const { kb, mtime } = await loadKB(app);
     expect(kb).toBeInstanceOf(KnowledgeBase);
     expect(kb.stats().entities).toBe(0);
     expect(mtime).toBe(0);
@@ -37,7 +37,7 @@ describe("loadKB", () => {
       mtime: 1234567890,
       ctime: 1234567890,
     });
-    const { kb, mtime } = await loadKB(app as never);
+    const { kb, mtime } = await loadKB(app);
     expect(kb.stats().entities).toBe(1);
     expect(kb.data.entities["alan-watts"]?.name).toBe("Alan Watts");
     expect(mtime).toBe(1234567890);
@@ -49,7 +49,7 @@ describe("saveKB", () => {
     const { app, files } = createMockApp();
     const kb = new KnowledgeBase();
     kb.addEntity({ name: "Alan Watts", type: "person", facts: ["x"] });
-    await saveKB(app as never, kb, 0);
+    await saveKB(app, kb, 0);
     const stored = files.get(KB_PATH);
     expect(stored).toBeDefined();
     const parsed = JSON.parse(stored!.content);

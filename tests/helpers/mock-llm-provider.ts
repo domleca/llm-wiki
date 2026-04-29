@@ -70,7 +70,7 @@ export class MockLLMProvider implements LLMProvider {
     if (this.embedIdx >= this.embeddings.length) {
       throw new Error("MockLLMProvider: no more embeddings in queue");
     }
-    return this.embeddings[this.embedIdx++]!;
+    return this.embeddings[this.embedIdx++];
   }
 
   enqueue(response: string): void {

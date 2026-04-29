@@ -116,7 +116,7 @@ export class OllamaProvider implements LLMProvider {
         "Ollama embeddings response missing numeric embedding array",
       );
     }
-    return json.embedding as number[];
+    return json.embedding;
   }
 
   async showModel(model: string): Promise<{ contextLength: number | null }> {

@@ -27,7 +27,7 @@ describe("OllamaProvider.embed", () => {
 
     expect(vec).toEqual([0.1, 0.2, 0.3]);
     expect(fetchImpl).toHaveBeenCalledOnce();
-    const call = (fetchImpl as ReturnType<typeof vi.fn>).mock.calls[0]!;
+    const call = (fetchImpl as ReturnType<typeof vi.fn>).mock.calls[0];
     const url = call[0] as string;
     const init = call[1] as RequestInit | undefined;
     expect(url).toBe("http://x/api/embeddings");

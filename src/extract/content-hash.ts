@@ -17,7 +17,7 @@ export async function sha256Hex(content: string): Promise<string> {
   const view = new Uint8Array(digest);
   let hex = "";
   for (let i = 0; i < view.length; i++) {
-    hex += view[i]!.toString(16).padStart(2, "0");
+    hex += view[i].toString(16).padStart(2, "0");
   }
   return hex;
 }

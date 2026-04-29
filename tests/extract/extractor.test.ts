@@ -46,7 +46,7 @@ describe("extractFile", () => {
     expect(kb.data.sources["Books/watts.md"]?.origin).toBe("user-note");
 
     expect(provider.calls).toHaveLength(1);
-    const call = provider.calls[0]!;
+    const call = provider.calls[0];
     expect(call.model).toBe("qwen2.5:7b");
     expect(call.prompt).toContain("DOCUMENT (Books/watts.md):");
     expect(call.prompt).toContain("Alan Watts wrote about Zen.");
@@ -91,7 +91,7 @@ describe("extractFile", () => {
       },
       model: "qwen2.5:7b",
     });
-    const prompt = provider.calls[0]!.prompt;
+    const prompt = provider.calls[0].prompt;
     expect(prompt).toContain("[... truncated ...]");
     expect(prompt.length).toBeLessThan(20_000);
   });

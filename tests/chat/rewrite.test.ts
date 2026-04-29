@@ -53,7 +53,7 @@ describe("rewriteFollowUp", () => {
       history: [turn("q1", "a1")],
       question: "and then?",
     });
-    const call = (spy.mock.calls[0]![0] as { prompt: string }).prompt;
+    const call = (spy.mock.calls[0][0] as { prompt: string }).prompt;
     expect(call).toContain("q1");
     expect(call).toContain("a1");
     expect(call).toContain("and then?");

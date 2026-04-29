@@ -7,7 +7,7 @@ describe("chat persistence", () => {
   it("round-trips via save/load", async () => {
     const { app } = createMockApp();
     const chats = [createChat({ id: "a", now: 1, folder: "", model: "m" })];
-    await saveChats(app as never, chats);
+    await saveChats(app, chats);
     expect(await loadChats(app as never)).toEqual(chats);
   });
 
@@ -18,16 +18,16 @@ describe("chat persistence", () => {
 
   it("returns empty array on malformed JSON", async () => {
     const { app } = createMockApp();
-    await saveChats(app as never, []);
+    await saveChats(app, []);
     const { safeWritePluginData } = await import("../../src/vault/safe-write.js");
-    await safeWritePluginData(app as never, "chats.json", "{not json");
+    await safeWritePluginData(app, "chats.json", "{not json");
     expect(await loadChats(app as never)).toEqual([]);
   });
 
   it("returns empty array when JSON is a non-array value", async () => {
     const { app } = createMockApp();
     const { safeWritePluginData } = await import("../../src/vault/safe-write.js");
-    await safeWritePluginData(app as never, "chats.json", JSON.stringify({ not: "an array" }));
+    await safeWritePluginData(app, "chats.json", JSON.stringify({ not: "an array" }));
     expect(await loadChats(app as never)).toEqual([]);
   });
 });

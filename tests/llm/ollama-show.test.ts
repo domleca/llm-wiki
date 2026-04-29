@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { OllamaProvider } from "../../src/llm/ollama.js";
 
 function mockFetch(body: unknown, status = 200): typeof fetch {
-  return (async () =>
-    new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;
+  return async () =>
+    new Response(JSON.stringify(body), { status });
 }
 
 describe("OllamaProvider.showModel", () => {

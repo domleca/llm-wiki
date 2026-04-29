@@ -25,21 +25,21 @@ function buildRichKb() {
 describe("generatePages", () => {
   it("writes entity pages only for quality entities", async () => {
     const { app, files } = createMockApp();
-    await generatePages(app as never, buildRichKb());
+    await generatePages(app, buildRichKb());
     expect(files.has("wiki/entities/alan-watts.md")).toBe(true);
     expect(files.has("wiki/entities/lonely-entity.md")).toBe(false);
   });
 
   it("writes concept pages only for quality concepts", async () => {
     const { app, files } = createMockApp();
-    await generatePages(app as never, buildRichKb());
+    await generatePages(app, buildRichKb());
     expect(files.has("wiki/concepts/zen-buddhism.md")).toBe(true);
     expect(files.has("wiki/concepts/address-book.md")).toBe(false);
   });
 
   it("writes a source page for every source", async () => {
     const { app, files } = createMockApp();
-    await generatePages(app as never, buildRichKb());
+    await generatePages(app, buildRichKb());
     expect(files.has("wiki/sources/Books/Watts.md")).toBe(true);
     expect(files.has("wiki/sources/Learn/Zen.md")).toBe(true);
     expect(files.has("wiki/sources/notes/a.md")).toBe(true);
@@ -47,7 +47,7 @@ describe("generatePages", () => {
 
   it("returns correct written count", async () => {
     const { app } = createMockApp();
-    const result = await generatePages(app as never, buildRichKb());
+    const result = await generatePages(app, buildRichKb());
     // 1 entity + 1 concept + 3 sources = 5
     expect(result.written).toBe(5);
   });
@@ -61,14 +61,14 @@ describe("generatePages", () => {
       mtime: 0,
       ctime: 0,
     });
-    const result = await generatePages(app as never, buildRichKb());
+    const result = await generatePages(app, buildRichKb());
     expect(files.has("wiki/entities/old-entity.md")).toBe(false);
     expect(result.deleted).toBe(1);
   });
 
   it("entity page content contains the entity name", async () => {
     const { app, files } = createMockApp();
-    await generatePages(app as never, buildRichKb());
+    await generatePages(app, buildRichKb());
     const content = files.get("wiki/entities/alan-watts.md")!.content;
     expect(content).toContain("Alan Watts");
   });

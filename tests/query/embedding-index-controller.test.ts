@@ -97,7 +97,7 @@ describe("EmbeddingIndexController", () => {
     });
     const index = await controller.ensureBuilt();
     expect(index.size).toBe(0);
-    const last = states[states.length - 1]!;
+    const last = states[states.length - 1];
     if (last.kind !== "error") throw new Error("expected error state");
     expect(last.message).toBe("ollama down");
     expect(last.reason).toBe("other");
@@ -108,7 +108,7 @@ describe("EmbeddingIndexController", () => {
       buildError: new LLMConnectError("fetch failed: ECONNREFUSED"),
     });
     await controller.ensureBuilt();
-    const last = states[states.length - 1]!;
+    const last = states[states.length - 1];
     if (last.kind !== "error") throw new Error("expected error state");
     expect(last.reason).toBe("connect");
     expect(last.message).toContain("ECONNREFUSED");

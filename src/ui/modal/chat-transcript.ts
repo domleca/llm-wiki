@@ -99,7 +99,7 @@ function cleanBasename(name: string): string {
 }
 
 function randomThinkingMessage(): string {
-  return THINKING_MESSAGES[Math.floor(Math.random() * THINKING_MESSAGES.length)]!;
+  return THINKING_MESSAGES[Math.floor(Math.random() * THINKING_MESSAGES.length)];
 }
 
 /** Clear all children from an element, using Obsidian's .empty() when available. */

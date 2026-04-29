@@ -22,7 +22,7 @@ describe("walkVaultFiles", () => {
     const { app } = createMockApp(
       filesFor(["Books/Watts.md", "Learn/Zen.md", "notes/random.md"]),
     );
-    const result = await walkVaultFiles(app as never, opts);
+    const result = await walkVaultFiles(app, opts);
     expect(result).toHaveLength(3);
     expect(result.map((r) => r.path)).toContain("Books/Watts.md");
   });
@@ -36,7 +36,7 @@ describe("walkVaultFiles", () => {
         "Template/note.md",
       ]),
     );
-    const result = await walkVaultFiles(app as never, opts);
+    const result = await walkVaultFiles(app, opts);
     expect(result.map((r) => r.path)).toEqual(["Books/Watts.md"]);
   });
 
@@ -55,7 +55,7 @@ describe("walkVaultFiles", () => {
         ctime: 1700000000,
       },
     ]);
-    const result = await walkVaultFiles(app as never, opts);
+    const result = await walkVaultFiles(app, opts);
     expect(result.map((r) => r.path)).toEqual(["Books/Watts.md"]);
   });
 
@@ -68,7 +68,7 @@ describe("walkVaultFiles", () => {
         "Dailies/random.md", // unparseable
       ]),
     );
-    const result = await walkVaultFiles(app as never, opts);
+    const result = await walkVaultFiles(app, opts);
     const paths = result.map((r) => r.path);
     expect(paths).not.toContain("Dailies/04 April 2026.md");
     expect(paths).toContain("Dailies/05 April 2026.md");
@@ -84,7 +84,7 @@ describe("walkVaultFiles", () => {
         "Books/Watts.md",
       ]),
     );
-    const result = await walkVaultFiles(app as never, opts);
+    const result = await walkVaultFiles(app, opts);
     const byPath = new Map(result.map((r) => [r.path, r.origin]));
     expect(byPath.get("Clippings/article.md")).toBe("user-note");
     expect(byPath.get("Dailies/06 April 2026.md")).toBe("daily");
@@ -99,7 +99,7 @@ describe("walkVaultFiles", () => {
         "Notes/Misc.md",
       ]),
     );
-    const result = await walkVaultFiles(app as never, {
+    const result = await walkVaultFiles(app, {
       ...opts,
       includeFolders: ["Books", "Projects/"],
     });

@@ -27,9 +27,9 @@ export function budgetHistory(
   const kept: ChatTurn[] = [];
   let used = 0;
   for (let i = turns.length - 1; i >= 0; i--) {
-    const cost = turnTokens(turns[i]!);
+    const cost = turnTokens(turns[i]);
     if (used + cost > opts.availableTokens) break;
-    kept.unshift(turns[i]!);
+    kept.unshift(turns[i]);
     used += cost;
   }
   return kept;

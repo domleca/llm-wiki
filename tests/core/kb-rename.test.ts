@@ -40,28 +40,28 @@ describe("KnowledgeBase.renameSource", () => {
   it("updates source id field inside the source record", () => {
     const kb = buildKb();
     kb.renameSource("old/watts.md", "new/watts.md");
-    expect(kb.data.sources["new/watts.md"]!.id).toBe("new/watts.md");
+    expect(kb.data.sources["new/watts.md"].id).toBe("new/watts.md");
   });
 
   it("updates entity sources arrays", () => {
     const kb = buildKb();
     kb.renameSource("old/watts.md", "new/watts.md");
-    expect(kb.data.entities["alan-watts"]!.sources).toContain("new/watts.md");
-    expect(kb.data.entities["alan-watts"]!.sources).not.toContain("old/watts.md");
+    expect(kb.data.entities["alan-watts"].sources).toContain("new/watts.md");
+    expect(kb.data.entities["alan-watts"].sources).not.toContain("old/watts.md");
   });
 
   it("updates concept sources arrays", () => {
     const kb = buildKb();
     kb.renameSource("old/watts.md", "new/watts.md");
-    expect(kb.data.concepts["zen"]!.sources).toContain("new/watts.md");
-    expect(kb.data.concepts["zen"]!.sources).not.toContain("old/watts.md");
+    expect(kb.data.concepts["zen"].sources).toContain("new/watts.md");
+    expect(kb.data.concepts["zen"].sources).not.toContain("old/watts.md");
   });
 
   it("updates connection sources arrays", () => {
     const kb = buildKb();
     kb.renameSource("old/watts.md", "new/watts.md");
-    expect(kb.data.connections[0]!.sources).toContain("new/watts.md");
-    expect(kb.data.connections[0]!.sources).not.toContain("old/watts.md");
+    expect(kb.data.connections[0].sources).toContain("new/watts.md");
+    expect(kb.data.connections[0].sources).not.toContain("old/watts.md");
   });
 
   it("is a no-op when oldPath does not exist", () => {

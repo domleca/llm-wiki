@@ -14,7 +14,7 @@ describe("OllamaProvider.ping", () => {
       lastUrl = typeof input === "string" ? input : input.toString();
       return new Response("{}", { status: 200 });
     });
-    const provider = makeProviderWith(fetchImpl as never);
+    const provider = makeProviderWith(fetchImpl);
     expect(await provider.ping()).toBe(true);
     expect(fetchImpl).toHaveBeenCalledOnce();
     expect(lastUrl).toContain("/api/tags");
@@ -24,7 +24,7 @@ describe("OllamaProvider.ping", () => {
     const fetchImpl = vi.fn(
       async () => new Response("err", { status: 500 }),
     );
-    const provider = makeProviderWith(fetchImpl as never);
+    const provider = makeProviderWith(fetchImpl);
     expect(await provider.ping()).toBe(false);
   });
 
@@ -32,13 +32,13 @@ describe("OllamaProvider.ping", () => {
     const fetchImpl = vi.fn(async () => {
       throw new Error("ECONNREFUSED");
     });
-    const provider = makeProviderWith(fetchImpl as never);
+    const provider = makeProviderWith(fetchImpl);
     expect(await provider.ping()).toBe(false);
   });
 
   it("returns false when the externally-supplied signal is already aborted", async () => {
     const fetchImpl = vi.fn(async () => new Response("{}", { status: 200 }));
-    const provider = makeProviderWith(fetchImpl as never);
+    const provider = makeProviderWith(fetchImpl);
     const ac = new AbortController();
     ac.abort();
     expect(await provider.ping(ac.signal)).toBe(false);

@@ -38,7 +38,7 @@ export function createMockFetch(queue: MockFetchResponse[]): MockFetchResult {
         ? input
         : input instanceof URL
           ? input.toString()
-          : (input as Request).url;
+          : (input).url;
     const headers: Record<string, string> = {};
     if (init?.headers) {
       const h = init.headers as Record<string, string>;
@@ -77,7 +77,7 @@ export function createMockFetch(queue: MockFetchResponse[]): MockFetchResult {
             controller.close();
             return;
           }
-          controller.enqueue(encoder.encode(chunks[i]!));
+          controller.enqueue(encoder.encode(chunks[i]));
           i++;
           queueMicrotask(pump);
         }
@@ -94,7 +94,7 @@ export function createMockFetch(queue: MockFetchResponse[]): MockFetchResult {
         const reader = stream.getReader();
         const decoder = new TextDecoder();
         let out = "";
-        // eslint-disable-next-line no-constant-condition
+         
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;

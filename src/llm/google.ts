@@ -108,7 +108,7 @@ export class GoogleProvider implements LLMProvider {
         "Google embeddings response missing numeric values array",
       );
     }
-    return vec as number[];
+    return vec;
   }
 
   complete(opts: CompletionOptions): AsyncIterable<string> {

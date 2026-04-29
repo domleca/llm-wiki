@@ -55,7 +55,7 @@ export async function runExtraction(
   outer: for (let i = 0; i < total; i++) {
     if (isAborted()) break;
 
-    const file = files[i]!;
+    const file = files[i];
     const index = i + 1;
 
     if (!kb.needsExtraction(file.path, file.mtime, file.contentHash)) {

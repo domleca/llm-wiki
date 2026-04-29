@@ -83,7 +83,7 @@ describe("ALLOWED_PREFIXES is exported and frozen", () => {
 describe("safeWritePluginData", () => {
   it("writes a file under .obsidian/plugins/llm-wiki/", async () => {
     const { app, files } = createMockApp();
-    await safeWritePluginData(app as never, "embeddings-cache.json", "{}");
+    await safeWritePluginData(app, "embeddings-cache.json", "{}");
     const stored = files.get(".obsidian/plugins/llm-wiki/embeddings-cache.json");
     expect(stored?.content).toBe("{}");
   });
@@ -106,14 +106,14 @@ describe("safeWritePluginData", () => {
 describe("safeReadPluginData", () => {
   it("reads a file under .obsidian/plugins/llm-wiki/", async () => {
     const { app } = createMockApp();
-    await safeWritePluginData(app as never, "test.json", '{"a":1}');
-    const result = await safeReadPluginData(app as never, "test.json");
+    await safeWritePluginData(app, "test.json", '{"a":1}');
+    const result = await safeReadPluginData(app, "test.json");
     expect(result).toBe('{"a":1}');
   });
 
   it("returns null when the file does not exist", async () => {
     const { app } = createMockApp();
-    const result = await safeReadPluginData(app as never, "nope.json");
+    const result = await safeReadPluginData(app, "nope.json");
     expect(result).toBeNull();
   });
 });

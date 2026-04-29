@@ -9,7 +9,7 @@ import { createMockApp } from "../helpers/mock-app.js";
 describe("loadEmbeddingsCache / saveEmbeddingsCache", () => {
   it("returns an empty cache when no file exists", async () => {
     const { app } = createMockApp();
-    const cache = await loadEmbeddingsCache(app as never);
+    const cache = await loadEmbeddingsCache(app);
     expect(cache.entries).toEqual({});
   });
 
@@ -20,8 +20,8 @@ describe("loadEmbeddingsCache / saveEmbeddingsCache", () => {
         "alan-watts": { sourceText: "Entity [person]: Alan Watts.", vector: [0.1, 0.2] },
       },
     };
-    await saveEmbeddingsCache(app as never, cache);
-    const read = await loadEmbeddingsCache(app as never);
+    await saveEmbeddingsCache(app, cache);
+    const read = await loadEmbeddingsCache(app);
     expect(read).toEqual(cache);
   });
 });

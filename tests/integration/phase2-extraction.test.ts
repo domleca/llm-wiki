@@ -47,7 +47,7 @@ describe("Phase 2 integration", () => {
       ctime: now,
     });
 
-    const walked = await walkVaultFiles(app as never, {
+    const walked = await walkVaultFiles(app, {
       skipDirs: DEFAULT_SKIP_DIRS,
       minFileSize: DEFAULT_MIN_FILE_SIZE,
       dailiesFromIso: defaultDailiesFromIso(),
@@ -76,8 +76,8 @@ describe("Phase 2 integration", () => {
       files: queueFiles,
       model: "qwen2.5:7b",
       saveKB: async () => {
-        await saveKB(app as never, kb, kbMtime);
-        const r = await loadKB(app as never);
+        await saveKB(app, kb, kbMtime);
+        const r = await loadKB(app);
         kbMtime = r.mtime;
       },
       emitter,
@@ -111,7 +111,7 @@ describe("Phase 2 integration", () => {
     let kbMtime = 0;
     const emitter = new ProgressEmitter();
 
-    const walked = await walkVaultFiles(app as never, {
+    const walked = await walkVaultFiles(app, {
       skipDirs: DEFAULT_SKIP_DIRS,
       minFileSize: DEFAULT_MIN_FILE_SIZE,
       dailiesFromIso: defaultDailiesFromIso(),
@@ -132,22 +132,22 @@ describe("Phase 2 integration", () => {
       files: queueFiles,
       model: "qwen2.5:7b",
       saveKB: async () => {
-        await saveKB(app as never, kb, kbMtime);
-        kbMtime = (await loadKB(app as never)).mtime;
+        await saveKB(app, kb, kbMtime);
+        kbMtime = (await loadKB(app)).mtime;
       },
       emitter,
     });
     expect(provider.calls).toHaveLength(1);
 
     // Second run with the same file contents — zero LLM calls.
-    const reloaded = await loadKB(app as never);
+    const reloaded = await loadKB(app);
     const stats = await runExtraction({
       provider,
       kb: reloaded.kb,
       files: queueFiles,
       model: "qwen2.5:7b",
       saveKB: async () => {
-        await saveKB(app as never, reloaded.kb, reloaded.mtime);
+        await saveKB(app, reloaded.kb, reloaded.mtime);
       },
       emitter,
     });
@@ -170,7 +170,7 @@ describe("Phase 2 integration", () => {
     const kb = new KnowledgeBase();
     let kbMtime = 0;
     const emitter = new ProgressEmitter();
-    const walked = await walkVaultFiles(app as never, {
+    const walked = await walkVaultFiles(app, {
       skipDirs: DEFAULT_SKIP_DIRS,
       minFileSize: DEFAULT_MIN_FILE_SIZE,
       dailiesFromIso: defaultDailiesFromIso(),
@@ -193,8 +193,8 @@ describe("Phase 2 integration", () => {
 
     // Simulate an external write right before the checkpoint at file 5.
     const saveKbWrapper = async (): Promise<void> => {
-      await saveKB(app as never, kb, kbMtime);
-      const r = await loadKB(app as never);
+      await saveKB(app, kb, kbMtime);
+      const r = await loadKB(app);
       kbMtime = r.mtime;
     };
     // Inject: after the 3rd file, bump the mtime of wiki/knowledge.json on the

@@ -95,9 +95,9 @@ function parseDailyDate(path: string): string | null {
   const stem = filename.replace(/\.md$/i, "");
   const match = /^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/.exec(stem);
   if (!match) return null;
-  const day = match[1]!.padStart(2, "0");
-  const monthName = match[2]!.toLowerCase();
-  const year = match[3]!;
+  const day = match[1].padStart(2, "0");
+  const monthName = match[2].toLowerCase();
+  const year = match[3];
   const month = MONTHS[monthName];
   if (!month) return null;
   return `${year}-${month}-${day}`;

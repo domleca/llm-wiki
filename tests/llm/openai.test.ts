@@ -34,10 +34,10 @@ describe("OpenAIProvider.complete", () => {
 
     expect(tokens.join("")).toBe("Hello world");
     expect(mock.calls).toHaveLength(1);
-    expect(mock.calls[0]!.url).toBe(
+    expect(mock.calls[0].url).toBe(
       "https://api.openai.com/v1/chat/completions",
     );
-    const body = JSON.parse(mock.calls[0]!.body!);
+    const body = JSON.parse(mock.calls[0].body!);
     expect(body.model).toBe("gpt-4o-mini");
     expect(body.stream).toBe(true);
     expect(body.messages[0].content).toBe("hi");
@@ -56,7 +56,7 @@ describe("OpenAIProvider.complete", () => {
     })) {
       tokens.push(chunk);
     }
-    expect(mock.calls[0]!.headers["Authorization"]).toBe(
+    expect(mock.calls[0].headers["Authorization"]).toBe(
       "Bearer sk-my-key",
     );
   });
@@ -88,7 +88,7 @@ describe("OpenAIProvider.complete", () => {
     for await (const _ of provider.complete({ prompt: "hi", model: "x" })) {
       // consume
     }
-    expect(mock.calls[0]!.url).toBe("https://api.cerebras.ai/v1/completions");
+    expect(mock.calls[0].url).toBe("https://api.cerebras.ai/v1/completions");
   });
 
   it("supports legacy completions payloads and streamed text deltas", async () => {
@@ -121,7 +121,7 @@ describe("OpenAIProvider.complete", () => {
     }
 
     expect(tokens.join("")).toBe("Hello world");
-    const body = JSON.parse(mock.calls[0]!.body!);
+    const body = JSON.parse(mock.calls[0].body!);
     expect(body.prompt).toBe("hi");
     expect(body.messages).toBeUndefined();
   });
@@ -139,7 +139,7 @@ describe("OpenAIProvider.complete", () => {
       // consume
     }
 
-    const body = JSON.parse(mock.calls[0]!.body!);
+    const body = JSON.parse(mock.calls[0].body!);
     expect(body.prompt).toBe("hi");
     expect(body.messages).toBeUndefined();
   });
@@ -158,7 +158,7 @@ describe("OpenAIProvider.complete", () => {
       // consume
     }
 
-    expect(mock.calls[0]!.headers["Authorization"]).toBeUndefined();
+    expect(mock.calls[0].headers["Authorization"]).toBeUndefined();
   });
 });
 
@@ -181,7 +181,7 @@ describe("OpenAIProvider.embed", () => {
       model: "text-embedding-3-small",
     });
     expect(vec).toEqual([0.1, 0.2, 0.3]);
-    expect(mock.calls[0]!.url).toBe(
+    expect(mock.calls[0].url).toBe(
       "https://api.openai.com/v1/embeddings",
     );
   });
@@ -210,7 +210,7 @@ describe("OpenAIProvider.embed", () => {
       fetchImpl: mock.fetch,
     });
     await provider.embed({ text: "hi", model: "x" });
-    expect(mock.calls[0]!.url).toBe("https://api.cerebras.ai/v1/embed");
+    expect(mock.calls[0].url).toBe("https://api.cerebras.ai/v1/embed");
   });
 });
 
@@ -263,7 +263,7 @@ describe("OpenAIProvider.listModels", () => {
     expect(models).not.toBeNull();
     expect(models!.includes("gpt-4o")).toBe(true);
     expect(models!.includes("text-embedding-3-small")).toBe(true);
-    expect(mock.calls[0]!.url).toBe("https://api.openai.com/v1/models");
+    expect(mock.calls[0].url).toBe("https://api.openai.com/v1/models");
   });
 
   it("returns null when model listing fails", async () => {
@@ -286,7 +286,7 @@ describe("OpenAIProvider.listModels", () => {
       fetchImpl: mock.fetch,
     });
     await provider.listModels();
-    expect(mock.calls[0]!.url).toBe("https://api.cerebras.ai/v1/models");
+    expect(mock.calls[0].url).toBe("https://api.cerebras.ai/v1/models");
   });
 
   it("normalizes base URL when it ends with /v1/v1", async () => {
@@ -303,7 +303,7 @@ describe("OpenAIProvider.listModels", () => {
       fetchImpl: mock.fetch,
     });
     await provider.listModels();
-    expect(mock.calls[0]!.url).toBe("https://api.cerebras.ai/v1/models");
+    expect(mock.calls[0].url).toBe("https://api.cerebras.ai/v1/models");
   });
 
   it("uses a custom models endpoint", async () => {
@@ -319,7 +319,7 @@ describe("OpenAIProvider.listModels", () => {
       fetchImpl: mock.fetch,
     });
     await provider.listModels();
-    expect(mock.calls[0]!.url).toBe("https://api.cerebras.ai/v1/my-models");
+    expect(mock.calls[0].url).toBe("https://api.cerebras.ai/v1/my-models");
   });
 
   it("falls back to default endpoints when empty strings are provided", async () => {
@@ -336,7 +336,7 @@ describe("OpenAIProvider.listModels", () => {
     });
 
     await provider.listModels();
-    expect(mock.calls[0]!.url).toBe("https://api.cerebras.ai/v1/models");
+    expect(mock.calls[0].url).toBe("https://api.cerebras.ai/v1/models");
   });
 
   it("times out hanging model list requests", async () => {

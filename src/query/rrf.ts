@@ -7,10 +7,10 @@ export function rrfFuse(
 ): RankedItem[] {
   const acc = new Map<string, number>();
   for (let i = 0; i < ranked.length; i++) {
-    const list = ranked[i]!;
+    const list = ranked[i];
     const w = weights[i] ?? 1.0;
     for (let r = 0; r < list.length; r++) {
-      const item = list[r]!;
+      const item = list[r];
       const contribution = w / (k + r + 1);
       acc.set(item.id, (acc.get(item.id) ?? 0) + contribution);
     }

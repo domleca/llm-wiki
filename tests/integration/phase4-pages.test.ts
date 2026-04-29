@@ -69,14 +69,14 @@ describe("Phase 4 integration: extraction → page generation", () => {
       ],
       model: "qwen2.5:7b",
       saveKB: async () => {
-        await saveKB(app as never, kb, kbMtime);
-        kbMtime = (await loadKB(app as never)).mtime;
+        await saveKB(app, kb, kbMtime);
+        kbMtime = (await loadKB(app)).mtime;
       },
       emitter,
       checkpointEvery: 5,
     });
 
-    await generatePages(app as never, kb);
+    await generatePages(app, kb);
 
     // Alan Watts has 2 facts and 2 sources → entity page generated
     expect(files.has("wiki/entities/alan-watts.md")).toBe(true);
@@ -105,13 +105,13 @@ describe("Phase 4 integration: extraction → page generation", () => {
       ],
       model: "qwen2.5:7b",
       saveKB: async () => {
-        await saveKB(app as never, kb, kbMtime);
-        kbMtime = (await loadKB(app as never)).mtime;
+        await saveKB(app, kb, kbMtime);
+        kbMtime = (await loadKB(app)).mtime;
       },
       emitter,
     });
 
-    await generatePages(app as never, kb);
+    await generatePages(app, kb);
 
     const entityContent = files.get("wiki/entities/alan-watts.md")!.content;
     // Must start with YAML frontmatter
@@ -134,7 +134,7 @@ describe("Phase 4 integration: extraction → page generation", () => {
     // thin: 1 fact, 1 source → fails
     kb.addEntity({ name: "Thin Entity", type: "other", facts: ["only"], source: "e.md" });
 
-    await generatePages(app as never, kb);
+    await generatePages(app, kb);
 
     const entityPages = Array.from(files.keys()).filter((p) =>
       p.startsWith("wiki/entities/"),
@@ -152,13 +152,13 @@ describe("Phase 4 integration: extraction → page generation", () => {
     // First run: entity passes filter (2 facts, 2 sources)
     kb.addEntity({ name: "Rich Entity", type: "person", facts: ["f1", "f2"], source: "a.md" });
     kb.addEntity({ name: "Rich Entity", type: "person", source: "b.md" });
-    await generatePages(app as never, kb);
+    await generatePages(app, kb);
     expect(files.has("wiki/entities/rich-entity.md")).toBe(true);
 
     // Remove the entity's source so it no longer qualifies
     kb.removeSource("a.md");
     kb.removeSource("b.md");
-    await generatePages(app as never, kb);
+    await generatePages(app, kb);
 
     // Entity no longer passes → page deleted
     expect(files.has("wiki/entities/rich-entity.md")).toBe(false);

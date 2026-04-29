@@ -31,9 +31,9 @@ describe("OllamaProvider.complete", () => {
 
     expect(tokens.join("")).toBe("Hello world");
     expect(mock.calls).toHaveLength(1);
-    expect(mock.calls[0]!.url).toBe("http://localhost:11434/api/generate");
-    expect(mock.calls[0]!.method).toBe("POST");
-    const body = JSON.parse(mock.calls[0]!.body!);
+    expect(mock.calls[0].url).toBe("http://localhost:11434/api/generate");
+    expect(mock.calls[0].method).toBe("POST");
+    const body = JSON.parse(mock.calls[0].body!);
     expect(body.model).toBe("qwen2.5:7b");
     expect(body.prompt).toBe("hi");
     expect(body.stream).toBe(true);

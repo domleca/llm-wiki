@@ -53,7 +53,7 @@ describe("validateKey", () => {
     const result = await validateKey(
       "openai",
       "sk-test",
-      mockFetch as typeof globalThis.fetch,
+      mockFetch,
     );
     expect(result).toBe("Connection failed: network down");
   });

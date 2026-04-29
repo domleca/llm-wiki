@@ -188,7 +188,7 @@ export function renderCloudSection(
     return;
   }
 
-  const providerKey = pt as CloudProvider;
+  const providerKey = pt;
   const currentKey = plugin.settings.apiKeys[providerKey] ?? "";
   const cached = plugin.keyValidationCache[providerKey];
   const masked = currentKey ? maskKey(currentKey) : "";

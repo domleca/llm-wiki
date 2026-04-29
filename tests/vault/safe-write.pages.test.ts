@@ -10,19 +10,19 @@ import {
 describe("safeWritePage", () => {
   it("writes a file under wiki/entities/", async () => {
     const { app, files } = createMockApp();
-    await safeWritePage(app as never, "wiki/entities/alan-watts.md", "content");
+    await safeWritePage(app, "wiki/entities/alan-watts.md", "content");
     expect(files.get("wiki/entities/alan-watts.md")?.content).toBe("content");
   });
 
   it("writes a file under wiki/concepts/", async () => {
     const { app, files } = createMockApp();
-    await safeWritePage(app as never, "wiki/concepts/zen.md", "content");
+    await safeWritePage(app, "wiki/concepts/zen.md", "content");
     expect(files.get("wiki/concepts/zen.md")?.content).toBe("content");
   });
 
   it("writes a nested source page under wiki/sources/", async () => {
     const { app, files } = createMockApp();
-    await safeWritePage(app as never, "wiki/sources/Books/Watts.md", "src");
+    await safeWritePage(app, "wiki/sources/Books/Watts.md", "src");
     expect(files.get("wiki/sources/Books/Watts.md")?.content).toBe("src");
   });
 
@@ -35,16 +35,16 @@ describe("safeWritePage", () => {
 
   it("overwrites an existing page", async () => {
     const { app, files } = createMockApp();
-    await safeWritePage(app as never, "wiki/entities/foo.md", "v1");
-    await safeWritePage(app as never, "wiki/entities/foo.md", "v2");
+    await safeWritePage(app, "wiki/entities/foo.md", "v1");
+    await safeWritePage(app, "wiki/entities/foo.md", "v2");
     expect(files.get("wiki/entities/foo.md")?.content).toBe("v2");
   });
 
   it("skips write when content is unchanged", async () => {
     const { app, writeLog } = createMockApp();
-    await safeWritePage(app as never, "wiki/entities/foo.md", "same");
+    await safeWritePage(app, "wiki/entities/foo.md", "same");
     expect(writeLog).toHaveLength(1);
-    await safeWritePage(app as never, "wiki/entities/foo.md", "same");
+    await safeWritePage(app, "wiki/entities/foo.md", "same");
     expect(writeLog).toHaveLength(1); // no second write
   });
 });
@@ -52,8 +52,8 @@ describe("safeWritePage", () => {
 describe("safeDeletePage", () => {
   it("deletes an existing page", async () => {
     const { app, files } = createMockApp();
-    await safeWritePage(app as never, "wiki/entities/alan-watts.md", "x");
-    await safeDeletePage(app as never, "wiki/entities/alan-watts.md");
+    await safeWritePage(app, "wiki/entities/alan-watts.md", "x");
+    await safeDeletePage(app, "wiki/entities/alan-watts.md");
     expect(files.has("wiki/entities/alan-watts.md")).toBe(false);
   });
 
@@ -75,9 +75,9 @@ describe("safeDeletePage", () => {
 describe("listPagePaths", () => {
   it("returns all .md files under the given prefix", async () => {
     const { app } = createMockApp();
-    await safeWritePage(app as never, "wiki/entities/alan-watts.md", "a");
-    await safeWritePage(app as never, "wiki/entities/karpathy.md", "b");
-    const paths = await listPagePaths(app as never, "wiki/entities/");
+    await safeWritePage(app, "wiki/entities/alan-watts.md", "a");
+    await safeWritePage(app, "wiki/entities/karpathy.md", "b");
+    const paths = await listPagePaths(app, "wiki/entities/");
     expect(paths.sort()).toEqual([
       "wiki/entities/alan-watts.md",
       "wiki/entities/karpathy.md",
@@ -86,9 +86,9 @@ describe("listPagePaths", () => {
 
   it("returns nested paths under wiki/sources/", async () => {
     const { app } = createMockApp();
-    await safeWritePage(app as never, "wiki/sources/Books/Watts.md", "w");
-    await safeWritePage(app as never, "wiki/sources/Learn/Zen.md", "z");
-    const paths = await listPagePaths(app as never, "wiki/sources/");
+    await safeWritePage(app, "wiki/sources/Books/Watts.md", "w");
+    await safeWritePage(app, "wiki/sources/Learn/Zen.md", "z");
+    const paths = await listPagePaths(app, "wiki/sources/");
     expect(paths.sort()).toEqual([
       "wiki/sources/Books/Watts.md",
       "wiki/sources/Learn/Zen.md",
@@ -97,7 +97,7 @@ describe("listPagePaths", () => {
 
   it("returns empty array when directory has no files", async () => {
     const { app } = createMockApp();
-    const paths = await listPagePaths(app as never, "wiki/entities/");
+    const paths = await listPagePaths(app, "wiki/entities/");
     expect(paths).toEqual([]);
   });
 
