@@ -3,6 +3,7 @@ import type { KBData } from "../core/types.js";
 import { assertAllowed, type SafeWriteApp } from "./safe-write.js";
 
 const KB_PATH = "wiki/knowledge.json";
+const KB_DIR = "wiki";
 
 export class KBStaleError extends Error {
   readonly expectedMtime: number;
@@ -26,7 +27,15 @@ export async function loadKB(app: SafeWriteApp): Promise<LoadedKB> {
   if (!(await app.vault.adapter.exists(KB_PATH))) {
     return { kb: new KnowledgeBase(), mtime: 0 };
   }
-  const text = await app.vault.adapter.read(KB_PATH);
+  let text: string;
+  try {
+    text = await app.vault.adapter.read(KB_PATH);
+  } catch (error) {
+    if (isMissingFileError(error)) {
+      return { kb: new KnowledgeBase(), mtime: 0 };
+    }
+    throw error;
+  }
   const data = JSON.parse(text) as KBData;
   const stat = await statOrNull(app, KB_PATH);
   return { kb: new KnowledgeBase(data), mtime: stat?.mtime ?? 0 };
@@ -43,6 +52,7 @@ export async function saveKB(
   expectedMtime: number,
 ): Promise<void> {
   assertAllowed(KB_PATH);
+  await ensureDir(app, KB_DIR);
   const stat = await statOrNull(app, KB_PATH);
   if (stat && stat.mtime !== expectedMtime) {
     throw new KBStaleError(expectedMtime, stat.mtime);
@@ -66,4 +76,17 @@ async function statOrNull(
   };
   if (typeof adapter.stat !== "function") return null;
   return adapter.stat(path);
+}
+
+async function ensureDir(app: SafeWriteApp, path: string): Promise<void> {
+  if (!(await app.vault.adapter.exists(path))) {
+    await app.vault.adapter.mkdir(path);
+  }
+}
+
+function isMissingFileError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const maybeError = error as { code?: unknown; message?: unknown };
+  if (maybeError.code === "ENOENT") return true;
+  return typeof maybeError.message === "string" && maybeError.message.includes("ENOENT");
 }

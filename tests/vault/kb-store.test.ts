@@ -42,6 +42,35 @@ describe("loadKB", () => {
     expect(kb.data.entities["alan-watts"]?.name).toBe("Alan Watts");
     expect(mtime).toBe(1234567890);
   });
+
+  it("falls back to an empty KB if the file disappears after exists()", async () => {
+    const app = {
+      vault: {
+        adapter: {
+          exists: async (path: string) => path === KB_PATH,
+          read: async (_path: string) => {
+            const err = new Error(
+              `ENOENT: no such file or directory, open '${KB_PATH}'`,
+            ) as Error & { code?: string };
+            err.code = "ENOENT";
+            throw err;
+          },
+          write: async () => {
+            throw new Error("not used");
+          },
+          mkdir: async () => {
+            throw new Error("not used");
+          },
+          stat: async () => null,
+        },
+      },
+    };
+
+    const { kb, mtime } = await loadKB(app as never);
+    expect(kb).toBeInstanceOf(KnowledgeBase);
+    expect(kb.stats().entities).toBe(0);
+    expect(mtime).toBe(0);
+  });
 });
 
 describe("saveKB", () => {
@@ -54,6 +83,37 @@ describe("saveKB", () => {
     expect(stored).toBeDefined();
     const parsed = JSON.parse(stored!.content);
     expect(parsed.entities["alan-watts"]?.name).toBe("Alan Watts");
+  });
+
+  it("creates the wiki directory before writing the KB", async () => {
+    const dirs = new Set<string>();
+    const writes: string[] = [];
+    const app = {
+      vault: {
+        adapter: {
+          exists: async (path: string) => path === KB_PATH ? false : dirs.has(path),
+          read: async () => {
+            throw new Error("not used");
+          },
+          write: async (path: string, content: string) => {
+            if (!dirs.has("wiki")) {
+              throw new Error(`ENOENT: no such file or directory, open '${path}'`);
+            }
+            writes.push(content);
+          },
+          mkdir: async (path: string) => {
+            dirs.add(path);
+          },
+          stat: async () => null,
+        },
+      },
+    };
+
+    const kb = new KnowledgeBase();
+    kb.addEntity({ name: "Alan Watts", type: "person", facts: ["x"] });
+    await expect(saveKB(app as never, kb, 0)).resolves.not.toThrow();
+    expect(dirs.has("wiki")).toBe(true);
+    expect(writes).toHaveLength(1);
   });
 
   it("throws KBStaleError when the on-disk mtime is newer than expectedMtime", async () => {
