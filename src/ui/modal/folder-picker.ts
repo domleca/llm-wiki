@@ -33,7 +33,7 @@ export class FolderPickerModal extends SuggestModal<string> {
     const effective = folder === WHOLE_VAULT_LABEL ? "" : folder;
     if (effective === this.current) {
       el.createEl("small", {
-        text: "current default",
+        text: "Current default",
         cls: "llm-wiki-model-picker-hint",
       });
     }

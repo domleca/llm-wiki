@@ -33,10 +33,12 @@ export function renderModelsSection(
             app: plugin.app,
             provider: plugin.provider,
             current: plugin.settings.ollamaModel,
-            onPick: async (model) => {
-              plugin.settings.ollamaModel = model;
-              await plugin.saveSettings();
-              handlers.rerender();
+            onPick: (model) => {
+              void (async () => {
+                plugin.settings.ollamaModel = model;
+                await plugin.saveSettings();
+                handlers.rerender();
+              })();
             },
           });
         }),
@@ -101,7 +103,7 @@ class CloudModelPickerModal extends SuggestModal<CatalogEntry> {
     });
     if (entry.id === this.current) {
       el.createEl("small", {
-        text: " (current)",
+        text: " (Current)",
         cls: "llm-wiki-model-picker-hint",
       });
     }

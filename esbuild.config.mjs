@@ -2,7 +2,7 @@ import esbuild from "esbuild";
 import process from "node:process";
 import fs from "node:fs";
 import path from "node:path";
-import builtins from "builtin-modules";
+import { builtinModules } from "node:module";
 
 const TESTVAULT_PLUGIN_DIR = process.env.LLM_WIKI_TESTVAULT
   ? path.join(process.env.LLM_WIKI_TESTVAULT, ".obsidian/plugins/llm-wiki")
@@ -57,7 +57,7 @@ const context = await esbuild.context({
     "@lezer/common",
     "@lezer/highlight",
     "@lezer/lr",
-    ...builtins,
+    ...builtinModules,
   ],
   platform: "node",
   format: "cjs",

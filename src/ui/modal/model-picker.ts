@@ -28,7 +28,7 @@ export class ModelPickerModal extends SuggestModal<string> {
   renderSuggestion(model: string, el: HTMLElement): void {
     el.createEl("div", { text: model });
     if (model === this.current) {
-      el.createEl("small", { text: "current default", cls: "llm-wiki-model-picker-hint" });
+      el.createEl("small", { text: "Current default", cls: "llm-wiki-model-picker-hint" });
     }
   }
 

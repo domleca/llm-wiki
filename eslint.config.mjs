@@ -47,6 +47,15 @@ export default [
       "obsidianmd/prefer-active-window-timers": "off",
       "obsidianmd/prefer-create-el": "off",
       "obsidianmd/prefer-instanceof": "off",
+      // Sentence-case rule defaults already cover Obsidian/OpenAI/Anthropic/etc.
+      // Add our own proper nouns and skip URL/example placeholders.
+      "obsidianmd/ui/sentence-case": [
+        "error",
+        {
+          ignoreWords: ["Wiki", "Ollama"],
+          ignoreRegex: ["^https?://", "^e\\.g\\."],
+        },
+      ],
       "local-rules/no-direct-vault-write": "error",
     },
   },

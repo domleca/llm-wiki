@@ -46,12 +46,14 @@ export function buildQuerySection(args: BuildQuerySectionArgs): void {
     openFolderPicker({
       app: args.app,
       current: "",
-      onPick: async (folder) => {
+      onPick: (folder) => {
         if (folder && !args.settings.queryFolders.includes(folder)) {
-          await args.onChange({
-            queryFolders: [...args.settings.queryFolders, folder],
-          });
-          args.rerender();
+          void (async () => {
+            await args.onChange({
+              queryFolders: [...args.settings.queryFolders, folder],
+            });
+            args.rerender();
+          })();
         }
       },
     });
@@ -80,10 +82,12 @@ export function buildQuerySection(args: BuildQuerySectionArgs): void {
         cls: "mod-warning",
       });
 
-      removeBtn.addEventListener("click", async () => {
-        const filtered = args.settings.queryFolders.filter((f) => f !== folder);
-        await args.onChange({ queryFolders: filtered });
-        args.rerender();
+      removeBtn.addEventListener("click", () => {
+        void (async () => {
+          const filtered = args.settings.queryFolders.filter((f) => f !== folder);
+          await args.onChange({ queryFolders: filtered });
+          args.rerender();
+        })();
       });
     }
   }

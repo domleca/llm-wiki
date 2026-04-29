@@ -36,7 +36,9 @@ export class LlmWikiSettingsTab extends PluginSettingTab {
     });
 
     renderIndexingSection(containerEl, this.plugin, {
-      onIndexAll: () => this.plugin.runExtractAll(),
+      onIndexAll: () => {
+        void this.plugin.runExtractAll();
+      },
       onIndexCancel: () => this.plugin.cancelExtraction(),
       isRunning: () => this.plugin.isExtractionRunning(),
       rerender: () => this.display(),
@@ -73,7 +75,7 @@ export class LlmWikiSettingsTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Hide wiki from search")
       .setDesc(
-        "Exclude generated wiki pages from search, Quick Switcher, and graph view. Turn off to browse them like regular notes.",
+        "Exclude generated wiki pages from search, quick switcher, and graph view. Turn off to browse them like regular notes.",
       )
       .addToggle((toggle) =>
         toggle

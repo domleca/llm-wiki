@@ -17,7 +17,7 @@ class VocabularyModal extends Modal {
   onOpen(): void {
     const { contentEl } = this;
     contentEl.empty();
-    contentEl.createEl("h2", { text: "LLM Wiki — Vocabulary" });
+    contentEl.createEl("h2", { text: "LLM Wiki — vocabulary" });
 
     const stats = this.kb.stats();
     contentEl.createEl("p", {
@@ -26,7 +26,7 @@ class VocabularyModal extends Modal {
 
     if (stats.entities === 0 && stats.concepts === 0) {
       contentEl.createEl("p", {
-        text: "Knowledge base is empty. Run extraction to populate it (coming in Phase 2).",
+        text: "Knowledge base is empty. Run extraction to populate it (coming in phase 2).",
       });
       return;
     }
