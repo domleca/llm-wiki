@@ -14,6 +14,7 @@ export interface FakeFile {
 
 export interface FakeApp {
   vault: {
+    configDir: string;
     getMarkdownFiles(): FakeFile[];
     cachedRead(file: FakeFile): Promise<string>;
     create(path: string, content: string): Promise<FakeFile>;
@@ -48,6 +49,7 @@ export function createMockApp(initial: FakeFile[] = []): {
 
   const app: FakeApp = {
     vault: {
+      configDir: ".obsidian",
       getMarkdownFiles: () =>
         Array.from(files.values()).filter((f) => f.path.endsWith(".md")),
       cachedRead: async (file) => {

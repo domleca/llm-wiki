@@ -9,7 +9,7 @@
     "dev": "node esbuild.config.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint . --ext .ts,.cjs",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [

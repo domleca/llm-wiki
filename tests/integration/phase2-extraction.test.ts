@@ -8,7 +8,7 @@ import { saveKB, loadKB } from "../../src/vault/kb-store.js";
 import { walkVaultFiles } from "../../src/vault/walker.js";
 import {
   DEFAULT_MIN_FILE_SIZE,
-  DEFAULT_SKIP_DIRS,
+  defaultSkipDirs,
   defaultDailiesFromIso,
 } from "../../src/extract/defaults.js";
 
@@ -48,7 +48,7 @@ describe("Phase 2 integration", () => {
     });
 
     const walked = await walkVaultFiles(app, {
-      skipDirs: DEFAULT_SKIP_DIRS,
+      skipDirs: defaultSkipDirs(app.vault.configDir),
       minFileSize: DEFAULT_MIN_FILE_SIZE,
       dailiesFromIso: defaultDailiesFromIso(),
     });
@@ -112,7 +112,7 @@ describe("Phase 2 integration", () => {
     const emitter = new ProgressEmitter();
 
     const walked = await walkVaultFiles(app, {
-      skipDirs: DEFAULT_SKIP_DIRS,
+      skipDirs: defaultSkipDirs(app.vault.configDir),
       minFileSize: DEFAULT_MIN_FILE_SIZE,
       dailiesFromIso: defaultDailiesFromIso(),
     });
@@ -171,7 +171,7 @@ describe("Phase 2 integration", () => {
     let kbMtime = 0;
     const emitter = new ProgressEmitter();
     const walked = await walkVaultFiles(app, {
-      skipDirs: DEFAULT_SKIP_DIRS,
+      skipDirs: defaultSkipDirs(app.vault.configDir),
       minFileSize: DEFAULT_MIN_FILE_SIZE,
       dailiesFromIso: defaultDailiesFromIso(),
     });

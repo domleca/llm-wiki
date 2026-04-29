@@ -22,7 +22,7 @@ import { extractFile } from "./extract/extractor.js";
 import { sha256Hex } from "./extract/content-hash.js";
 import {
   DEFAULT_MIN_FILE_SIZE,
-  DEFAULT_SKIP_DIRS,
+  defaultSkipDirs,
   defaultDailiesFromIso,
 } from "./extract/defaults.js";
 import { ProgressEmitter } from "./runtime/progress.js";
@@ -304,7 +304,7 @@ export default class LlmWikiPlugin extends Plugin {
 
     // On-save watcher: re-extract a file shortly after it's saved.
     this.onSaveWatcher = new OnSaveWatcher({
-      skipDirs: DEFAULT_SKIP_DIRS,
+      skipDirs: defaultSkipDirs(this.app.vault.configDir),
       getIncludedFolders: () => this.settings.queryFolders,
       isExtractionRunning: () => this.running,
       trigger: (path) => {
@@ -369,7 +369,7 @@ export default class LlmWikiPlugin extends Plugin {
     if (sources > 0) return;
 
     const walkOpts: WalkOptions = {
-      skipDirs: DEFAULT_SKIP_DIRS,
+      skipDirs: defaultSkipDirs(this.app.vault.configDir),
       includeFolders: this.settings.queryFolders,
       minFileSize: DEFAULT_MIN_FILE_SIZE,
       dailiesFromIso: defaultDailiesFromIso(),
@@ -618,7 +618,7 @@ export default class LlmWikiPlugin extends Plugin {
     try {
       await this.reloadKB();
       const walkOpts: WalkOptions = {
-        skipDirs: DEFAULT_SKIP_DIRS,
+        skipDirs: defaultSkipDirs(this.app.vault.configDir),
         includeFolders: this.settings.queryFolders,
         minFileSize: DEFAULT_MIN_FILE_SIZE,
         dailiesFromIso: defaultDailiesFromIso(),

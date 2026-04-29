@@ -69,5 +69,19 @@ export default [
         process: "readonly",
       },
     },
+    rules: {
+      // Build scripts run outside Obsidian so there's no `app` to read
+      // configDir from. The `.obsidian` literal here is a TestVault path.
+      "obsidianmd/hardcoded-config-path": "off",
+    },
+  },
+  {
+    // Test fixtures legitimately exercise `.obsidian` paths — production
+    // code uses `app.vault.configDir`, but tests mock-set it to the same
+    // value and assert against the resulting path strings.
+    files: ["tests/**/*.ts"],
+    rules: {
+      "obsidianmd/hardcoded-config-path": "off",
+    },
   },
 ];

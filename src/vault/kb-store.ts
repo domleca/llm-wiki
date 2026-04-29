@@ -51,7 +51,7 @@ export async function saveKB(
   kb: KnowledgeBase,
   expectedMtime: number,
 ): Promise<void> {
-  assertAllowed(KB_PATH);
+  assertAllowed(app, KB_PATH);
   await ensureDir(app, KB_DIR);
   const stat = await statOrNull(app, KB_PATH);
   if (stat && stat.mtime !== expectedMtime) {

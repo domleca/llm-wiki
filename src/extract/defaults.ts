@@ -10,14 +10,21 @@ export const DEFAULT_CHAR_LIMIT = 12_000;
  *  worth extracting. Below this, the file is skipped. */
 export const DEFAULT_MIN_FILE_SIZE = 100;
 
-export const DEFAULT_SKIP_DIRS: string[] = [
-  "wiki",
-  ".obsidian",
-  ".trash",
-  "Template",
-  "Templates",
-  "Assets",
-];
+/**
+ * Directory names to skip when walking the vault for extraction.
+ * Takes the user's configDir at call time so we never assume
+ * `.obsidian` (Obsidian lets users move it).
+ */
+export function defaultSkipDirs(configDir: string): string[] {
+  return [
+    "wiki",
+    configDir,
+    ".trash",
+    "Template",
+    "Templates",
+    "Assets",
+  ];
+}
 
 /** Default cutoff for dailies: one year ago (ISO date). Dailies older than
  *  this are skipped from extraction. Computed lazily so tests can mock Date. */
