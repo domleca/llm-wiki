@@ -61,7 +61,7 @@ export class LlmWikiSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Show status bar")
-      .setDesc("Display the LLM Wiki indicator in the status bar.")
+      .setDesc("Display the indicator in the status bar.")
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.showStatusBar)

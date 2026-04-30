@@ -14,7 +14,7 @@ export class ModelPickerModal extends SuggestModal<string> {
     private readonly onPick: (model: string) => void,
   ) {
     super(app);
-    this.setPlaceholder("Search installed Ollama models…");
+    this.setPlaceholder("Search installed models…");
     this.emptyStateText = "No matching installed models. Run `ollama pull <tag>` first.";
     this.modalEl.addClass("llm-wiki-centered-suggest");
   }
@@ -48,7 +48,7 @@ export async function openModelPicker(args: {
   onPick: (model: string) => void;
 }): Promise<void> {
   if (!args.provider.listModels) {
-    new Notice("LLM Wiki: provider does not expose installed models.");
+    new Notice("Provider does not expose installed models.");
     return;
   }
   const models = await args.provider.listModels();

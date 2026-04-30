@@ -17,7 +17,7 @@ class VocabularyModal extends Modal {
   onOpen(): void {
     const { contentEl } = this;
     contentEl.empty();
-    contentEl.createEl("h2", { text: "LLM Wiki — vocabulary" });
+    contentEl.createEl("h2", { text: "Vocabulary" });
 
     const stats = this.kb.stats();
     contentEl.createEl("p", {

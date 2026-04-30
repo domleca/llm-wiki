@@ -20,10 +20,10 @@ export function renderIndexingSection(
   if (plugin.settings.providerType === "ollama") {
     new Setting(containerEl)
       .setName("Ollama URL")
-      .setDesc("Base URL of your local Ollama server.")
+      .setDesc("Base URL of your local server.")
       .addText((text) =>
         text
-          .setPlaceholder("http://localhost:11434")
+          .setPlaceholder("Server URL")
           .setValue(plugin.settings.ollamaUrl)
           .onChange(async (value) => {
             plugin.settings.ollamaUrl =

@@ -103,7 +103,7 @@ class CloudModelPickerModal extends SuggestModal<CatalogEntry> {
     });
     if (entry.id === this.current) {
       el.createEl("small", {
-        text: " (Current)",
+        text: "Current",
         cls: "llm-wiki-model-picker-hint",
       });
     }

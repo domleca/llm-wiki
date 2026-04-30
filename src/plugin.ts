@@ -1,5 +1,4 @@
-import { Notice, Plugin, TFile } from "obsidian";
-import * as Obsidian from "obsidian";
+import { getLanguage, Notice, Plugin, TFile } from "obsidian";
 import { KnowledgeBase } from "./core/kb.js";
 import { loadKB, saveKB } from "./vault/kb-store.js";
 import { walkVaultFiles, type WalkOptions } from "./vault/walker.js";
@@ -548,7 +547,7 @@ export default class LlmWikiPlugin extends Plugin {
   get extractionOutputLanguage(): string {
     return describeExtractionLanguage(
       this.settings.extractionOutputLanguage,
-      readObsidianLanguage(),
+      getLanguage(),
     );
   }
 
@@ -585,7 +584,7 @@ export default class LlmWikiPlugin extends Plugin {
 
   async runExtractAll(): Promise<void> {
     if (this.running) {
-      new Notice("LLM Wiki: extraction already running.");
+      new Notice("Extraction already running.");
       return;
     }
     // Preflight: provider reachable + model available.
@@ -626,7 +625,7 @@ export default class LlmWikiPlugin extends Plugin {
       const walked = await walkVaultFiles(this.app, walkOpts);
       if (walked.length === 0) {
         new Notice(
-          "LLM Wiki: nothing to extract (all files filtered by folders, skip dirs, min size, or dailies cutoff).",
+          "Nothing to extract (all files filtered by folders, skip dirs, min size, or dailies cutoff).",
         );
         return;
       }
@@ -683,7 +682,7 @@ export default class LlmWikiPlugin extends Plugin {
 
   private openQueryModal(): void {
     if (!this.kb) {
-      new Notice("LLM Wiki: knowledge base not loaded yet");
+      new Notice("Knowledge base not loaded yet.");
       return;
     }
     if (!this.embeddingIndexController) {
@@ -772,7 +771,7 @@ export default class LlmWikiPlugin extends Plugin {
 
   async runExtractCurrent(file: TFile): Promise<void> {
     if (this.running) {
-      new Notice("LLM Wiki: wait for the current extraction to finish.");
+      new Notice("Wait for the current extraction to finish.");
       return;
     }
     this.setRunning(true);
@@ -860,16 +859,3 @@ function resolveLanguageLabel(language: string): string {
   }
 }
 
-function readObsidianLanguage(): string {
-  // getLanguage() is the official API but only exists in Obsidian 1.8.7+.
-  // We declare minAppVersion 1.5.0, so on older builds fall back to the
-  // `language` localStorage key — the value getLanguage() returns anyway.
-  const fn = (Obsidian as { getLanguage?: () => string }).getLanguage;
-  if (typeof fn === "function") return fn();
-  try {
-    // eslint-disable-next-line obsidianmd/prefer-get-language -- intentional 1.5.0–1.8.6 fallback
-    return globalThis.localStorage?.getItem("language") ?? "en";
-  } catch {
-    return "en";
-  }
-}

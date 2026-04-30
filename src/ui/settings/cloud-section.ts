@@ -42,8 +42,8 @@ export function renderCloudSection(
 
   // ── Provider picker ───────────────────────────────────────────────
   new Setting(containerEl)
-    .setName("LLM provider")
-    .setDesc("Choose between a local Ollama server or a cloud API.")
+    .setName("Provider")
+    .setDesc("Choose between a local server or a cloud API.")
     .addDropdown((dropdown) => {
       for (const p of PROVIDER_OPTIONS) {
         dropdown.addOption(p, PROVIDER_LABELS[p]);
@@ -84,7 +84,7 @@ export function renderCloudSection(
       .setDesc("Endpoint root for your OpenAI-compatible API (for example: https://api.groq.com).")
       .addText((text) =>
         text
-          .setPlaceholder("https://...")
+          .setPlaceholder("Paste base URL")
           .setValue(plugin.settings.customOpenAIBaseUrl)
           .onChange(async (value) => {
             plugin.settings.customOpenAIBaseUrl = value.trim();
@@ -120,7 +120,7 @@ export function renderCloudSection(
       .setDesc("Completion model used for extraction and chat.")
       .addText((text) =>
         text
-          .setPlaceholder("e.g. gpt-4o-mini")
+          .setPlaceholder("Completion model name")
           .setValue(plugin.settings.customOpenAIModel)
           .onChange(async (value) => {
             plugin.settings.customOpenAIModel = value.trim();
@@ -133,7 +133,7 @@ export function renderCloudSection(
       .setDesc("Optional. Defaults to the completion model if left blank.")
       .addText((text) =>
         text
-          .setPlaceholder("e.g. text-embedding-3-small")
+          .setPlaceholder("Embedding model name")
           .setValue(plugin.settings.customOpenAIEmbeddingModel)
           .onChange(async (value) => {
             plugin.settings.customOpenAIEmbeddingModel = value.trim();

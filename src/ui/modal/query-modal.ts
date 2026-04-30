@@ -401,12 +401,12 @@ export class QueryModal extends Modal {
 
   private async openModelPopover(): Promise<void> {
     if (!this.args.provider.listModels) {
-      new Notice("LLM Wiki: provider does not expose installed models.");
+      new Notice("Provider does not expose installed models.");
       return;
     }
     const models = await this.args.provider.listModels();
     if (!models || models.length === 0) {
-      new Notice("LLM Wiki: no models available.");
+      new Notice("No models available.");
       return;
     }
 

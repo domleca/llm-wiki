@@ -25,7 +25,7 @@ export class WelcomeModal extends Modal {
     contentEl.empty();
     contentEl.addClass("llm-wiki-welcome-modal");
 
-    contentEl.createEl("h2", { text: "Welcome to LLM Wiki" });
+    contentEl.createEl("h2", { text: "Welcome" });
 
     const introEl = contentEl.createEl("p");
     introEl.appendText("Your vault needs to be indexed before you can ask questions.");
