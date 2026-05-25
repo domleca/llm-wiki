@@ -9,7 +9,7 @@ import { OpenAIProvider } from "./llm/openai.js";
 import { AnthropicProvider } from "./llm/anthropic.js";
 import { GoogleProvider } from "./llm/google.js";
 import { MistralProvider } from "./llm/mistral.js";
-import type { LLMProvider } from "./llm/provider.js";
+import { LLMConnectError, type LLMProvider } from "./llm/provider.js";
 import {
   completionModels,
   defaultCompletionModel,
@@ -168,6 +168,11 @@ export default class LlmWikiPlugin extends Plugin {
   private statusBarEl: HTMLElement | null = null;
   private scheduler: Scheduler | null = null;
   private onSaveWatcher: OnSaveWatcher | null = null;
+  /** True once we've shown the user a "provider unreachable, auto-indexing
+   *  paused" Notice during the current outage. Reset on any successful
+   *  provider call or when the provider config changes, so the next outage
+   *  produces a fresh notice. */
+  private autoIndexProviderDownNotified = false;
 
   async onload(): Promise<void> {
     // One-time migration: 1.0.4 renamed the plugin id from "llm-wiki" to
@@ -333,7 +338,7 @@ export default class LlmWikiPlugin extends Plugin {
       trigger: (path) => {
         const tfile = this.app.vault.getAbstractFileByPath(path);
         if (tfile instanceof TFile) {
-          void this.runExtractCurrent(tfile);
+          void this.runExtractCurrent(tfile, { auto: true });
         }
       },
     });
@@ -470,6 +475,8 @@ export default class LlmWikiPlugin extends Plugin {
   rebuildProvider(): void {
     const s = this.settings;
     const ollama = new OllamaProvider({ url: s.ollamaUrl });
+    // Provider config changed — give the next outage a fresh user notice.
+    this.autoIndexProviderDownNotified = false;
 
     switch (s.providerType) {
       case "openai-compatible": {
@@ -614,13 +621,13 @@ export default class LlmWikiPlugin extends Plugin {
     // Preflight: provider reachable + model available.
     const reachable = await this.provider.ping();
     if (!reachable) {
-      const target =
-        this.settings.providerType === "ollama"
-          ? `Ollama at ${this.settings.ollamaUrl}`
-          : `${this.settings.providerType} API`;
-      new Notice(`LLM Wiki: ${target} unreachable. Check your connection and retry.`);
+      new Notice(
+        `LLM Wiki: ${this.providerTargetLabel()} unreachable. Check your connection and retry.`,
+      );
+      this.autoIndexProviderDownNotified = true;
       return;
     }
+    this.autoIndexProviderDownNotified = false;
     if (this.provider.listModels) {
       const models = await this.provider.listModels();
       if (models && !models.includes(this.activeModel)) {
@@ -793,11 +800,30 @@ export default class LlmWikiPlugin extends Plugin {
     }
   }
 
-  async runExtractCurrent(file: TFile): Promise<void> {
+  async runExtractCurrent(
+    file: TFile,
+    opts?: { auto?: boolean },
+  ): Promise<void> {
+    const auto = opts?.auto === true;
     if (this.running) {
-      new Notice("Wait for the current extraction to finish.");
+      if (!auto) {
+        new Notice("Wait for the current extraction to finish.");
+      }
       return;
     }
+
+    // Auto path (on-save watcher): preflight-ping the provider so we don't
+    // run a doomed extraction every time the user touches a note while the
+    // provider is unreachable. Show one Notice per outage; stay quiet after
+    // that until the provider comes back.
+    if (auto) {
+      const reachable = await this.provider.ping();
+      if (!reachable) {
+        this.notifyAutoIndexProviderDown();
+        return;
+      }
+    }
+
     this.setRunning(true);
     this.abortController = new AbortController();
     try {
@@ -823,12 +849,33 @@ export default class LlmWikiPlugin extends Plugin {
       const reloaded = await loadKB(this.app);
       this.kbMtime = reloaded.mtime;
       await generatePages(this.app, this.kb);
+      this.autoIndexProviderDownNotified = false;
     } catch (e) {
+      // The provider can drop between ping and extract — gate connect
+      // errors on the auto path the same way we gate ping failures.
+      if (auto && e instanceof LLMConnectError) {
+        this.notifyAutoIndexProviderDown();
+        return;
+      }
       new Notice(`LLM Wiki: extract failed — ${(e as Error).message}`);
     } finally {
       this.setRunning(false);
       this.abortController = null;
     }
+  }
+
+  private providerTargetLabel(): string {
+    return this.settings.providerType === "ollama"
+      ? `Ollama at ${this.settings.ollamaUrl}`
+      : `${this.settings.providerType} API`;
+  }
+
+  private notifyAutoIndexProviderDown(): void {
+    if (this.autoIndexProviderDownNotified) return;
+    new Notice(
+      `LLM Wiki: ${this.providerTargetLabel()} unreachable — auto-indexing paused. Will resume once it's back.`,
+    );
+    this.autoIndexProviderDownNotified = true;
   }
 }
 
