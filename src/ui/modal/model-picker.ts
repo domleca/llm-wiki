@@ -54,7 +54,7 @@ export async function openModelPicker(args: {
   const models = await args.provider.listModels();
   if (!models || models.length === 0) {
     new Notice(
-      "LLM Wiki: Ollama unreachable or no models installed. Start Ollama and `ollama pull` a model.",
+      "LM Wiki: Ollama unreachable or no models installed. Start Ollama and `ollama pull` a model.",
     );
     return;
   }

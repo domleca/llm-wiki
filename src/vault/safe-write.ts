@@ -24,7 +24,7 @@ export class PathNotAllowedError extends Error {
   readonly path: string;
   constructor(path: string) {
     super(
-      `Refusing to write to "${path}". Path is not in the LLM Wiki allowlist.`,
+      `Refusing to write to "${path}". Path is not in the LM Wiki allowlist.`,
     );
     this.name = "PathNotAllowedError";
     this.path = path;

@@ -35,7 +35,7 @@ export type StatusBarState =
 export function formatIndexingLabel(state: StatusBarState): string {
   switch (state.state) {
     case "idle":
-      return "LLM Wiki";
+      return "LM Wiki";
     case "indexing": {
       const eta = formatEta(state.elapsedMs, state.processed, state.total);
       return `Indexing ${state.processed}/${state.total} · ${eta}`;

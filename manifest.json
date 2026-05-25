@@ -1,7 +1,7 @@
 {
   "id": "llm-wiki-plugin",
-  "name": "LLM Wiki",
-  "version": "1.0.4",
+  "name": "LM Wiki",
+  "version": "1.0.5",
   "minAppVersion": "1.8.7",
   "description": "Prompt your knowledge base privately, on your own hardware, with the model of your choice.",
   "author": "Dominique Leca",

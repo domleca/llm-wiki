@@ -44,7 +44,7 @@ export class WelcomeModal extends Modal {
       contentEl.createEl("p", {
         text:
           "This estimate is for local models. Cloud providers (OpenAI, Anthropic, Google) " +
-          "are much faster — configure one in Settings > LLM Wiki first if you prefer.",
+          "are much faster — configure one in Settings > LM Wiki first if you prefer.",
         cls: "mod-muted",
       });
     }

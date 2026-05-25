@@ -666,7 +666,7 @@ export class QueryModal extends Modal {
     }
     if (state.kind === "error") {
       new Notice(
-        `LLM Wiki: embedding index unavailable (${state.message}) — keyword-only retrieval`,
+        `LM Wiki: embedding index unavailable (${state.message}) — keyword-only retrieval`,
       );
     }
     this.terminalTextEl.removeClass("llm-wiki-query-terminal-clickable");

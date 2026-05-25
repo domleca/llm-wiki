@@ -1,17 +1,17 @@
-# LLM Wiki
+# LM Wiki
 
 This project was inspired by [Andrej Karpathy's post on LLM knowledge bases](https://x.com/karpathy/status/2039805659525644595) — using LLMs to compile personal notes into a structured, queryable wiki. 
-LLM Wiki is an attempt to package that workflow into something anyone can use, privately, right inside Obsidian.
+LM Wiki is an attempt to package that workflow into something anyone can use, privately, right inside Obsidian.
 
 ---
 
 Your notes already contain a wealth of knowledge — scattered across files, half-connected, hard to query. 
-LLM Wiki reads your Obsidian vault, extracts the people, ideas & connections, and lets you ask questions in natural language. 
+LM Wiki reads your Obsidian vault, extracts the people, ideas & connections, and lets you ask questions in natural language. 
 
 TLDR: privately chat with your notes.
 Everything runs locally on your machine. No cloud account required. Your notes never leave your computer. You can also use Anthropic, OpenAI or Gemini if you wish.
 
-![LLM Wiki demo — asking questions about your notes](docs/assets/hero-demo.gif)
+![LM Wiki demo — asking questions about your notes](docs/assets/hero-demo.gif)
 
 ## Quick start
 
@@ -44,7 +44,7 @@ As of April 2026, both models are the most reasonable option for an average loca
 
 You have two options.
 
-*From the Community Plugins browser (once accepted).* In Obsidian, go to Settings > Community plugins, browse, search for "LLM Wiki", click Install, then Enable.
+*From the Community Plugins browser (once accepted).* In Obsidian, go to Settings > Community plugins, browse, search for "LM Wiki", click Install, then Enable.
 
 *Manual install (works today, before community-store acceptance).* Download these three files from the latest [release](https://github.com/domleca/llm-wiki/releases):
 
@@ -52,13 +52,13 @@ You have two options.
 - `manifest.json`
 - `styles.css`
 
-Place them in `<your-vault>/.obsidian/plugins/llm-wiki-plugin/` — create the folder if it doesn't exist. Then in Obsidian, go to Settings > Community plugins, make sure Community plugins are enabled (turn off Restricted mode if prompted), and toggle **LLM Wiki** on. If you don't see it in the list right away, hit the refresh button next to "Installed plugins".
+Place them in `<your-vault>/.obsidian/plugins/llm-wiki-plugin/` — create the folder if it doesn't exist. Then in Obsidian, go to Settings > Community plugins, make sure Community plugins are enabled (turn off Restricted mode if prompted), and toggle **LM Wiki** on. If you don't see it in the list right away, hit the refresh button next to "Installed plugins".
 
 <!-- Once accepted in the community directory, users can also install via: obsidian://show-plugin?id=llm-wiki-plugin -->
 
 **3. Index your knowledge base**
 
-Open the command palette (`Cmd+P` / `Ctrl+P`) and run **LLM Wiki: Run extraction now**. The plugin walks your vault, sends each note to the local model, and builds a structured knowledge base. Progress shows in the status bar.
+Open the command palette (`Cmd+P` / `Ctrl+P`) and run **LM Wiki: Run extraction now**. The plugin walks your vault, sends each note to the local model, and builds a structured knowledge base. Progress shows in the status bar.
 
 > **This takes a while.** The first extraction processes every note one by one. On a 600-note vault with a MacBook Air M2 (16 GB) running `qwen2.5:7b` locally, it took about **4 hours**. Larger vaults or older machines will take longer. Good time to start it before bed. If you're on a Mac laptop, keep it awake with `caffeinate` in a terminal:
 >
@@ -106,7 +106,7 @@ That's it. You're running.
 
 ## Cloud providers (optional)
 
-The default setup is fully local — nothing to sign up for, nothing to pay for. If you want to use a cloud model instead (faster, or for larger vaults), go to Settings > LLM Wiki, pick a provider, and enter your API key.
+The default setup is fully local — nothing to sign up for, nothing to pay for. If you want to use a cloud model instead (faster, or for larger vaults), go to Settings > LM Wiki, pick a provider, and enter your API key.
 
 | Provider | Chat models | Embedding |
 |---|---|---|
@@ -121,11 +121,11 @@ Cloud providers send note content to the provider's API. If privacy matters, sti
 
 **Your existing notes are never modified. Everything the plugin generates lives in a single `wiki/` folder.**
 
-LLM Wiki keeps three things cleanly separated in your head and on disk:
+LM Wiki keeps three things cleanly separated in your head and on disk:
 
-- **Your notes** — the raw material. Everything you've already written in your vault. LLM Wiki reads them but never touches them.
+- **Your notes** — the raw material. Everything you've already written in your vault. LM Wiki reads them but never touches them.
 - **The wiki** — a structured knowledge base built *from* your notes. It lives in a single `wiki/` folder inside your vault and is what queries search against.
-- **Your chats** — the answers LLM Wiki gives you. Saved so you can resume conversations, kept apart from both your notes and the wiki.
+- **Your chats** — the answers LM Wiki gives you. Saved so you can resume conversations, kept apart from both your notes and the wiki.
 
 The `wiki/` folder looks like this:
 
@@ -138,11 +138,11 @@ wiki/
   sources/           one page per source note
 ```
 
-By default, the `wiki/` folder is hidden from search, Quick Switcher, and graph view — it won't clutter your vault or interfere with your links. If you're curious and want to browse the generated pages, you can make them visible in Settings > LLM Wiki > Appearance. Either way, your original notes stay exactly as they were.
+By default, the `wiki/` folder is hidden from search, Quick Switcher, and graph view — it won't clutter your vault or interfere with your links. If you're curious and want to browse the generated pages, you can make them visible in Settings > LM Wiki > Appearance. Either way, your original notes stay exactly as they were.
 
 ## How it works
 
-LLM Wiki turns your unstructured notes into a structured knowledge base, then uses that structure to answer questions. Here's what happens under the hood:
+LM Wiki turns your unstructured notes into a structured knowledge base, then uses that structure to answer questions. Here's what happens under the hood:
 
 **Extraction.** When you run extraction, the plugin reads each note in your vault and sends it to an LLM with a prompt like "what entities, concepts, and connections are in this text?" The model returns structured data — names, types, descriptions, relationships — which gets merged into a single knowledge base (`wiki/kb.json`). Think of it as the plugin reading all your notes and building a mental map of everything in them.
 

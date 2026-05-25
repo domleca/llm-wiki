@@ -33,7 +33,7 @@ describe("formatEta", () => {
 
 describe("formatIndexingLabel", () => {
   it("composes the idle-state label", () => {
-    expect(formatIndexingLabel({ state: "idle" })).toBe("LLM Wiki");
+    expect(formatIndexingLabel({ state: "idle" })).toBe("LM Wiki");
   });
 
   it("composes the indexing-state label with ETA", () => {

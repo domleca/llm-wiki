@@ -186,7 +186,7 @@ export default class LlmWikiPlugin extends Plugin {
       );
       if (migration.copied.length > 0) {
         new Notice(
-          `LLM Wiki: migrated your data (${migration.copied.join(", ")}) ` +
+          `LM Wiki: migrated your data (${migration.copied.join(", ")}) ` +
             `from the previous plugin folder. The old folder at ` +
             `${this.app.vault.configDir}/plugins/llm-wiki/ is kept as a ` +
             `backup — safe to delete once you've confirmed everything works.`,
@@ -194,7 +194,7 @@ export default class LlmWikiPlugin extends Plugin {
         );
       }
     } catch (e) {
-      console.error("LLM Wiki: plugin folder migration failed", e);
+      console.error("LM Wiki: plugin folder migration failed", e);
       // Continue: the plugin can still load with default settings.
     }
 
@@ -420,7 +420,7 @@ export default class LlmWikiPlugin extends Plugin {
             this.startScheduler();
           }
           new Notice(
-            `LLM Wiki: extraction will run tonight at ${String(this.settings.nightlyExtractionHour).padStart(2, "0")}:00.`,
+            `LM Wiki: extraction will run tonight at ${String(this.settings.nightlyExtractionHour).padStart(2, "0")}:00.`,
           );
         },
       },
@@ -622,7 +622,7 @@ export default class LlmWikiPlugin extends Plugin {
     const reachable = await this.provider.ping();
     if (!reachable) {
       new Notice(
-        `LLM Wiki: ${this.providerTargetLabel()} unreachable. Check your connection and retry.`,
+        `LM Wiki: ${this.providerTargetLabel()} unreachable. Check your connection and retry.`,
       );
       this.autoIndexProviderDownNotified = true;
       return;
@@ -636,7 +636,7 @@ export default class LlmWikiPlugin extends Plugin {
             ? ` Run \`ollama pull ${this.activeModel}\`.`
             : " Choose a different model in settings.";
         new Notice(
-          `LLM Wiki: model "${this.activeModel}" not available.${hint}`,
+          `LM Wiki: model "${this.activeModel}" not available.${hint}`,
         );
         return;
       }
@@ -697,14 +697,14 @@ export default class LlmWikiPlugin extends Plugin {
       this.settings.lastExtractionRunIso = new Date().toISOString();
       await this.saveSettings();
       new Notice(
-        `LLM Wiki: ${stats.succeeded} extracted, ${stats.failed} failed, ${stats.skipped} skipped (${Math.round(stats.elapsedMs / 1000)}s).`,
+        `LM Wiki: ${stats.succeeded} extracted, ${stats.failed} failed, ${stats.skipped} skipped (${Math.round(stats.elapsedMs / 1000)}s).`,
       );
       await generatePages(this.app, this.kb);
     } catch (e) {
       this.progress.emit("batch-errored", {
         message: (e as Error).message ?? "Unknown error",
       });
-      new Notice(`LLM Wiki: extraction failed — ${(e as Error).message}`);
+      new Notice(`LM Wiki: extraction failed — ${(e as Error).message}`);
     } finally {
       this.setRunning(false);
       this.abortController = null;
@@ -767,10 +767,10 @@ export default class LlmWikiPlugin extends Plugin {
     try {
       const result = await generatePages(this.app, this.kb);
       new Notice(
-        `LLM Wiki: ${result.written} pages written, ${result.deleted} deleted.`,
+        `LM Wiki: ${result.written} pages written, ${result.deleted} deleted.`,
       );
     } catch (e) {
-      new Notice(`LLM Wiki: page generation failed — ${(e as Error).message}`);
+      new Notice(`LM Wiki: page generation failed — ${(e as Error).message}`);
     }
   }
 
@@ -857,7 +857,7 @@ export default class LlmWikiPlugin extends Plugin {
         this.notifyAutoIndexProviderDown();
         return;
       }
-      new Notice(`LLM Wiki: extract failed — ${(e as Error).message}`);
+      new Notice(`LM Wiki: extract failed — ${(e as Error).message}`);
     } finally {
       this.setRunning(false);
       this.abortController = null;
@@ -873,7 +873,7 @@ export default class LlmWikiPlugin extends Plugin {
   private notifyAutoIndexProviderDown(): void {
     if (this.autoIndexProviderDownNotified) return;
     new Notice(
-      `LLM Wiki: ${this.providerTargetLabel()} unreachable — auto-indexing paused. Will resume once it's back.`,
+      `LM Wiki: ${this.providerTargetLabel()} unreachable — auto-indexing paused. Will resume once it's back.`,
     );
     this.autoIndexProviderDownNotified = true;
   }

@@ -1,8 +1,30 @@
 # Changelog
 
-All notable changes to LLM Wiki are documented in this file.
+All notable changes to LM Wiki are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [1.0.5] — 2026-05-25
+
+### Changed
+- Plugin display name renamed from "LLM Wiki" to "LM Wiki" to resolve a
+  collision with another community plugin that registered the same name.
+  The plugin id (`llm-wiki-plugin`), GitHub repo, runtime folder, and
+  all stored data are unchanged.
+
+## [1.0.4] — 2026-05-25
+
+### Changed
+- Plugin id renamed from `llm-wiki` to `llm-wiki-plugin`. Existing
+  installs auto-migrate user data (settings, chat history, embeddings
+  cache, interaction logs) into the new folder on first load. The old
+  `.obsidian/plugins/llm-wiki/` folder is kept as a backup.
+
+### Fixed
+- On-save extraction no longer spams "extract failed" notices when the
+  provider is unreachable. The on-save path now preflight-pings the
+  provider and surfaces a single "auto-indexing paused" notice per
+  outage. Manual extractions are unaffected.
 
 ## [1.0.1] — 2026-04-11
 

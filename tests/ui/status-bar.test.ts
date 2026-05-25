@@ -15,7 +15,7 @@ describe("StatusBarWidget", () => {
     const el = fakeEl();
     const emitter = new ProgressEmitter();
     new StatusBarWidget(el, emitter);
-    expect(el.texts.at(-1)).toBe("LLM Wiki");
+    expect(el.texts.at(-1)).toBe("LM Wiki");
   });
 
   it("updates to indexing label on batch-started + file-completed events", () => {
@@ -54,7 +54,7 @@ describe("StatusBarWidget", () => {
       total: 1,
       elapsedMs: 100,
     });
-    expect(el.texts.at(-1)).toBe("LLM Wiki");
+    expect(el.texts.at(-1)).toBe("LM Wiki");
   });
 
   it("shows the error state on batch-errored", () => {
