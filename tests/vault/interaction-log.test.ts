@@ -19,7 +19,7 @@ describe("appendInteractionLog", () => {
       },
       now,
     );
-    const path = ".obsidian/plugins/llm-wiki/interactions/2026-04-09.jsonl";
+    const path = ".obsidian/plugins/llm-wiki-plugin/interactions/2026-04-09.jsonl";
     const content = files.get(path)?.content;
     expect(content).toBeDefined();
     expect(content).toMatch(/\n$/);
@@ -63,7 +63,7 @@ describe("appendInteractionLog", () => {
       },
       now,
     );
-    const path = ".obsidian/plugins/llm-wiki/interactions/2026-04-09.jsonl";
+    const path = ".obsidian/plugins/llm-wiki-plugin/interactions/2026-04-09.jsonl";
     const content = files.get(path)?.content ?? "";
     const lines = content.trim().split("\n");
     expect(lines.length).toBe(2);
@@ -84,7 +84,7 @@ describe("appendInteractionLog", () => {
     });
     // Just check that some file was written under interactions/
     const written = Array.from(files.keys()).filter((p) =>
-      p.startsWith(".obsidian/plugins/llm-wiki/interactions/"),
+      p.startsWith(".obsidian/plugins/llm-wiki-plugin/interactions/"),
     );
     expect(written.length).toBe(1);
   });

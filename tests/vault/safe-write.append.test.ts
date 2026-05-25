@@ -10,13 +10,13 @@ describe("safeAppendPluginData", () => {
       "interactions/2026-04-09.jsonl",
       '{"a":1}',
     );
-    const path = ".obsidian/plugins/llm-wiki/interactions/2026-04-09.jsonl";
+    const path = ".obsidian/plugins/llm-wiki-plugin/interactions/2026-04-09.jsonl";
     expect(files.get(path)?.content).toBe('{"a":1}\n');
   });
 
   it("appends to an existing file", async () => {
     const { app, files } = createMockApp();
-    const path = ".obsidian/plugins/llm-wiki/interactions/x.jsonl";
+    const path = ".obsidian/plugins/llm-wiki-plugin/interactions/x.jsonl";
     // Seed an existing file through the adapter so the mock records it properly.
     await app.vault.adapter.write(path, "first\n");
     await safeAppendPluginData(app, "interactions/x.jsonl", "second");
@@ -30,7 +30,7 @@ describe("safeAppendPluginData", () => {
       "interactions/y.jsonl",
       "already\n",
     );
-    const path = ".obsidian/plugins/llm-wiki/interactions/y.jsonl";
+    const path = ".obsidian/plugins/llm-wiki-plugin/interactions/y.jsonl";
     expect(files.get(path)?.content).toBe("already\n");
   });
 

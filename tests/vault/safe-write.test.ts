@@ -37,10 +37,10 @@ describe("isAllowedPath", () => {
     const custom = createMockApp().app;
     custom.vault.configDir = ".config/obsidian";
     expect(
-      isAllowedPath(custom, ".config/obsidian/plugins/llm-wiki/chats.json"),
+      isAllowedPath(custom, ".config/obsidian/plugins/llm-wiki-plugin/chats.json"),
     ).toBe(true);
     expect(
-      isAllowedPath(custom, ".obsidian/plugins/llm-wiki/chats.json"),
+      isAllowedPath(custom, ".obsidian/plugins/llm-wiki-plugin/chats.json"),
     ).toBe(false);
   });
 

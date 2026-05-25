@@ -1,6 +1,6 @@
 /**
  * Structured interaction log — one JSONL file per day under
- * `.obsidian/plugins/llm-wiki/interactions/`.
+ * `.obsidian/plugins/llm-wiki-plugin/interactions/`.
  *
  * Each entry captures enough about a single Q&A round-trip to reconstruct
  * model usage, retrieval stats, and latency after the fact without having

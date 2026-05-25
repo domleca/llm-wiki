@@ -42,6 +42,7 @@ import { buildEmbeddingIndex, EMBEDDING_MODEL } from "./query/embeddings.js";
 import { EmbeddingIndexController } from "./query/embedding-index-controller.js";
 import { generatePages, sourcePagePath } from "./pages/generator.js";
 import { safeDeletePage } from "./vault/safe-write.js";
+import { migratePluginFolder } from "./vault/migrate-plugin-folder.js";
 
 /** Per-provider API keys, keyed by CloudProvider. */
 export type ApiKeys = Partial<Record<CloudProvider, string>>;
@@ -169,6 +170,29 @@ export default class LlmWikiPlugin extends Plugin {
   private onSaveWatcher: OnSaveWatcher | null = null;
 
   async onload(): Promise<void> {
+    // One-time migration: 1.0.4 renamed the plugin id from "llm-wiki" to
+    // "llm-wiki-plugin", which changes the folder Obsidian reads from.
+    // Copy the user's data over before loadSettings() reads data.json.
+    try {
+      const migration = await migratePluginFolder(
+        this.app,
+        "llm-wiki",
+        "llm-wiki-plugin",
+      );
+      if (migration.copied.length > 0) {
+        new Notice(
+          `LLM Wiki: migrated your data (${migration.copied.join(", ")}) ` +
+            `from the previous plugin folder. The old folder at ` +
+            `${this.app.vault.configDir}/plugins/llm-wiki/ is kept as a ` +
+            `backup — safe to delete once you've confirmed everything works.`,
+          15000,
+        );
+      }
+    } catch (e) {
+      console.error("LLM Wiki: plugin folder migration failed", e);
+      // Continue: the plugin can still load with default settings.
+    }
+
     await this.loadSettings();
     this.rebuildProvider();
     this.applySearchExclusion();
