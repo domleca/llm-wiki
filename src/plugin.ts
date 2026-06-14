@@ -175,23 +175,28 @@ export default class LlmWikiPlugin extends Plugin {
   private autoIndexProviderDownNotified = false;
 
   async onload(): Promise<void> {
-    // One-time migration: 1.0.4 renamed the plugin id from "llm-wiki" to
-    // "llm-wiki-plugin", which changes the folder Obsidian reads from.
-    // Copy the user's data over before loadSettings() reads data.json.
+    // One-time migration: the plugin id was renamed twice. 1.0.4 moved
+    // "llm-wiki" → "llm-wiki-plugin"; 1.0.6 moves "llm-wiki-plugin" → "lm-wiki"
+    // after the directory bot rejected the "-plugin" suffix. Each rename
+    // changes the folder Obsidian reads from, so copy user data into the
+    // new folder before loadSettings() reads data.json.
+    //
+    // Call the helper twice, newest source first. The idempotency check
+    // (skip if "lm-wiki/data.json" already exists) means the second call
+    // no-ops as soon as the first one copies anything — newer wins.
     try {
-      const migration = await migratePluginFolder(
-        this.app,
-        "llm-wiki",
-        "llm-wiki-plugin",
-      );
-      if (migration.copied.length > 0) {
-        new Notice(
-          `LM Wiki: migrated your data (${migration.copied.join(", ")}) ` +
-            `from the previous plugin folder. The old folder at ` +
-            `${this.app.vault.configDir}/plugins/llm-wiki/ is kept as a ` +
-            `backup — safe to delete once you've confirmed everything works.`,
-          15000,
-        );
+      for (const oldId of ["llm-wiki-plugin", "llm-wiki"]) {
+        const migration = await migratePluginFolder(this.app, oldId, "lm-wiki");
+        if (migration.copied.length > 0) {
+          new Notice(
+            `LM Wiki: migrated your data (${migration.copied.join(", ")}) ` +
+              `from the previous plugin folder. The old folder at ` +
+              `${this.app.vault.configDir}/plugins/${oldId}/ is kept as a ` +
+              `backup — safe to delete once you've confirmed everything works.`,
+            15000,
+          );
+          break;
+        }
       }
     } catch (e) {
       console.error("LM Wiki: plugin folder migration failed", e);

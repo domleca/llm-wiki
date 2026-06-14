@@ -4,6 +4,22 @@ All notable changes to LM Wiki are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.6] — 2026-06-14
+
+### Changed
+- Plugin id renamed from `llm-wiki-plugin` to `lm-wiki`. The Obsidian
+  community directory's automated review rejects plugin ids that end in
+  `-plugin` ("redundant suffix"); the 1.0.4 id was chosen before that
+  rule was in place. Existing installs auto-migrate user data (settings,
+  chat history, embeddings cache, interaction logs) into the new
+  `.obsidian/plugins/lm-wiki/` folder on first load. Both prior folders
+  (`llm-wiki/` and `llm-wiki-plugin/`) are kept as backups.
+- Removed all `!important` declarations from the query modal styles,
+  replacing them with `body`-prefixed selectors that beat Obsidian's
+  defaults via specificity rather than override force.
+- Switched `text-decoration-style: dotted` longhand to the shorthand
+  `text-decoration: underline dotted` for broader Electron support.
+
 ## [1.0.5] — 2026-05-25
 
 ### Changed

@@ -54,7 +54,7 @@ export interface SafeWriteApp {
 /** Returns the vault-relative directory where the plugin stores its
  *  runtime data (chats, embeddings cache, interaction logs, etc.). */
 export function getPluginDir(app: SafeWriteApp): string {
-  return `${app.vault.configDir}/plugins/llm-wiki-plugin`;
+  return `${app.vault.configDir}/plugins/lm-wiki`;
 }
 
 /**
@@ -105,7 +105,7 @@ export async function safeWritePluginData(
 }
 
 /**
- * Appends a line to a file under `.obsidian/plugins/llm-wiki-plugin/`, creating the
+ * Appends a line to a file under `.obsidian/plugins/lm-wiki/`, creating the
  * file (and parent directory) if needed. Unlike `safeWritePluginData`, this
  * preserves existing content — used for JSONL logs such as the interaction log.
  *

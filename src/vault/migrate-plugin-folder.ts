@@ -1,9 +1,16 @@
 /**
- * One-time migration: when the plugin's manifest id changed from
- * "llm-wiki" to "llm-wiki-plugin" in 1.0.4, Obsidian started reading
- * runtime data from a new folder. This copies the user's data out of
- * the old folder so settings, chats, embeddings cache, and interaction
- * logs survive the rename.
+ * One-time migration: when the plugin's manifest id changes, Obsidian
+ * starts reading runtime data from a different folder. This helper copies
+ * the user's data out of the old folder so settings, chats, embeddings
+ * cache, and interaction logs survive the rename.
+ *
+ * The plugin has been renamed twice:
+ *   1.0.4  "llm-wiki"        → "llm-wiki-plugin"
+ *   1.0.6  "llm-wiki-plugin" → "lm-wiki"   (forced; bot rejects "-plugin" suffix)
+ *
+ * Callers (see plugin.ts onload) loop over both old ids in priority order
+ * — newest first — and break on the first successful copy. The helper
+ * itself is single-pair: oldId → newId.
  *
  * Copies, never moves: leaves the old folder intact as a backup the
  * user can delete manually once they're confident the new bundle works.

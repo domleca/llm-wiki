@@ -52,9 +52,9 @@ You have two options.
 - `manifest.json`
 - `styles.css`
 
-Place them in `<your-vault>/.obsidian/plugins/llm-wiki-plugin/` — create the folder if it doesn't exist. Then in Obsidian, go to Settings > Community plugins, make sure Community plugins are enabled (turn off Restricted mode if prompted), and toggle **LM Wiki** on. If you don't see it in the list right away, hit the refresh button next to "Installed plugins".
+Place them in `<your-vault>/.obsidian/plugins/lm-wiki/` — create the folder if it doesn't exist. Then in Obsidian, go to Settings > Community plugins, make sure Community plugins are enabled (turn off Restricted mode if prompted), and toggle **LM Wiki** on. If you don't see it in the list right away, hit the refresh button next to "Installed plugins".
 
-<!-- Once accepted in the community directory, users can also install via: obsidian://show-plugin?id=llm-wiki-plugin -->
+<!-- Once accepted in the community directory, users can also install via: obsidian://show-plugin?id=lm-wiki -->
 
 **3. Index your knowledge base**
 

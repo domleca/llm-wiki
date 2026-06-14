@@ -5,7 +5,7 @@ import path from "node:path";
 import { builtinModules } from "node:module";
 
 const TESTVAULT_PLUGIN_DIR = process.env.LLM_WIKI_TESTVAULT
-  ? path.join(process.env.LLM_WIKI_TESTVAULT, ".obsidian/plugins/llm-wiki-plugin")
+  ? path.join(process.env.LLM_WIKI_TESTVAULT, ".obsidian/plugins/lm-wiki")
   : null;
 
 function syncToTestVault() {
