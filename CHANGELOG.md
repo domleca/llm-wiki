@@ -4,6 +4,14 @@ All notable changes to LM Wiki are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.7] — 2026-06-15
+
+### Changed
+- Release workflow now generates GitHub artifact attestations
+  (`actions/attest-build-provenance@v2`) for `main.js`, `manifest.json`,
+  and `styles.css`, so users can cryptographically verify each release
+  asset was built from this repository. No runtime code change.
+
 ## [1.0.6] — 2026-06-14
 
 ### Changed

@@ -1,6 +1,6 @@
 {
   "name": "lm-wiki",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Local-first LLM-powered knowledge base for your Obsidian vault",
   "type": "module",
   "private": true,
