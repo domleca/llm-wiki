@@ -33,7 +33,7 @@ describe("AnthropicProvider.complete", () => {
     const tokens: string[] = [];
     for await (const chunk of provider.complete({
       prompt: "hi",
-      model: "claude-3-5-haiku-20241022",
+      model: "claude-haiku-4-5-20251001",
     })) {
       tokens.push(chunk);
     }
@@ -43,7 +43,7 @@ describe("AnthropicProvider.complete", () => {
     expect(mock.calls[0].headers["x-api-key"]).toBe("sk-ant-test");
     expect(mock.calls[0].headers["anthropic-version"]).toBe("2023-06-01");
     const body = JSON.parse(mock.calls[0].body!);
-    expect(body.model).toBe("claude-3-5-haiku-20241022");
+    expect(body.model).toBe("claude-haiku-4-5-20251001");
     expect(body.stream).toBe(true);
   });
 
@@ -58,7 +58,7 @@ describe("AnthropicProvider.complete", () => {
     await expect(async () => {
       for await (const _ of provider.complete({
         prompt: "hi",
-        model: "claude-3-5-haiku-20241022",
+        model: "claude-haiku-4-5-20251001",
       })) {
         // consume
       }
