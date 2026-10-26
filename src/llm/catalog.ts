@@ -94,8 +94,8 @@ const openai: CatalogEntry[] = [
 
 const anthropic: CatalogEntry[] = [
   {
-    id: "claude-sonnet-4-20250514",
-    label: "Claude Sonnet 4",
+    id: "claude-sonnet-5-5",
+    label: "Claude Sonnet 5.5",
     provider: "anthropic",
     contextLength: 200_000,
     canComplete: true,
@@ -110,8 +110,8 @@ const anthropic: CatalogEntry[] = [
     canEmbed: false,
   },
   {
-    id: "claude-3-5-haiku-20241022",
-    label: "Claude 3.5 Haiku",
+    id: "claude-haiku-4-5-20251001",
+    label: "Claude Haiku 4.5",
     provider: "anthropic",
     contextLength: 200_000,
     canComplete: true,
@@ -243,7 +243,7 @@ export function defaultCompletionModel(provider: CloudProvider): string {
     case "openai":
       return "gpt-4o-mini";
     case "anthropic":
-      return "claude-3-5-haiku-20241022";
+      return "claude-haiku-4-5-20251001";
     case "google":
       return "gemini-2.0-flash";
     case "mistral":
